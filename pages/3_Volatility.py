@@ -26,6 +26,11 @@ for col, (tkr, name) in zip(cols, [("^VIX", "VIX"), ("^VIX3M", "VIX 3M"),
                    f"{chg:+.2f}%" if chg is not None else None,
                    delta_color="inverse")
 
+theme.note("VIX = 30-day S&P insurance price (teens calm, 20s stressed, "
+           "30+ panic) · VVIX = vol of vol · MOVE = the bond market's VIX — "
+           "rates often lead equities · SKEW = crash-insurance premium. "
+           "Deltas shown red when rising: rising vol is risk-off.")
+
 st.divider()
 
 # ---- term structure ratio: the tripwire ----
@@ -50,6 +55,10 @@ if "^VIX" in hist and "^VIX3M" in hist:
                    ("🟡 flattening — watch closely." if last < 1.0
                     else "🔴 **inverted** — the market is paying up for "
                          "near-term protection.")))
+    theme.note("The regime tripwire. Normally near-term vol is cheaper than "
+               "3-month vol (ratio below 1). A push above 1.0 means the "
+               "market pays MORE for immediate protection — the signature "
+               "of stress arriving, and where the standing alert lives.")
 
 st.divider()
 
@@ -77,10 +86,29 @@ else:
         theme.style_fig(fig, f"SPY options — expiration {expiry}",
                         height=380, unified_hover=False),
         use_container_width=True)
+    theme.note("Left side high = puts pricier than calls — the market pays "
+               "up for downside. A steepening left wing = growing crash "
+               "premium; a flattening one = complacency. This curve IS the "
+               "SKEW index, in raw contract prices.")
 
 st.divider()
 
 st.subheader("The complex over time")
+SERIES_NOTES = {
+    "^VIX": "Mean-reverting by construction: it spends years in the teens "
+            "and days in the 40s. Spikes mark fear extremes — often better "
+            "contrarian markers than trend signals.",
+    "^VVIX": "The price of options ON the VIX. Above ~110 = hedgers paying "
+             "up for volatility convexity even if VIX itself looks calm — "
+             "an early-nerves gauge.",
+    "^MOVE": "Treasury volatility. When MOVE spikes while VIX sleeps, the "
+             "bond market sees something equities don't — check the event "
+             "calendar (CPI, FOMC, auctions) first, regime second.",
+    "^SKEW": "Demand for deep out-of-the-money puts, ~110–150 range. High "
+             "readings = tail insurance persistently bid. Poor timing tool, "
+             "good context tool — read it alongside VIX and PCC, never "
+             "alone.",
+}
 pick = st.selectbox("Series", ["^VIX", "^VVIX", "^MOVE", "^SKEW"],
                     format_func=lambda t: data.MARKET_TICKERS[t])
 series_ohlc = data.ohlc(pick, period="2y")
@@ -96,3 +124,4 @@ else:
     height = 300
 st.plotly_chart(theme.style_fig(fig, height=height, unified_hover=False),
                 use_container_width=True)
+theme.note(SERIES_NOTES[pick])

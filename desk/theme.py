@@ -87,3 +87,9 @@ def candles(df, name: str = "") -> go.Candlestick:
         decreasing_line_color=RED, decreasing_fillcolor=RED,
         line=dict(width=1), whiskerwidth=0.6,
     )
+
+
+def note(text: str) -> None:
+    """Small interpretive caption under a chart: how to read it."""
+    st.markdown(f'<div class="desk-note" style="margin:-6px 0 14px 2px">'
+                f'{text}</div>', unsafe_allow_html=True)

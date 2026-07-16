@@ -38,6 +38,9 @@ st.plotly_chart(
 above200 = spx.iloc[-1] > spx.rolling(200).mean().iloc[-1]
 st.markdown(f"**Trend check:** price is currently "
             f"{'**above** ✅' if above200 else '**below** ❌'} the 200-day.")
+theme.note("Price above a rising 200-day = uptrend regime; below = defense. "
+           "Ribbon order (20 over 50 over 200) and slope show trend health; "
+           "long candle wicks show sessions where conviction failed.")
 
 st.divider()
 
@@ -55,8 +58,7 @@ def ratio_chart(num, den, title, note):
                     line=dict(width=1, color=theme.MUTED, dash="dot"))
     st.plotly_chart(theme.style_fig(fig, title, height=290),
                     use_container_width=True)
-    st.markdown(f'<div class="desk-note">{note}</div>',
-                unsafe_allow_html=True)
+    theme.note(note)
 
 
 c1, c2 = st.columns(2)
@@ -89,3 +91,7 @@ if sel:
     fig.update_layout(yaxis_title="% change over lookback")
     st.plotly_chart(theme.style_fig(fig, height=380),
                     use_container_width=True)
+    theme.note("Confirmation check: does the rest of the world agree with "
+               "equities? Stocks rising alone — while copper, credit, and "
+               "crypto sag — is a divergence worth a Notebook entry. Broad "
+               "agreement = regime confirmation.")
