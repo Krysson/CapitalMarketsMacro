@@ -199,3 +199,19 @@ def pct_chg(s: pd.Series, days: int = 1) -> float | None:
     if len(s) <= days:
         return None
     return (s.iloc[-1] / s.iloc[-1 - days] - 1) * 100
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def ohlc(ticker: str, period: str = "1y") -> pd.DataFrame:
+    """Daily OHLC for one ticker (for candlestick charts). Empty on failure."""
+    import yfinance as yf
+
+    try:
+        df = yf.download(ticker, period=period, interval="1d",
+                         auto_adjust=True, progress=False)
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)
+        keep = [c for c in ("Open", "High", "Low", "Close") if c in df.columns]
+        return df[keep].dropna()
+    except Exception:
+        return pd.DataFrame()

@@ -5,10 +5,12 @@ from pathlib import Path
 
 import streamlit as st
 
+from desk import theme
+
 st.set_page_config(page_title="Notebook — Desk", page_icon="📓", layout="wide")
-st.title("Analyst's Notebook")
-st.caption("Evidence → Interpretation → Risks → Falsification → Decision. "
-           "Tag evidence [F] fact, [E] estimate, [I] inference.")
+theme.header("BOOK I · CH. 15", "Analyst's Notebook",
+             "Evidence → Interpretation → Risks → Falsification → Decision. "
+             "Tag evidence [F] fact, [E] estimate, [I] inference.")
 
 STORE = Path("notebook_entries.json")
 
@@ -30,8 +32,8 @@ entries = load()
 
 st.warning(
     "Storage note: on Streamlit Community Cloud this file resets whenever the "
-    "app redeploys or restarts. **Download your notebook regularly** (button "
-    "below) and re-upload to restore.", icon="💾")
+    "app redeploys or restarts. **Download your notebook regularly** and "
+    "re-upload to restore.", icon="💾")
 
 with st.form("entry", clear_on_submit=True):
     st.subheader("New entry")
@@ -64,9 +66,13 @@ if entries:
                      f"**Risks**\n\n{e['risks']}", "",
                      f"**Falsification**\n\n{e['falsification']}", "",
                      f"**Decision** — {e['decision']}", "", "---", ""]
-    st.download_button("⬇️ Download notebook (markdown)",
+    c1, c2 = st.columns(2)
+    c1.download_button("⬇️ Download notebook (markdown)",
                        "\n".join(md_lines),
                        file_name="analysts_notebook.md")
+    c2.download_button("⬇️ Download backup (JSON)",
+                       json.dumps(entries, indent=2),
+                       file_name="notebook_backup.json")
 
 uploaded = st.file_uploader("Restore from a previous JSON backup", type="json")
 if uploaded is not None:
@@ -78,9 +84,6 @@ if uploaded is not None:
         st.error("Could not parse that file.")
 
 if entries:
-    st.download_button("⬇️ Download backup (JSON)",
-                       json.dumps(entries, indent=2),
-                       file_name="notebook_backup.json")
     st.subheader(f"Entries ({len(entries)})")
     for e in entries:
         with st.expander(f"📅 {e['date']} — {e['decision'][:60] or 'entry'}"):
