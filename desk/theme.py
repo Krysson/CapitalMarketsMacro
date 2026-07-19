@@ -20,7 +20,11 @@ PURPLE = "#9A6BD1"
 _CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
-html, body, [class*="st-"], p, li { font-family: 'IBM Plex Sans', sans-serif; }
+html, body, p, li, label, button, input, textarea, select {
+  font-family: 'IBM Plex Sans', sans-serif; }
+[data-testid="stIconMaterial"], [class*="material-symbols"],
+span[translate="no"] {
+  font-family: 'Material Symbols Rounded' !important; }
 h1, h2, h3 { font-family: 'Spectral', serif !important; font-weight: 600 !important; }
 [data-testid="stMetricValue"], [data-testid="stMetricDelta"],
 [data-testid="stDataFrame"] * { font-family: 'IBM Plex Mono', monospace; }
