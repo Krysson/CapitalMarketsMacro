@@ -29,3 +29,4 @@ Macro (FRED), Market, Volatility, and the Analyst's Notebook.
   file resets on redeploy - use the download/restore buttons on the page.
 - Breadth internals (S5TH, ADD) are not in any free API; RSP/SPY is the
   in-app proxy and TradingView remains the home for full internals.
+- https://capitalmarketsmacro.streamlit.app/
