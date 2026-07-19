@@ -78,7 +78,7 @@ with right:
                 lambda v: f"color: {theme.GREEN if v > 0 else theme.RED}"
                 if isinstance(v, float) else "",
                 subset=["Chg %"],
-            ),
+            ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
             hide_index=True, height=430, use_container_width=True,
         )
 
