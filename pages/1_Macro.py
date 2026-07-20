@@ -8,9 +8,11 @@ from desk import data, theme
 st.set_page_config(page_title="Macro — Desk", page_icon="📊", layout="wide")
 theme.header("BOOK III · CH. 4", "Macro Dashboard",
              "All Tier 1, primary-source data via FRED. Read top to bottom: "
-             "Growth → Inflation → Policy → Liquidity.")
+             "Growth → Inflation → Policy → Liquidity. Gray bands = NBER "
+             "recessions (USREC).")
 
 bundle = data.macro_bundle()
+rec = data.usrec()
 years = st.slider("Lookback (years)", 1, 20, 5)
 
 NOTES = {
@@ -57,25 +59,18 @@ NOTES = {
 }
 
 
-def tail_years(s: pd.Series, n: int) -> pd.Series:
-    if s.empty:
-        return s
-    cutoff = s.index.max() - pd.Timedelta(days=int(n * 365.25))
-    return s[s.index >= cutoff]
-
-
 def line(sid, series, title, yoy=False, color=theme.BLUE):
     s = series.dropna() if series is not None else pd.Series(dtype=float)
     if s.empty:
         st.warning(f"{title}: no data")
         return
     if yoy:
-        m = s.resample("MS").last()
-        s = ((m / m.shift(12) - 1) * 100).dropna()
+        s = data.yoy_pct(s)
         title += " (YoY %)"
-    s = tail_years(s, years)
+    s = data.tail_years(s, years)
     fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines",
                                line=dict(width=1.8, color=color)))
+    theme.recession_bands(fig, rec, start=s.index.min(), end=s.index.max())
     st.plotly_chart(theme.style_fig(fig, title, height=260),
                     use_container_width=True)
     if sid in NOTES:
@@ -84,9 +79,10 @@ def line(sid, series, title, yoy=False, color=theme.BLUE):
 
 nl = data.net_liquidity(bundle)
 if not nl.empty:
-    s = tail_years(nl, years) / 1_000_000
+    s = data.tail_years(nl, years) / 1_000_000
     fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines",
                                line=dict(width=2.2, color=theme.AMBER)))
+    theme.recession_bands(fig, rec, start=s.index.min(), end=s.index.max())
     st.plotly_chart(
         theme.style_fig(fig, "Net Liquidity = Fed Balance Sheet − TGA − "
                              "ON RRP  ($tn)", height=320),
