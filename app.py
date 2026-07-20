@@ -24,7 +24,7 @@ st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
 TAPE_SYMBOLS = [
     {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
     {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
-    {"proName": "FRED:DGS10", "title": "US 10Y"},   # fb: FRED:DGS10
+    {"proName": "CAPITALCOM:US10", "title": "US 10Y"},   # fb: FRED:DGS10
     {"proName": "CAPITALCOM:DXY", "title": "Dollar"},    # fb: FRED:DTWEXBGS
     {"proName": "TVC:GOLD", "title": "Gold"},
     {"proName": "TVC:USOIL", "title": "WTI"},
@@ -81,6 +81,32 @@ for col, ev, blurb in (
             ''',
             unsafe_allow_html=True,
         )
+
+with st.expander("Full economic calendar — TradingView (display glass)"):
+    components.html(
+        """
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript"
+            src="https://s3.tradingview.com/external-embedding/embed-widget-events.js"
+            async>
+          {
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "width": "100%",
+            "height": 450,
+            "locale": "en",
+            "importanceFilter": "0,1",
+            "countryFilter": "us"
+          }
+          </script>
+        </div>
+        """,
+        height=460)
+    theme.note("Everything between the two anchors above — claims every "
+               "Thursday, PCE, payrolls, auctions. The amber strip is "
+               "computed from published schedules and is the desk's source "
+               "of truth; this widget is glass for everything else.")
 
 with st.spinner("Pulling FRED data…"):
     bundle = data.macro_bundle()
