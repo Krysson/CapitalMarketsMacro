@@ -6,9 +6,13 @@ are training for. Every chart keeps its right-side scale via style_fig()
 and its reading note via note(). The command line (in every header)
 teaches Bloomberg-style mnemonic navigation: type a function, hit GO.
 """
+import re
+
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
+
+from desk import data as _data
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -92,7 +96,34 @@ _ROUTES = {
     "TOP": "pages/5_Wire.py", "N": "pages/5_Wire.py",
     "WIRE": "pages/5_Wire.py",
     "BLP": "pages/00_Launchpad.py", "PAD": "pages/00_Launchpad.py",
+    "Q": "pages/6_Quote.py", "QUOTE": "pages/6_Quote.py",
 }
+
+_FUNC_TOKENS = {"GP", "DES", "FA"}
+
+
+def _parse_command(c: str) -> tuple:
+    """Pure command parser. Returns one of:
+    ("help",) · ("page", path) · ("quote", "fred"|"yf", symbol, func)
+    · ("unknown", token) · ("none",)
+    Priority: page mnemonics > FRED aliases > ticker shape — so VIX still
+    opens the Volatility page; use ^VIX for the raw chart.
+    """
+    toks = c.split()
+    if not toks:
+        return ("none",)
+    if toks[0] in ("HELP", "?"):
+        return ("help",)
+    if len(toks) == 1 and toks[0] in _ROUTES:
+        return ("page", _ROUTES[toks[0]])
+    if toks[0] == "FRED" and len(toks) >= 2:
+        return ("quote", "fred", toks[1], "")
+    if len(toks) == 1 and toks[0] in _data.FRED_ALIASES:
+        return ("quote", "fred", _data.FRED_ALIASES[toks[0]], "")
+    if re.fullmatch(r"[A-Z0-9.\-^=]{1,12}", toks[0]):
+        func = toks[1] if len(toks) > 1 and toks[1] in _FUNC_TOKENS else ""
+        return ("quote", "yf", toks[0], func)
+    return ("unknown", toks[0])
 
 _HELP = """
 | FUNCTION | PAGE | ON THE REAL MACHINE |
@@ -105,6 +136,9 @@ _HELP = """
 | `VIX` / `VOL` | Volatility | VIX Index GP, VCAL |
 | `NOTE` | Notebook | NOTE — notes & ideas |
 | `TOP` / `N` | News Wire | TOP — top news · N — news |
+| `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
+| `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
+| `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
 
 Type the function, hit **GO** (or Enter). Same habit as the terminal:
 navigate by mnemonic, not by mouse.
@@ -122,16 +156,18 @@ def command_line() -> None:
     if not (go and cmd.strip()):
         return
     c = cmd.upper().replace("<GO>", "").strip()
-    if c in ("HELP", "?"):
+    action = _parse_command(c)
+    if action[0] == "help":
         st.markdown(_HELP)
-        return
-    page = _ROUTES.get(c)
-    if page:
-        st.switch_page(page)
-    else:
+    elif action[0] == "page":
+        st.switch_page(action[1])
+    elif action[0] == "quote":
+        st.session_state["quote_query"] = action[1:]
+        st.switch_page("pages/6_Quote.py")
+    elif action[0] == "unknown":
         st.markdown(
-            f'<div class="desk-note" style="color:{RED}">{c} — UNKNOWN '
-            f'FUNCTION. TYPE HELP &lt;GO&gt; FOR THE LIST.</div>',
+            f'<div class="desk-note" style="color:{RED}">{action[1]} — '
+            f'UNKNOWN FUNCTION. TYPE HELP &lt;GO&gt; FOR THE LIST.</div>',
             unsafe_allow_html=True)
 
 

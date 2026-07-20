@@ -18,8 +18,13 @@ display glass only. Colors mean **direction, not advice**.
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
 | Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision, JSON export/restore |
 | Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
+| Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30` |
 
 Every page has a **command line** at the top — type a function, hit GO.
+It is security-aware, like the machine: any ticker (`GOOG`, `^VIX`,
+`GC=F`, `BTC-USD`) opens the Quote page; `GOOG FA` / `GOOG DES` open
+financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
+`10Y`, `CURVE`) chart the FRED series; `FRED <ID>` charts anything.
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 

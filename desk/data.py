@@ -284,3 +284,68 @@ def print_lines(p: dict) -> dict[str, str]:
             line += f" · EFFR {ev:.2f}% ({ed:%d-%b})"
         out["FOMC"] = line
     return out
+
+
+# Command-bar shorthand for common series — type the alias, get the chart.
+FRED_ALIASES = {
+    "CPI": "CPIAUCSL", "COREPCE": "PCEPILFE", "PCE": "PCEPILFE",
+    "NFP": "PAYEMS", "PAYROLLS": "PAYEMS", "CLAIMS": "ICSA",
+    "UNRATE": "UNRATE", "U3": "UNRATE", "GDP": "GDPC1",
+    "FEDFUNDS": "DFEDTARU", "EFFR": "EFFR", "SOFR": "SOFR",
+    "10Y": "DGS10", "2Y": "DGS2", "CURVE": "T10Y2Y",
+    "BREAKEVEN": "T5YIE", "NFCI": "NFCI", "WALCL": "WALCL",
+    "TGA": "WTREGEN", "RRP": "RRPONTSYD",
+}
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def ticker_snapshot(t: str) -> dict:
+    """Quote-page basics for one ticker. {} on failure; the profile
+    fields degrade independently (Yahoo's .info is flakier than prices)."""
+    import yfinance as yf
+
+    out = {}
+    try:
+        tk = yf.Ticker(t)
+        fi = tk.fast_info
+        out = {"price": fi["last_price"],
+               "prev_close": fi["previous_close"],
+               "year_high": fi["year_high"], "year_low": fi["year_low"],
+               "market_cap": fi.get("market_cap"),
+               "currency": fi.get("currency", "USD")}
+    except Exception:
+        return {}
+    try:
+        info = tk.info
+        for k_src, k_dst in (("longName", "name"), ("sector", "sector"),
+                             ("industry", "industry"),
+                             ("trailingPE", "pe"), ("forwardPE", "fwd_pe"),
+                             ("dividendYield", "div_yield"),
+                             ("beta", "beta"),
+                             ("longBusinessSummary", "summary")):
+            if info.get(k_src) is not None:
+                out[k_dst] = info[k_src]
+    except Exception:
+        pass
+    return out
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def ticker_financials(t: str) -> pd.DataFrame:
+    """Annual income-statement highlights, columns = fiscal years.
+    Empty frame on failure (Yahoo rate-limits this endpoint)."""
+    import yfinance as yf
+
+    try:
+        df = yf.Ticker(t).income_stmt
+        rows = [r for r in ("Total Revenue", "Gross Profit",
+                            "Operating Income", "Net Income")
+                if r in df.index]
+        if not rows:
+            return pd.DataFrame()
+        out = df.loc[rows].iloc[:, :4]
+        out.columns = [c.strftime("%Y") if hasattr(c, "strftime")
+                       else str(c) for c in out.columns]
+        return out
+    except Exception:
+        return pd.DataFrame()

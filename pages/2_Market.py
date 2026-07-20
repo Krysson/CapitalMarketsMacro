@@ -110,7 +110,7 @@ st.divider()
 st.subheader("Cross-asset (normalized)")
 sel = st.multiselect(
     "Compare", options=list(data.MARKET_TICKERS.keys()),
-    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "IWM"],
+    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "BTC-USD"],
     format_func=lambda t: data.MARKET_TICKERS[t])
 if sel:
     fig = go.Figure()
