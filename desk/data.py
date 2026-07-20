@@ -215,3 +215,25 @@ def ohlc(ticker: str, period: str = "1y") -> pd.DataFrame:
         return df[keep].dropna()
     except Exception:
         return pd.DataFrame()
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def usrec() -> pd.Series:
+    """NBER recession indicator (monthly 0/1). Cached a full day."""
+    return fred_series("USREC", start="1990-01-01")
+
+
+def tail_years(s: pd.Series, n: int | float) -> pd.Series:
+    """Last n years by date cutoff (pandas-2-safe; Series.last() is gone)."""
+    if s.empty:
+        return s
+    cutoff = s.index.max() - pd.Timedelta(days=int(n * 365.25))
+    return s[s.index >= cutoff]
+
+
+def yoy_pct(s: pd.Series) -> pd.Series:
+    """Frequency-safe YoY %: resample to month-start, then shift(12)."""
+    if s is None or s.empty:
+        return pd.Series(dtype=float)
+    m = s.resample("MS").last()
+    return ((m / m.shift(12) - 1) * 100).dropna()
