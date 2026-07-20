@@ -1,6 +1,7 @@
 """Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 from desk import data, theme
 
@@ -95,3 +96,35 @@ if sel:
                "equities? Stocks rising alone — while copper, credit, and "
                "crypto sag — is a divergence worth a Notebook entry. Broad "
                "agreement = regime confirmation.")
+
+
+st.divider()
+with st.expander("Live SPX — TradingView (display glass)"):
+    components.html(
+        """
+        <div class="tradingview-widget-container">
+          <div id="tv_spx"></div>
+          <script src="https://s3.tradingview.com/tv.js"></script>
+          <script>
+          new TradingView.widget({
+            "container_id": "tv_spx",
+            "symbol": "FOREXCOM:SPXUSD",
+            "interval": "D",
+            "timezone": "America/New_York",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "allow_symbol_change": true,
+            "width": "100%",
+            "height": 500
+          });
+          </script>
+        </div>
+        """,
+        height=510)
+    theme.note("Official TradingView embed — live intraday glass, useful "
+               "for watching a session unfold. Display only: every "
+               "computed check on this desk still runs on FRED and Yahoo "
+               "data, so a widget outage never touches the signals.")
