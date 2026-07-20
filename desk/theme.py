@@ -66,6 +66,17 @@ h3 { font-size: 0.95rem !important; }
 .desk-caption { color:#6E6E6E; font-size:0.88rem; margin-bottom:0.4rem; }
 .desk-note { color:#6E6E6E; font-size:0.78rem;
   font-family:'IBM Plex Mono',monospace; }
+/* The Bloomberg amber input: solid amber field, black text. Scoped by
+   placeholder so only the command line gets it, never Notebook forms. */
+input[placeholder^="COMMAND"] {
+  background:#FF9F1C !important; color:#000000 !important;
+  font-weight:600 !important; letter-spacing:0.06em;
+  border-radius:2px !important; }
+input[placeholder^="COMMAND"]::placeholder {
+  color:rgba(0,0,0,0.55) !important; }
+div[data-baseweb="input"]:has(> input[placeholder^="COMMAND"]) {
+  background:#FF9F1C !important;
+  border-color:#FF9F1C !important; border-radius:2px !important; }
 </style>
 """
 
@@ -80,12 +91,14 @@ _ROUTES = {
     "NOTE": "pages/4_Notebook.py", "NB": "pages/4_Notebook.py",
     "TOP": "pages/5_Wire.py", "N": "pages/5_Wire.py",
     "WIRE": "pages/5_Wire.py",
+    "BLP": "pages/00_Launchpad.py", "PAD": "pages/00_Launchpad.py",
 }
 
 _HELP = """
 | FUNCTION | PAGE | ON THE REAL MACHINE |
 |---|---|---|
-| `HOME` | Summary | HOME — your launchpad |
+| `HOME` | Summary | HOME — your start page |
+| `BLP` | Launchpad | BLP — Launchpad, everything tiled at once |
 | `CIR` | Daily Circuit | (house function — your routine) |
 | `ECO` | Macro | ECO — economic data & calendar |
 | `WEI` | Market | WEI — world equity indices |
@@ -244,3 +257,18 @@ def sparkline_svg(s, color: str = AMBER, width: int = 210,
         f'vector-effect="non-scaling-stroke"/>'
         f'<circle cx="{lx:.1f}" cy="{ly:.1f}" r="2.2" fill="{color}"/></svg>'
     )
+
+
+def panel_bar(title: str, right: str = "") -> None:
+    """Bloomberg-style panel title bar: function name left, value right."""
+    st.markdown(
+        f'<div style="display:flex;justify-content:space-between;'
+        f'align-items:baseline;background:#161616;'
+        f'border-top:2px solid {AMBER};padding:3px 10px;'
+        f'margin:8px 0 4px 0;border-radius:2px 2px 0 0">'
+        f'<span style="font-family:\'IBM Plex Mono\',monospace;'
+        f'font-size:0.72rem;letter-spacing:0.18em;color:{AMBER};'
+        f'text-transform:uppercase">{title}</span>'
+        f'<span style="font-family:\'IBM Plex Mono\',monospace;'
+        f'font-size:0.78rem;color:{TEXT}">{right}</span></div>',
+        unsafe_allow_html=True)
