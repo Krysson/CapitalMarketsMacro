@@ -160,8 +160,9 @@ cot_root = st.selectbox(
     "Contract", list(data.COT_CODES),
     format_func=lambda r: f"{data.COT_CODES[r][1]} ({r})",
     key="cot_root")
-code, cot_name = data.COT_CODES[cot_root]
-cot = data.cot_series(code)
+code, cot_name, cot_kind = data.COT_CODES[cot_root]
+spec_label = data._COT_DATASETS[cot_kind][2]
+cot = data.cot_series(code, cot_kind)
 if cot.empty:
     st.warning("CFTC data unavailable — the public API may be busy; "
                "try again shortly.")
@@ -175,7 +176,7 @@ else:
         fillcolor="rgba(77,166,255,0.10)"))
     fig.add_hline(y=0, line=dict(color=theme.MUTED, width=1))
     theme.plot(theme.style_fig(
-        fig, f"{cot_name.upper()} — MANAGED MONEY NET POSITION "
+        fig, f"{cot_name.upper()} — {spec_label} NET POSITION "
              f"(CONTRACTS, 5Y)", height=300))
     if pct >= 90:
         theme.readout(theme.AMBER,
@@ -196,7 +197,13 @@ else:
                "with the CFTC every week (Tuesday's data, released "
                "Friday — mind the lag). Crowding is a FRAGILITY read, "
                "not a timing signal: extremes mark where a squeeze has "
-               "fuel, and extremes can extend for months. Speculators "
-               "net long means commercials — the people who actually "
-               "hold the barrels and bushels — are net short, and "
-               "they're usually the ones who know something.")
+               "fuel, and extremes can extend for months. Two reports, "
+               "two speculator definitions: commodities show MANAGED "
+               "MONEY vs commercials (the people holding the barrels "
+               "and bushels — usually the ones who know something); "
+               "financials show LEVERAGED FUNDS (hedge funds/CTAs) vs "
+               "dealers and asset managers. One famous trap in the "
+               "financials: a large leveraged-fund SHORT in Treasury "
+               "futures is often the cash-futures basis trade, not a "
+               "directional bet against bonds — read Treasury COT "
+               "extremes with that asterisk attached.")

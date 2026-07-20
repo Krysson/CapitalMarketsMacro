@@ -647,50 +647,73 @@ def futures_curve(root: str, n: int = 6) -> pd.DataFrame:
 
 # ------------------------------------------------------ COT / GLOBAL ----
 
-# CFTC contract codes for the disaggregated COT report (weekly filings).
+# CFTC COT lives in TWO datasets: physical commodities in the
+# "disaggregated" report (speculators = managed money), financial
+# futures in the TFF report (speculators = leveraged funds). Same API,
+# different dataset IDs and column prefixes.
+_COT_DATASETS = {
+    "disagg": ("72hh-3qpy", "m_money", "MANAGED MONEY"),
+    "tff": ("gpe5-46if", "lev_money", "LEVERAGED FUNDS"),
+}
+
+# (cftc_code, display_name, dataset_kind)
 COT_CODES = {
-    "CL": ("067651", "WTI Crude"), "NG": ("023651", "Nat Gas"),
-    "GC": ("088691", "Gold"), "SI": ("084691", "Silver"),
-    "HG": ("085692", "Copper"), "ZC": ("002602", "Corn"),
-    "ZS": ("005602", "Soybeans"), "ZW": ("001602", "Wheat (SRW)"),
+    "ES": ("13874A", "S&P 500 E-mini", "tff"),
+    "NQ": ("209742", "Nasdaq 100 E-mini", "tff"),
+    "ZN": ("043602", "10Y T-Note", "tff"),
+    "ZT": ("042601", "2Y T-Note", "tff"),
+    "ZB": ("020601", "30Y T-Bond", "tff"),
+    "DX": ("098662", "US Dollar Index", "tff"),
+    "VX": ("1170E1", "VIX Futures", "tff"),
+    "CL": ("067651", "WTI Crude", "disagg"),
+    "NG": ("023651", "Nat Gas", "disagg"),
+    "GC": ("088691", "Gold", "disagg"),
+    "SI": ("084691", "Silver", "disagg"),
+    "HG": ("085692", "Copper", "disagg"),
+    "ZC": ("002602", "Corn", "disagg"),
+    "ZS": ("005602", "Soybeans", "disagg"),
+    "ZW": ("001602", "Wheat (SRW)", "disagg"),
 }
 
 
-def cot_transform(rows: list[dict]) -> pd.DataFrame:
-    """Pure: raw CFTC records -> weekly net managed-money DataFrame."""
+def cot_transform(rows: list[dict],
+                  prefix: str = "m_money") -> pd.DataFrame:
+    """Pure: raw CFTC records -> weekly net-speculator DataFrame.
+    prefix = 'm_money' (disaggregated) or 'lev_money' (TFF)."""
     df = pd.DataFrame(rows)
-    need = {"report_date_as_yyyy_mm_dd", "m_money_positions_long_all",
-            "m_money_positions_short_all"}
+    lcol, scol = (f"{prefix}_positions_long_all",
+                  f"{prefix}_positions_short_all")
+    need = {"report_date_as_yyyy_mm_dd", lcol, scol}
     if df.empty or not need.issubset(df.columns):
         return pd.DataFrame()
     df["date"] = pd.to_datetime(df["report_date_as_yyyy_mm_dd"])
-    for c in ("m_money_positions_long_all", "m_money_positions_short_all",
-              "open_interest_all"):
+    for c in (lcol, scol, "open_interest_all"):
         if c in df:
             df[c] = pd.to_numeric(df[c], errors="coerce")
-    df["net_mm"] = (df["m_money_positions_long_all"]
-                    - df["m_money_positions_short_all"])
+    df["net_mm"] = df[lcol] - df[scol]
     keep = ["net_mm"] + (["open_interest_all"]
                          if "open_interest_all" in df else [])
     return df.set_index("date")[keep].dropna(subset=["net_mm"]).sort_index()
 
 
 @st.cache_data(ttl=21600, show_spinner=False)
-def cot_series(code: str) -> pd.DataFrame:
-    """~10y of weekly COT for one contract, straight from the CFTC's
-    public API (official filings — reported, not estimated)."""
+def cot_series(code: str, kind: str = "disagg") -> pd.DataFrame:
+    """~10y of weekly COT for one contract from the CFTC's public API
+    (official filings — reported, not estimated). kind selects the
+    dataset: 'disagg' for commodities, 'tff' for financials."""
+    dataset, prefix, _ = _COT_DATASETS[kind]
     try:
         r = requests.get(
-            "https://publicreporting.cftc.gov/resource/72hh-3qpy.json",
+            f"https://publicreporting.cftc.gov/resource/{dataset}.json",
             params={"cftc_contract_market_code": code,
                     "$select": ("report_date_as_yyyy_mm_dd,"
-                                "m_money_positions_long_all,"
-                                "m_money_positions_short_all,"
+                                f"{prefix}_positions_long_all,"
+                                f"{prefix}_positions_short_all,"
                                 "open_interest_all"),
                     "$order": "report_date_as_yyyy_mm_dd", "$limit": 600},
             timeout=15)
         r.raise_for_status()
-        return cot_transform(r.json())
+        return cot_transform(r.json(), prefix)
     except Exception:
         return pd.DataFrame()
 
