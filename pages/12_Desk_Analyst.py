@@ -49,8 +49,11 @@ if not passcode:
 
 c1, c2 = st.columns([3, 1])
 model = c2.selectbox("Model", ["claude-sonnet-4-6",
+                               "claude-opus-4-8",
                                "claude-haiku-4-5-20251001"],
-                     help="Sonnet reasons better; Haiku costs less.")
+                     help="Sonnet = the daily driver. Opus = strongest "
+                          "reasoning, highest cost — deep sessions. "
+                          "Haiku = cheapest, quick questions.")
 with c1:
     st.markdown('<div class="desk-note">Each message re-reads the live '
                 'desk. Conversation is kept to the last 12 turns to '
