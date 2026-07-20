@@ -1,0 +1,133 @@
+"""Desk Analyst — chat with Claude about the live desk. ASK <GO>.
+
+The analyst reads the same dashboard the trainee reads: every message
+carries a fresh snapshot of the desk's computed readings. It recommends
+in positioning grammar only (long/short asset classes, duration, vol,
+sector tilts — never single names), always with reasoning and
+falsification, in the book's voice.
+"""
+import streamlit as st
+
+from desk import analyst, theme
+
+st.set_page_config(page_title="Analyst — Desk", page_icon="🤖",
+                   layout="wide")
+theme.header(
+    "BOOK III · THE DESK ANALYST",
+    "Desk Analyst",
+    "An analyst wired to this desk's live readings. Ask for the morning "
+    "read, a positioning view, a Notebook draft, or an explanation of "
+    "anything on any page. It reasons in the book's framework — "
+    "positioning grammar, evidence tiers, mandatory falsification. "
+    "Training desk — direction, not advice.")
+
+api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
+if not api_key:
+    st.error("No ANTHROPIC_API_KEY in app secrets. Add it in Streamlit "
+             "Cloud → App settings → Secrets:")
+    st.code('ANTHROPIC_API_KEY = "sk-ant-..."\n'
+            '# strongly recommended on a public app — gates the chat:\n'
+            'DESK_CHAT_PASSCODE = "choose-a-passphrase"')
+    st.stop()
+
+# Cost gate: this page spends real API credits per message. On a public
+# deployment, set DESK_CHAT_PASSCODE so strangers can't run your tab.
+passcode = st.secrets.get("DESK_CHAT_PASSCODE", "")
+if passcode and not st.session_state.get("analyst_ok"):
+    entered = st.text_input("Desk passcode", type="password")
+    if entered and entered == passcode:
+        st.session_state["analyst_ok"] = True
+        st.rerun()
+    elif entered:
+        st.error("Wrong passcode.")
+    st.stop()
+if not passcode:
+    st.markdown('<div class="desk-note" style="color:#FFD75E">No '
+                'DESK_CHAT_PASSCODE set — anyone who finds this public '
+                'page can spend your API credits. Add one in secrets.'
+                '</div>', unsafe_allow_html=True)
+
+c1, c2 = st.columns([3, 1])
+model = c2.selectbox("Model", ["claude-sonnet-4-6",
+                               "claude-haiku-4-5-20251001"],
+                     help="Sonnet reasons better; Haiku costs less.")
+with c1:
+    st.markdown('<div class="desk-note">Each message re-reads the live '
+                'desk. Conversation is kept to the last 12 turns to '
+                'control cost.</div>', unsafe_allow_html=True)
+
+if "analyst_chat" not in st.session_state:
+    st.session_state["analyst_chat"] = []
+
+# canned openers — the workflows this page exists for
+if not st.session_state["analyst_chat"]:
+    b1, b2, b3, b4 = st.columns(4)
+    CANNED = {
+        "Morning read + positioning": (
+            "Give me the morning read: walk the desk in Circuit order "
+            "(dials → vol tripwire → breadth → cross-asset → rates & "
+            "credit), then give your positioning view in the standard "
+            "format."),
+        "Draft today's Notebook entry": (
+            "Draft today's Notebook entry from the current snapshot, "
+            "in the exact template, ready to paste."),
+        "What's the vol market saying?": (
+            "Read the volatility complex for me — the VIX/VIX3M level, "
+            "what the term structure implies here, and what would "
+            "change the read."),
+        "Quiz me on the desk": (
+            "Act as the senior on the desk: ask me three questions "
+            "about today's readings that a trainee should be able to "
+            "answer, wait for my answers, then grade them."),
+    }
+    for col, (label, prompt) in zip((b1, b2, b3, b4), CANNED.items()):
+        if col.button(label, use_container_width=True):
+            st.session_state["analyst_chat"].append(
+                {"role": "user", "content": prompt})
+            st.rerun()
+
+for msg in st.session_state["analyst_chat"]:
+    with st.chat_message(msg["role"],
+                         avatar="🖥️" if msg["role"] == "assistant"
+                         else "🧑‍💻"):
+        st.markdown(msg["content"])
+
+prompt = st.chat_input("Ask the desk…")
+if prompt:
+    st.session_state["analyst_chat"].append(
+        {"role": "user", "content": prompt})
+    st.rerun()
+
+chat = st.session_state["analyst_chat"]
+if chat and chat[-1]["role"] == "user":
+    with st.chat_message("assistant", avatar="🖥️"):
+        with st.spinner("Reading the desk…"):
+            snapshot = analyst.desk_snapshot()
+        system, history = analyst.build_messages(chat, snapshot)
+        try:
+            from anthropic import Anthropic
+            client = Anthropic(api_key=api_key)
+            with client.messages.stream(
+                    model=model, max_tokens=1500,
+                    system=system, messages=history) as stream:
+                reply = st.write_stream(stream.text_stream)
+        except Exception as ex:
+            reply = None
+            st.error(f"API call failed: {type(ex).__name__} — check the "
+                     f"key, model access, and account credits.")
+    if reply:
+        st.session_state["analyst_chat"].append(
+            {"role": "assistant", "content": reply})
+
+if chat:
+    if st.button("Clear conversation"):
+        st.session_state["analyst_chat"] = []
+        st.rerun()
+
+theme.note("What this demonstrates for trainees: a desk view is never "
+           "'the analyst said so' — it's readings, reasoning, and a "
+           "kill-switch, in that order. Anything the analyst drafts "
+           "goes through the same Notebook discipline as your own "
+           "calls. Positioning grammar only; single names are banned "
+           "on purpose — ideas live at the factor level, vehicles come "
+           "later.")

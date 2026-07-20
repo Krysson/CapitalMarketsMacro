@@ -14,7 +14,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -101,6 +101,9 @@ _ROUTES = {
     "WIRE": "pages/5_Wire.py",
     "BLP": "pages/00_Launchpad.py", "PAD": "pages/00_Launchpad.py",
     "Q": "pages/6_Quote.py", "QUOTE": "pages/6_Quote.py",
+    "ASK": "pages/12_Desk_Analyst.py",
+    "ANALYST": "pages/12_Desk_Analyst.py",
+    "IB": "pages/12_Desk_Analyst.py",
     "FED": "pages/10_Fed.py", "DIFF": "pages/10_Fed.py",
     "TIME": "pages/11_Time_Machine.py", "TM": "pages/11_Time_Machine.py",
     "REWIND": "pages/11_Time_Machine.py",
@@ -154,6 +157,7 @@ _HELP = """
 | `CTM` / `FUT` | Futures | CTM — contract table · board + term structure + COT |
 | `DIFF` / `FED` | Fed Statement Diff | redline vs the prior statement |
 | `TM` / `TIME` | Time Machine | the desk as of any past date (ALFRED vintages) |
+| `ASK` / `IB` | Desk Analyst | chat with the desk's AI analyst (IB — chat, on the machine) |
 | `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
 | `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
