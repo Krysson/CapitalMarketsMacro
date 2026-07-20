@@ -105,7 +105,7 @@ if kind == "fred":
                                line=dict(width=1.8, color=theme.AMBER)))
     theme.recession_bands(fig, data.usrec(), start=tail.index.min(),
                           end=tail.index.max())
-    st.plotly_chart(theme.style_fig(fig, None, height=380),
+    theme.plot(theme.style_fig(fig, None, height=380),
                     use_container_width=True)
     pts = data.series_hist_points(s)
     if pts:
@@ -164,7 +164,7 @@ if not ohlc.empty:
                         name=f"SMA {win}",
                         line=dict(width=1.1, color=colr))
     fig.update_layout(xaxis_rangeslider_visible=False)
-    st.plotly_chart(
+    theme.plot(
         theme.style_fig(fig, f"{sym} — 1Y DAILY", height=400,
                         unified_hover=False),
         use_container_width=True)

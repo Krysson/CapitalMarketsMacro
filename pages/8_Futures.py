@@ -92,7 +92,7 @@ if not ohlc.empty:
                         name=f"SMA {win}",
                         line=dict(width=1.1, color=colr))
     fig.update_layout(xaxis_rangeslider_visible=False)
-    st.plotly_chart(
+    theme.plot(
         theme.style_fig(fig, f"{dict(all_contracts)[pick]} ({pick}) — "
                              f"1Y FRONT-MONTH", height=380,
                         unified_hover=False),
@@ -130,7 +130,7 @@ if st.session_state.get("fut_curve_root"):
             x=curve.contract, y=curve.price, mode="lines+markers",
             line=dict(width=2, color=theme.AMBER),
             marker=dict(size=6)))
-        st.plotly_chart(
+        theme.plot(
             theme.style_fig(fig, f"{CURVE_NAMES[r]} — LISTED MONTHS",
                             height=300),
             use_container_width=True)

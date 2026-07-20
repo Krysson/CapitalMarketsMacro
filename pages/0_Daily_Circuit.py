@@ -103,7 +103,7 @@ else:
     fig = go.Figure(go.Scatter(x=r6.index, y=r6.values, mode="lines",
                                line=dict(width=1.8, color=theme.PURPLE)))
     fig.add_hline(y=1.0, line=dict(color=theme.RED, width=1, dash="dash"))
-    st.plotly_chart(theme.style_fig(fig, "VIX / VIX3M — 6 months",
+    theme.plot(theme.style_fig(fig, "VIX / VIX3M — 6 months",
                                     height=240), use_container_width=True)
     theme.note("The tripwire, not a timing tool. Crosses above 1.0 mark "
                "regime shifts; how long it STAYS above matters more than "
@@ -135,7 +135,7 @@ else:
                     line=dict(width=1.8, color=theme.BLUE))
     fig.add_scatter(x=ma50.index, y=ma50.values, mode="lines", name="50d MA",
                     line=dict(width=1, color=theme.MUTED, dash="dot"))
-    st.plotly_chart(theme.style_fig(fig, "RSP / SPY — 6 months",
+    theme.plot(theme.style_fig(fig, "RSP / SPY — 6 months",
                                     height=240), use_container_width=True)
     theme.note("Breadth proxy — narrow leadership can persist far longer "
                "than feels reasonable, so this is a fragility read, not a "

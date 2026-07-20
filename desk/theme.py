@@ -198,6 +198,19 @@ def header(eyebrow: str, title: str, caption: str | None = None) -> None:
                     unsafe_allow_html=True)
 
 
+# Mobile-safe chart config: no toolbar, no scroll-capture, double-tap
+# resets. Applied by theme.plot() — the one way charts reach the screen.
+_PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False,
+               "doubleClick": "reset"}
+
+
+def plot(fig: go.Figure, **kwargs) -> None:
+    """House renderer: full width + mobile config on every chart."""
+    kwargs.setdefault("use_container_width", True)
+    cfg = {**_PLOTLY_CFG, **kwargs.pop("config", {})}
+    st.plotly_chart(fig, config=cfg, **kwargs)
+
+
 def style_fig(fig: go.Figure, title: str | None = None,
               height: int = 300, unified_hover: bool = True) -> go.Figure:
     """House chart style: black terminal, right-side scale, quiet grid."""
@@ -211,6 +224,7 @@ def style_fig(fig: go.Figure, title: str | None = None,
         hovermode="x unified" if unified_hover else "closest",
         hoverlabel=dict(bgcolor=PANEL,
                         font_family="IBM Plex Mono, monospace"),
+        dragmode=False,   # charts must never trap a phone's scroll
     )
     if title:
         fig.update_layout(title=dict(

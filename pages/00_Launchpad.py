@@ -38,7 +38,7 @@ def mini(s: pd.Series, title: str, color: str, hline: float | None = None,
     if hline is not None:
         fig.add_hline(y=hline, line=dict(color=theme.RED, width=1,
                                          dash="dash"))
-    st.plotly_chart(theme.style_fig(fig, None, height=150),
+    theme.plot(theme.style_fig(fig, None, height=150),
                     use_container_width=True,
                     config={"displayModeBar": False})
 

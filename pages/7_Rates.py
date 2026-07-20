@@ -43,7 +43,7 @@ for label, pos, color, width in snaps:
                         mode="lines+markers", name=label,
                         line=dict(width=width, color=color),
                         marker=dict(size=5))
-st.plotly_chart(theme.style_fig(fig, None, height=340),
+theme.plot(theme.style_fig(fig, None, height=340),
                 use_container_width=True)
 theme.note("The price of money at every maturity, and how it moved. "
            "Shape is the message: upward-sloping = normal; humped or "
@@ -81,7 +81,7 @@ if not s_2s10s.empty:
     tail = data.tail_years(s_2s10s, years)
     theme.recession_bands(fig, rec, start=tail.index.min(),
                           end=tail.index.max())
-st.plotly_chart(theme.style_fig(fig, "CURVE SPREADS (pp)", height=300),
+theme.plot(theme.style_fig(fig, "CURVE SPREADS (pp)", height=300),
                 use_container_width=True)
 theme.note("The classic recession machinery. 3m10y is the academic "
            "favorite (the Fed's own recession-probability input); 2s10s "
@@ -103,7 +103,7 @@ if not nom.empty and not real.empty:
         tail = data.tail_years(s.dropna(), years)
         fig.add_scatter(x=tail.index, y=tail.values, mode="lines",
                         name=name, line=dict(width=1.5, color=color))
-    st.plotly_chart(
+    theme.plot(
         theme.style_fig(fig, "10Y DECOMPOSITION — NOMINAL = REAL + "
                              "BREAKEVEN (%)", height=300),
         use_container_width=True)
@@ -133,7 +133,7 @@ else:
         tail = data.tail_years(hy, years)
         theme.recession_bands(fig, rec, start=tail.index.min(),
                               end=tail.index.max())
-    st.plotly_chart(theme.style_fig(fig, "OAS OVER TREASURIES (%)",
+    theme.plot(theme.style_fig(fig, "OAS OVER TREASURIES (%)",
                                     height=320),
                     use_container_width=True)
     theme.note("What the bond market charges for default risk, index-"
@@ -151,7 +151,7 @@ else:
                                    mode="lines",
                                    line=dict(width=1.6,
                                              color=theme.PURPLE)))
-        st.plotly_chart(theme.style_fig(fig, "HY MINUS IG — THE JUNK "
+        theme.plot(theme.style_fig(fig, "HY MINUS IG — THE JUNK "
                                              "PREMIUM (pp)", height=240),
                         use_container_width=True)
         theme.note("Compression = reach-for-yield, risk appetite high. "

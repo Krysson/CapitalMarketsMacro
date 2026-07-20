@@ -31,7 +31,7 @@ for win, color in [(20, theme.GREEN), (50, theme.BLUE), (200, theme.RED)]:
     fig.add_scatter(x=ma.index, y=ma.values, mode="lines", name=f"SMA {win}",
                     line=dict(width=1.1, color=color))
 fig.update_layout(xaxis_rangeslider_visible=False)
-st.plotly_chart(
+theme.plot(
     theme.style_fig(fig, "S&P 500 — trend vs 20 / 50 / 200-day",
                     height=420, unified_hover=False),
     use_container_width=True)
@@ -57,7 +57,7 @@ def ratio_chart(num, den, title, note):
                     line=dict(width=1.8, color=theme.PURPLE))
     fig.add_scatter(x=ma50.index, y=ma50.values, mode="lines", name="50d MA",
                     line=dict(width=1, color=theme.MUTED, dash="dot"))
-    st.plotly_chart(theme.style_fig(fig, title, height=290),
+    theme.plot(theme.style_fig(fig, title, height=290),
                     use_container_width=True)
     theme.note(note)
 
@@ -110,7 +110,7 @@ st.divider()
 st.subheader("Cross-asset (normalized)")
 sel = st.multiselect(
     "Compare", options=list(data.MARKET_TICKERS.keys()),
-    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "IWM"],
+    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "BTC-USD"],
     format_func=lambda t: data.MARKET_TICKERS[t])
 if sel:
     fig = go.Figure()
@@ -124,7 +124,7 @@ if sel:
                             line=dict(width=1.6,
                                       color=palette[i % len(palette)]))
     fig.update_layout(yaxis_title="% change over lookback")
-    st.plotly_chart(theme.style_fig(fig, height=380),
+    theme.plot(theme.style_fig(fig, height=380),
                     use_container_width=True)
     theme.note("Confirmation check: does the rest of the world agree with "
                "equities? Stocks rising alone — while copper, credit, and "

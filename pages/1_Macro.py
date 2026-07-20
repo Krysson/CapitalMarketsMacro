@@ -71,7 +71,7 @@ def line(sid, series, title, yoy=False, color=theme.BLUE):
     fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines",
                                line=dict(width=1.8, color=color)))
     theme.recession_bands(fig, rec, start=s.index.min(), end=s.index.max())
-    st.plotly_chart(theme.style_fig(fig, title, height=260),
+    theme.plot(theme.style_fig(fig, title, height=260),
                     use_container_width=True)
     if sid in NOTES:
         theme.note(NOTES[sid])
@@ -83,7 +83,7 @@ if not nl.empty:
     fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines",
                                line=dict(width=2.2, color=theme.AMBER)))
     theme.recession_bands(fig, rec, start=s.index.min(), end=s.index.max())
-    st.plotly_chart(
+    theme.plot(
         theme.style_fig(fig, "Net Liquidity = Fed Balance Sheet − TGA − "
                              "ON RRP  ($tn)", height=320),
         use_container_width=True)

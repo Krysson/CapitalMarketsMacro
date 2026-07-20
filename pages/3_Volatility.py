@@ -43,7 +43,7 @@ if "^VIX" in hist and "^VIX3M" in hist:
     fig.add_hline(y=1.0, line=dict(color=theme.RED, width=1.5, dash="dash"),
                   annotation_text="inversion — regime tripwire",
                   annotation_position="top left")
-    st.plotly_chart(
+    theme.plot(
         theme.style_fig(fig, "VIX / VIX3M term-structure ratio  (below 1 = "
                              "contango / calm · above 1 = inverted / stress)",
                         height=320),
@@ -82,7 +82,7 @@ else:
                   annotation_text="spot")
     fig.update_layout(xaxis_title="strike as % of spot",
                       yaxis_title="implied volatility (%)")
-    st.plotly_chart(
+    theme.plot(
         theme.style_fig(fig, f"SPY options — expiration {expiry}",
                         height=380, unified_hover=False),
         use_container_width=True)
@@ -119,7 +119,7 @@ if st.session_state.get("iv_surface"):
             colorbar=dict(title="IV %", tickfont=dict(size=10))))
         fig.update_layout(xaxis_title="strike as % of spot",
                           yaxis_title="days to expiry")
-        st.plotly_chart(theme.style_fig(fig, "IV SURFACE — OTM PUTS "
+        theme.plot(theme.style_fig(fig, "IV SURFACE — OTM PUTS "
                                              "LEFT, OTM CALLS RIGHT",
                                         height=340,
                                         unified_hover=False),
@@ -132,7 +132,7 @@ if st.session_state.get("iv_surface"):
                 x=[f"{d}d" for d in atm.index], y=atm.values,
                 mode="lines+markers",
                 line=dict(width=1.8, color=theme.AMBER)))
-            st.plotly_chart(theme.style_fig(fig, "ATM TERM STRUCTURE "
+            theme.plot(theme.style_fig(fig, "ATM TERM STRUCTURE "
                                                  "(IV %)", height=240),
                             use_container_width=True)
         theme.note("Read it in two directions. Left-to-right at any row "
@@ -175,6 +175,6 @@ else:
     fig.add_scatter(x=s.index, y=s.values, mode="lines",
                     line=dict(width=1.6, color=theme.BLUE))
     height = 300
-st.plotly_chart(theme.style_fig(fig, height=height, unified_hover=False),
+theme.plot(theme.style_fig(fig, height=height, unified_hover=False),
                 use_container_width=True)
 theme.note(SERIES_NOTES[pick])
