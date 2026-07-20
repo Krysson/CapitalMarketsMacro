@@ -1,52 +1,127 @@
-"""Shared visual identity for the Capital Markets Desk.
+"""Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
 
-Tokens: ink-navy terminal background, amber accent, Spectral serif for
-chapter-style headings, IBM Plex Mono for numerals. Every chart gets a
-right-side price scale via style_fig().
+Pure black, amber-on-black hierarchy, monospace everywhere, squared
+corners, dense layout. Built to feel like the machine the desk's readers
+are training for. Every chart keeps its right-side scale via style_fig()
+and its reading note via note(). The command line (in every header)
+teaches Bloomberg-style mnemonic navigation: type a function, hit GO.
 """
 import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-INK = "#0D1117"
-PANEL = "#161D2A"
-TEXT = "#E6E4DC"
-MUTED = "#8B95A7"
-AMBER = "#E8A33D"
-GREEN = "#26A269"
-RED = "#D64545"
-BLUE = "#5B8DC9"
-PURPLE = "#9A6BD1"
+INK = "#000000"
+PANEL = "#0D0D0D"
+TEXT = "#E8E6E1"
+MUTED = "#6E6E6E"
+AMBER = "#FF9F1C"
+YELLOW = "#FFD75E"
+GREEN = "#00B061"
+RED = "#E5484D"
+BLUE = "#4DA6FF"
+PURPLE = "#B18CFF"
 
 _CSS = """
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Spectral:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 html, body, p, li, label, button, input, textarea, select {
   font-family: 'IBM Plex Sans', sans-serif; }
 [data-testid="stIconMaterial"], [class*="material-symbols"],
 span[translate="no"] {
   font-family: 'Material Symbols Rounded' !important; }
-h1, h2, h3 { font-family: 'Spectral', serif !important; font-weight: 600 !important; }
+h1, h2, h3 { font-family: 'IBM Plex Mono', monospace !important;
+  font-weight: 600 !important; text-transform: uppercase;
+  letter-spacing: 0.06em; color: #FF9F1C !important; }
+h1 { font-size: 1.5rem !important; }
+h2 { font-size: 1.05rem !important; }
+h3 { font-size: 0.95rem !important; }
 [data-testid="stMetricValue"], [data-testid="stMetricDelta"],
 [data-testid="stDataFrame"] * { font-family: 'IBM Plex Mono', monospace; }
-[data-testid="stDataFrame"] * { font-size: 0.84rem; }
-[data-testid="stSidebarNav"] a span { font-family: 'IBM Plex Sans', sans-serif; }
+[data-testid="stDataFrame"] * { font-size: 0.8rem; }
+[data-testid="stSidebar"] { background: #050505;
+  border-right: 1px solid rgba(255,159,28,0.25); }
+[data-testid="stSidebarNav"] a span {
+  font-family: 'IBM Plex Mono', monospace; text-transform: uppercase;
+  font-size: 0.8rem; letter-spacing: 0.08em; }
+[data-testid="stExpander"] { border-radius: 2px !important;
+  border-color: rgba(255,159,28,0.25) !important; }
+.stButton button, .stFormSubmitButton button {
+  border-radius: 2px !important; font-family: 'IBM Plex Mono', monospace;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  border-color: rgba(255,159,28,0.5) !important; }
+.stTextInput input, .stTextArea textarea, .stSelectbox > div > div {
+  border-radius: 2px !important;
+  font-family: 'IBM Plex Mono', monospace !important; }
 #MainMenu, footer { visibility: hidden; }
-.block-container { padding-top: 2.4rem; max-width: 1250px; }
+.block-container { padding-top: 1.6rem; max-width: 1400px; }
 .desk-eyebrow { font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
-  letter-spacing:0.24em; color:#E8A33D; text-transform:uppercase; }
-.desk-rule { height:2px; border:0; margin:0.5rem 0 1.0rem 0;
-  background:linear-gradient(90deg,#E8A33D 0,#E8A33D 72px,
-             rgba(232,163,61,0.18) 72px, transparent 100%); }
-.desk-caption { color:#8B95A7; font-size:0.92rem; margin-bottom:0.4rem; }
-.desk-note { color:#8B95A7; font-size:0.8rem; font-family:'IBM Plex Mono',monospace; }
+  letter-spacing:0.24em; color:#FF9F1C; text-transform:uppercase; }
+.desk-rule { height:1px; border:0; margin:0.45rem 0 0.9rem 0;
+  background:linear-gradient(90deg,#FF9F1C 0,#FF9F1C 96px,
+             rgba(255,159,28,0.25) 96px, rgba(255,159,28,0.06) 100%); }
+.desk-caption { color:#6E6E6E; font-size:0.88rem; margin-bottom:0.4rem; }
+.desk-note { color:#6E6E6E; font-size:0.78rem;
+  font-family:'IBM Plex Mono',monospace; }
 </style>
 """
 
+# Command-line routes. Mnemonics chosen to match the real Bloomberg
+# function where one exists — the point is transferable muscle memory.
+_ROUTES = {
+    "HOME": "app.py", "SUM": "app.py",
+    "CIR": "pages/0_Daily_Circuit.py", "CIRCUIT": "pages/0_Daily_Circuit.py",
+    "ECO": "pages/1_Macro.py", "MACRO": "pages/1_Macro.py",
+    "WEI": "pages/2_Market.py", "MKT": "pages/2_Market.py",
+    "VOL": "pages/3_Volatility.py", "VIX": "pages/3_Volatility.py",
+    "NOTE": "pages/4_Notebook.py", "NB": "pages/4_Notebook.py",
+    "TOP": "pages/5_Wire.py", "N": "pages/5_Wire.py",
+    "WIRE": "pages/5_Wire.py",
+}
+
+_HELP = """
+| FUNCTION | PAGE | ON THE REAL MACHINE |
+|---|---|---|
+| `HOME` | Summary | HOME — your launchpad |
+| `CIR` | Daily Circuit | (house function — your routine) |
+| `ECO` | Macro | ECO — economic data & calendar |
+| `WEI` | Market | WEI — world equity indices |
+| `VIX` / `VOL` | Volatility | VIX Index GP, VCAL |
+| `NOTE` | Notebook | NOTE — notes & ideas |
+| `TOP` / `N` | News Wire | TOP — top news · N — news |
+
+Type the function, hit **GO** (or Enter). Same habit as the terminal:
+navigate by mnemonic, not by mouse.
+"""
+
+
+def command_line() -> None:
+    """Bloomberg-style command field. Renders on every page via header()."""
+    with st.form("deskcmd", clear_on_submit=True, border=False):
+        c1, c2 = st.columns([9, 1])
+        cmd = c1.text_input(
+            "command", label_visibility="collapsed",
+            placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
+        go = c2.form_submit_button("GO", use_container_width=True)
+    if not (go and cmd.strip()):
+        return
+    c = cmd.upper().replace("<GO>", "").strip()
+    if c in ("HELP", "?"):
+        st.markdown(_HELP)
+        return
+    page = _ROUTES.get(c)
+    if page:
+        st.switch_page(page)
+    else:
+        st.markdown(
+            f'<div class="desk-note" style="color:{RED}">{c} — UNKNOWN '
+            f'FUNCTION. TYPE HELP &lt;GO&gt; FOR THE LIST.</div>',
+            unsafe_allow_html=True)
+
 
 def header(eyebrow: str, title: str, caption: str | None = None) -> None:
-    """Chapter-style page header: eyebrow, serif title, amber rule, caption."""
+    """Terminal page header: command line, eyebrow, title, amber rule."""
     st.markdown(_CSS, unsafe_allow_html=True)
+    command_line()
     st.markdown(f'<div class="desk-eyebrow">{eyebrow}</div>',
                 unsafe_allow_html=True)
     st.title(title)
@@ -58,28 +133,29 @@ def header(eyebrow: str, title: str, caption: str | None = None) -> None:
 
 def style_fig(fig: go.Figure, title: str | None = None,
               height: int = 300, unified_hover: bool = True) -> go.Figure:
-    """House chart style: transparent, right-side scale, quiet grid."""
+    """House chart style: black terminal, right-side scale, quiet grid."""
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(family="IBM Plex Mono, monospace", size=11.5, color=TEXT),
+        font=dict(family="IBM Plex Mono, monospace", size=11, color=TEXT),
         height=height,
-        margin=dict(l=8, r=8, t=44 if title else 16, b=8),
-        legend=dict(orientation="h", y=1.09, x=0,
-                    bgcolor="rgba(0,0,0,0)", font=dict(size=11)),
+        margin=dict(l=8, r=8, t=38 if title else 14, b=8),
+        legend=dict(orientation="h", y=1.1, x=0,
+                    bgcolor="rgba(0,0,0,0)", font=dict(size=10.5)),
         hovermode="x unified" if unified_hover else "closest",
-        hoverlabel=dict(bgcolor=PANEL, font_family="IBM Plex Mono, monospace"),
+        hoverlabel=dict(bgcolor=PANEL,
+                        font_family="IBM Plex Mono, monospace"),
     )
     if title:
         fig.update_layout(title=dict(
-            text=title, x=0.0, xanchor="left",
-            font=dict(family="IBM Plex Sans, sans-serif", size=15,
-                      color=TEXT)))
-    fig.update_xaxes(showgrid=False, linecolor="rgba(139,149,167,0.3)",
-                     tickcolor="rgba(139,149,167,0.3)")
+            text=title.upper(), x=0.0, xanchor="left",
+            font=dict(family="IBM Plex Mono, monospace", size=12.5,
+                      color=AMBER)))
+    fig.update_xaxes(showgrid=False, linecolor="rgba(232,230,225,0.25)",
+                     tickcolor="rgba(232,230,225,0.25)")
     fig.update_yaxes(side="right", showgrid=True, zeroline=False,
-                     gridcolor="rgba(139,149,167,0.12)",
-                     linecolor="rgba(139,149,167,0.3)",
-                     tickcolor="rgba(139,149,167,0.3)")
+                     gridcolor="rgba(232,230,225,0.07)",
+                     linecolor="rgba(232,230,225,0.25)",
+                     tickcolor="rgba(232,230,225,0.25)")
     return fig
 
 
@@ -99,14 +175,13 @@ def note(text: str) -> None:
     st.markdown(f'<div class="desk-note" style="margin:-6px 0 14px 2px">'
                 f'{text}</div>', unsafe_allow_html=True)
 
+
 def recession_bands(fig: go.Figure, usrec, start=None, end=None) -> go.Figure:
     """Gray NBER recession bands (FRED USREC) behind a chart's traces.
 
     Bands are clipped to [start, end] so they respect the lookback window.
     No-op if the USREC series is missing or no recession falls in view.
     """
-    import pandas as pd
-
     if usrec is None or getattr(usrec, "empty", True):
         return fig
     s = usrec.dropna()
@@ -135,7 +210,7 @@ def recession_bands(fig: go.Figure, usrec, start=None, end=None) -> go.Figure:
         x0 = max(b0, pd.Timestamp(start)) if start is not None else b0
         x1 = min(b1, pd.Timestamp(end)) if end is not None else b1
         fig.add_vrect(x0=x0, x1=x1, layer="below", line_width=0,
-                      fillcolor="rgba(139,149,167,0.14)")
+                      fillcolor="rgba(200,200,200,0.10)")
     return fig
 
 

@@ -7,6 +7,8 @@ drop. The Summary strip shows a maintenance nudge when a list runs dry.
 
 CPI       — BLS release dates, 8:30 a.m. ET.
             Source: bls.gov/schedule/news_release/cpi.htm
+NFP       — BLS Employment Situation release dates, 8:30 a.m. ET.
+            Source: bls.gov/schedule/news_release/empsit.htm
 FOMC      — statement day (day 2 of each meeting), 2:00 p.m. ET.
             Source: federalreserve.gov/monetarypolicy/fomccalendars.htm
             2027 dates are the Fed's *tentative* schedule (Sept 2025
@@ -27,6 +29,15 @@ CPI_RELEASES = [
     dt.date(2026, 12, 10),  # Nov 2026 data
     # Dec 2026 data releases in Jan 2027 — add when BLS posts the
     # 2027 schedule (usually late summer / fall 2026).
+]
+
+NFP_RELEASES = [
+    dt.date(2026, 8, 7),    # Jul 2026 data
+    dt.date(2026, 9, 4),    # Aug 2026 data
+    dt.date(2026, 10, 2),   # Sep 2026 data
+    dt.date(2026, 11, 6),   # Oct 2026 data
+    dt.date(2026, 12, 4),   # Nov 2026 data
+    # Dec 2026 data releases in Jan 2027 — refresh with the 2027 schedule.
 ]
 
 FOMC_STATEMENTS = [
@@ -88,4 +99,10 @@ def next_cpi(today: dt.date | None = None) -> NextEvent:
 def next_fomc(today: dt.date | None = None) -> NextEvent:
     today = today or dt.date.today()
     return NextEvent("FOMC", _next(FOMC_STATEMENTS, today), "2:00 p.m. ET",
+                     today)
+
+
+def next_nfp(today: dt.date | None = None) -> NextEvent:
+    today = today or dt.date.today()
+    return NextEvent("NFP", _next(NFP_RELEASES, today), "8:30 a.m. ET",
                      today)

@@ -24,7 +24,7 @@ st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
 TAPE_SYMBOLS = [
     {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
     {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
-    {"proName": "FRED:DGS10", "title": "US 10Y"},   # fb: FRED:DGS10
+    {"proName": "CAPITALCOM:US10", "title": "US 10Y"},   # fb: FRED:DGS10
     {"proName": "CAPITALCOM:DXY", "title": "Dollar"},    # fb: FRED:DTWEXBGS
     {"proName": "TVC:GOLD", "title": "Gold"},
     {"proName": "TVC:USOIL", "title": "WTI"},
@@ -58,16 +58,17 @@ theme.header(
     "Colors show direction, not good vs. bad — quick-glance heuristics for a "
     "learning desk, not trading signals or investment advice.")
 
-cpi, fomc = events.next_cpi(), events.next_fomc()
-e1, e2 = st.columns(2)
+cpi, nfp, fomc = events.next_cpi(), events.next_nfp(), events.next_fomc()
+e1, e2, e3 = st.columns(3)
 for col, ev, blurb in (
     (e1, cpi, "the month's inflation print — vol event at 8:30 a.m."),
-    (e2, fomc, "rate decision + presser — vol event at 2:00 p.m."),
+    (e2, nfp, "jobs day — the biggest labor print, 8:30 a.m."),
+    (e3, fomc, "rate decision + presser — vol event at 2:00 p.m."),
 ):
     with col:
         st.markdown(
             f'''
-            <div style="border-radius:8px;padding:10px 14px;
+            <div style="border-radius:2px;padding:10px 14px;
                         background:{theme.PANEL};
                         border-left:3px solid {theme.AMBER};
                         margin-bottom:6px">
@@ -143,12 +144,12 @@ for col, s in zip(cols, sigs):
     with col:
         st.markdown(
             f"""
-            <div style="border-radius:10px;padding:18px 16px;
+            <div style="border-radius:2px;padding:18px 16px;
                         background:{theme.PANEL};
                         border-left:4px solid {s.color};min-height:176px">
               <div class="desk-eyebrow" style="color:{theme.MUTED}">
                 {s.category}</div>
-              <div style="font-family:'Spectral',serif;font-size:1.45rem;
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:1.2rem;
                           font-weight:600;color:{s.color};line-height:1.2;
                           margin:4px 0 6px 0">{s.label}</div>
               <div class="desk-note">score {s.score} / 4</div>
@@ -199,5 +200,6 @@ with right:
 
 st.markdown('<div class="desk-note">Data: FRED (St. Louis Fed) · Yahoo '
             'Finance, delayed · TradingView tape is display glass · Pages: '
-            'Daily Circuit / Macro / Market / Volatility / Notebook in '
+            'Daily Circuit / Macro / Market / Volatility / Notebook / '
+            'Wire in '
             'the sidebar</div>', unsafe_allow_html=True)

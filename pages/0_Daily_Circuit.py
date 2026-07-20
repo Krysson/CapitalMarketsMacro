@@ -18,8 +18,9 @@ theme.header(
     "confirmation. Run it the same way every day — the value is in the "
     "repetition, not any single reading. Direction, not advice.")
 
-cpi, fomc = events.next_cpi(), events.next_fomc()
-theme.note(f"On the calendar: CPI {cpi.when} · FOMC {fomc.when}. "
+cpi, nfp, fomc = events.next_cpi(), events.next_nfp(), events.next_fomc()
+theme.note(f"On the calendar: CPI {cpi.when} · NFP {nfp.when} · "
+           f"FOMC {fomc.when}. "
            "Known vol events — a wild print on the day itself is scheduled "
            "noise until proven otherwise.")
 
@@ -35,7 +36,7 @@ def step(n: int, title: str) -> None:
         f'<div style="margin-top:1.6rem">'
         f'<span style="font-family:\'IBM Plex Mono\',monospace;'
         f'color:{theme.AMBER};font-size:0.85rem">STEP {n}</span>'
-        f'<span style="font-family:\'Spectral\',serif;font-size:1.3rem;'
+        f'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:1.05rem;'
         f'font-weight:600;color:{theme.TEXT};margin-left:12px">{title}'
         f'</span></div>', unsafe_allow_html=True)
 
@@ -43,7 +44,7 @@ def step(n: int, title: str) -> None:
 def verdict(color: str, text: str) -> None:
     st.markdown(
         f'<div style="border-left:3px solid {color};padding:6px 12px;'
-        f'background:{theme.PANEL};border-radius:0 8px 8px 0;'
+        f'background:{theme.PANEL};border-radius:0;'
         f'margin:8px 0 4px 0;font-family:\'IBM Plex Mono\',monospace;'
         f'font-size:0.9rem;color:{theme.TEXT}">{text}</div>',
         unsafe_allow_html=True)
@@ -68,7 +69,7 @@ chips = st.columns(4)
 for c, s in zip(chips, sigs):
     with c:
         st.markdown(
-            f'<div style="border-radius:8px;padding:10px 12px;'
+            f'<div style="border-radius:2px;padding:10px 12px;'
             f'background:{theme.PANEL};border-left:3px solid {s.color}">'
             f'<span class="desk-eyebrow" style="color:{theme.MUTED}">'
             f'{s.category}</span><br>'
@@ -166,7 +167,7 @@ for col, (key, label, sub, up_txt, dn_txt) in zip(cc, reads):
     d = chg(s, 21)
     with col:
         if d is None:
-            st.markdown(f'<div style="border-radius:8px;padding:10px 12px;'
+            st.markdown(f'<div style="border-radius:2px;padding:10px 12px;'
                         f'background:{theme.PANEL};border-left:3px solid '
                         f'{NA}"><span class="desk-eyebrow" style="color:'
                         f'{theme.MUTED}">{label}</span><br>'
@@ -177,7 +178,7 @@ for col, (key, label, sub, up_txt, dn_txt) in zip(cc, reads):
         color = WARN if risk_off else OK
         flags += int(risk_off)
         st.markdown(
-            f'<div style="border-radius:8px;padding:10px 12px;'
+            f'<div style="border-radius:2px;padding:10px 12px;'
             f'background:{theme.PANEL};border-left:3px solid {color}">'
             f'<span class="desk-eyebrow" style="color:{theme.MUTED}">'
             f'{label}</span><br>'
