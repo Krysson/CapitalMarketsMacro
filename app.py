@@ -58,13 +58,21 @@ theme.header(
     "Colors show direction, not good vs. bad — quick-glance heuristics for a "
     "learning desk, not trading signals or investment advice.")
 
+with st.spinner("Pulling FRED data…"):
+    bundle = data.macro_bundle()
+
 cpi, nfp, fomc = events.next_cpi(), events.next_nfp(), events.next_fomc()
+prints = data.print_lines(data.latest_prints(bundle))
 e1, e2, e3 = st.columns(3)
 for col, ev, blurb in (
     (e1, cpi, "the month's inflation print — vol event at 8:30 a.m."),
     (e2, nfp, "jobs day — the biggest labor print, 8:30 a.m."),
     (e3, fomc, "rate decision + presser — vol event at 2:00 p.m."),
 ):
+    pline = prints.get(ev.name, "")
+    print_html = (f'<div style="font-family:\'IBM Plex Mono\',monospace;'
+                  f'font-size:0.78rem;color:{theme.YELLOW};'
+                  f'margin-top:3px">{pline}</div>') if pline else ""
     with col:
         st.markdown(
             f'''
@@ -77,6 +85,7 @@ for col, ev, blurb in (
               <span style="font-family:'IBM Plex Mono',monospace;
                            font-size:0.95rem;color:{theme.TEXT};
                            margin-left:10px">{ev.when}</span>
+              {print_html}
               <div class="desk-note" style="margin-top:2px">{blurb}</div>
             </div>
             ''',
@@ -108,9 +117,6 @@ with st.expander("Full economic calendar — TradingView (display glass)"):
                "Thursday, PCE, payrolls, auctions. The amber strip is "
                "computed from published schedules and is the desk's source "
                "of truth; this widget is glass for everything else.")
-
-with st.spinner("Pulling FRED data…"):
-    bundle = data.macro_bundle()
 
 sigs = signals.compute_signals(bundle)
 

@@ -237,3 +237,50 @@ def yoy_pct(s: pd.Series) -> pd.Series:
         return pd.Series(dtype=float)
     m = s.resample("MS").last()
     return ((m / m.shift(12) - 1) * 100).dropna()
+
+
+def latest_prints(bundle: dict[str, pd.Series]) -> dict:
+    """Latest headline numbers for the event anchors.
+
+    All FRED (Tier 1); the three extra series ride the existing
+    fred_series cache. Each value is (number, date) or None.
+    """
+    def last(s: pd.Series):
+        s = s.dropna()
+        return (float(s.iloc[-1]), s.index[-1]) if not s.empty else None
+
+    empty = pd.Series(dtype=float)
+    pay = bundle.get("PAYEMS", empty).dropna()
+    nfp = (pay.resample("MS").last().diff().dropna()
+           if not pay.empty else empty)
+    return {
+        "cpi_yoy": last(yoy_pct(bundle.get("CPIAUCSL", empty))),
+        "nfp_chg": last(nfp),                       # thousands, 1m change
+        "unrate": last(fred_series("UNRATE", start="2024-01-01")),
+        "tgt_lower": last(fred_series("DFEDTARL", start="2024-01-01")),
+        "tgt_upper": last(bundle.get("DFEDTARU", empty)),
+        "effr": last(fred_series("EFFR", start="2024-01-01")),
+    }
+
+
+def print_lines(p: dict) -> dict[str, str]:
+    """Render latest_prints into one display line per anchor ('' if n/a)."""
+    out = {"CPI": "", "NFP": "", "FOMC": ""}
+    if p.get("cpi_yoy"):
+        v, dt_ = p["cpi_yoy"]
+        out["CPI"] = f"last {v:+.1f}% YoY ({dt_:%b})"
+    if p.get("nfp_chg"):
+        v, dt_ = p["nfp_chg"]
+        line = f"last {v:+,.0f}K"
+        if p.get("unrate"):
+            line += f" · U-3 {p['unrate'][0]:.1f}%"
+        out["NFP"] = line + f" ({dt_:%b})"
+    if p.get("tgt_upper"):
+        hi = p["tgt_upper"][0]
+        line = (f"target {p['tgt_lower'][0]:.2f}\u2013{hi:.2f}%"
+                if p.get("tgt_lower") else f"target \u2264{hi:.2f}%")
+        if p.get("effr"):
+            ev, ed = p["effr"]
+            line += f" · EFFR {ev:.2f}% ({ed:%d-%b})"
+        out["FOMC"] = line
+    return out

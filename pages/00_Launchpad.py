@@ -57,10 +57,14 @@ for c, s in zip(cols, sigs):
             f'color:{s.color};font-size:0.92rem">{s.label} · {s.score}/4'
             f'</span></div>', unsafe_allow_html=True)
 with cols[4]:
+    prints = data.print_lines(data.latest_prints(bundle))
     rows = "".join(
         f'<div style="display:flex;justify-content:space-between">'
         f'<span style="color:{theme.AMBER}">{ev.name}</span>'
         f'<span style="color:{theme.TEXT}">{ev.when}</span></div>'
+        + (f'<div style="color:{theme.YELLOW};font-size:0.7rem;'
+           f'text-align:right;margin:-1px 0 3px 0">'
+           f'{prints[ev.name]}</div>' if prints.get(ev.name) else "")
         for ev in (events.next_cpi(), events.next_nfp(),
                    events.next_fomc()))
     st.markdown(
