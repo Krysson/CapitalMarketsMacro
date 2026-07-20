@@ -1,4 +1,6 @@
 """Capital Markets Desk — Summary page."""
+import json
+
 import pandas as pd
 import streamlit as st
 import streamlit.components.v1 as components
@@ -10,29 +12,40 @@ st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
 
 # TradingView ticker tape — official free embed. Display-only glass:
 # every computed signal below still runs on FRED / yfinance.
-_TAPE = """
+#
+# GOTCHA (licensing, not syntax): Cboe indices (VIX), ICE's DXY, and
+# TVC:US10Y are NOT licensed for third-party embeds — they render as
+# "only available on TradingView". Embed-safe sources instead:
+#   - CAPITALCOM:* — live CFD mirrors of DXY / VIX / 10Y yield
+#   - FRED:*       — daily official values; proven in TradingView's own
+#                    widget demos (FRED:SP500 etc.)
+# If a CAPITALCOM symbol ever stops rendering, swap in the FRED fallback
+# on the same line.
+TAPE_SYMBOLS = [
+    {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+    {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
+    {"proName": "CAPITALCOM:US10", "title": "US 10Y"},   # fb: FRED:DGS10
+    {"proName": "CAPITALCOM:DXY", "title": "Dollar"},    # fb: FRED:DTWEXBGS
+    {"proName": "TVC:GOLD", "title": "Gold"},
+    {"proName": "TVC:USOIL", "title": "WTI"},
+    {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
+    {"proName": "CAPITALCOM:VIX", "title": "VIX"},       # fb: FRED:VIXCLS
+]
+
+_TAPE = f"""
 <div class="tradingview-widget-container">
   <div class="tradingview-widget-container__widget"></div>
   <script type="text/javascript"
     src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
     async>
-  {
-    "symbols": [
-      {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-      {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
-      {"proName": "TVC:US10Y", "title": "US 10Y"},
-      {"proName": "TVC:DXY", "title": "Dollar"},
-      {"proName": "TVC:GOLD", "title": "Gold"},
-      {"proName": "TVC:USOIL", "title": "WTI"},
-      {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
-      {"proName": "TVC:VIX", "title": "VIX"}
-    ],
+  {{
+    "symbols": {json.dumps(TAPE_SYMBOLS)},
     "showSymbolLogo": false,
     "colorTheme": "dark",
     "isTransparent": true,
     "displayMode": "regular",
     "locale": "en"
-  }
+  }}
   </script>
 </div>
 """
