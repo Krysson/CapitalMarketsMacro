@@ -24,7 +24,7 @@ st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
 TAPE_SYMBOLS = [
     {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
     {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
-    {"proName": "FRED:DGS10", "title": "US 10Y"},   # fb: FRED:DGS10
+    {"proName": "FRED:DGS10", "title": "US 10Y"},  # daily official close
     {"proName": "CAPITALCOM:DXY", "title": "Dollar"},    # fb: FRED:DTWEXBGS
     {"proName": "TVC:GOLD", "title": "Gold"},
     {"proName": "TVC:USOIL", "title": "WTI"},

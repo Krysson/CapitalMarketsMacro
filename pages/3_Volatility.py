@@ -93,6 +93,59 @@ else:
 
 st.divider()
 
+st.subheader("SPY implied-volatility surface (term × strike)")
+st.markdown('<div class="desk-caption">The skew above is one slice; the '
+            'surface is all of them — IV across both strike and time. '
+            'Built on demand: four chain calls against a rate-limited '
+            'endpoint.</div>', unsafe_allow_html=True)
+if st.button("Build surface — 4 chain calls"):
+    st.session_state["iv_surface"] = True
+if st.session_state.get("iv_surface"):
+    surf, spot = data.spy_iv_surface()
+    if surf.empty:
+        st.warning("Chains unavailable (Yahoo rate limit) — try again "
+                   "in a minute.")
+    else:
+        import numpy as np
+        surf = surf.copy()
+        surf["bin"] = (surf["moneyness"] / 2.5).round() * 2.5
+        grid = (surf.groupby(["dte", "bin"])["impliedVolatility"]
+                .mean().mul(100).unstack().sort_index())
+        fig = go.Figure(go.Heatmap(
+            z=grid.values, x=list(grid.columns),
+            y=[f"{d}d" for d in grid.index],
+            colorscale=[[0, "#0D0D0D"], [0.5, "#B45F1B"],
+                        [1, "#FFD75E"]],
+            colorbar=dict(title="IV %", tickfont=dict(size=10))))
+        fig.update_layout(xaxis_title="strike as % of spot",
+                          yaxis_title="days to expiry")
+        st.plotly_chart(theme.style_fig(fig, "IV SURFACE — OTM PUTS "
+                                             "LEFT, OTM CALLS RIGHT",
+                                        height=340,
+                                        unified_hover=False),
+                        use_container_width=True)
+        atm = (surf[(surf.moneyness > 97.5) & (surf.moneyness < 102.5)]
+               .groupby("dte")["impliedVolatility"].mean().mul(100)
+               .sort_index())
+        if len(atm) > 1:
+            fig = go.Figure(go.Scatter(
+                x=[f"{d}d" for d in atm.index], y=atm.values,
+                mode="lines+markers",
+                line=dict(width=1.8, color=theme.AMBER)))
+            st.plotly_chart(theme.style_fig(fig, "ATM TERM STRUCTURE "
+                                                 "(IV %)", height=240),
+                            use_container_width=True)
+        theme.note("Read it in two directions. Left-to-right at any row "
+                   "= the skew (bright left wing = crash premium). "
+                   "Bottom-to-top at any column = the term structure — "
+                   "normally brighter with time (contango); a bright "
+                   "SHORT-dated row means near-term event risk is "
+                   "priced, the surface's version of the VIX/VIX3M "
+                   "tripwire. A lone bright cell at one expiry = a "
+                   "known date (CPI, FOMC) wearing its price.")
+
+st.divider()
+
 st.subheader("The complex over time")
 SERIES_NOTES = {
     "^VIX": "Mean-reverting by construction: it spends years in the teens "

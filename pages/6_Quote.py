@@ -18,6 +18,49 @@ theme.header(
     "EFFR · 10Y · FRED DGS30. Page mnemonics win ties — VIX opens the "
     "Volatility page, ^VIX charts the index.")
 
+def fred_search_ui(prefill: str = "") -> None:
+    """FRED catalog search: type words, pick a series, chart it."""
+    theme.panel_bar("FRED catalog search",
+                    "~800,000 series · popularity-ranked")
+    query = st.text_input("Search FRED series", value=prefill,
+                          placeholder="e.g. housing starts, M2, "
+                                      "delinquency rate, japan cpi")
+    if not query.strip():
+        return
+    results = data.fred_search(query)
+    if not results:
+        st.markdown(
+            '<div class="desk-note">No results — or no FRED_API_KEY in '
+            'secrets (the search endpoint needs one; charts work '
+            'without). Browse the full catalog at '
+            '<a href="https://fred.stlouisfed.org/search?st='
+            + query.replace(" ", "+")
+            + '" target="_blank" style="color:#FF9F1C">'
+            'fred.stlouisfed.org</a>.</div>', unsafe_allow_html=True)
+        return
+    df = pd.DataFrame(results).rename(columns={
+        "id": "ID", "title": "Title", "freq": "Freq",
+        "units": "Units", "pop": "Pop"})
+    st.dataframe(df, hide_index=True, use_container_width=True,
+                 height=min(420, 40 + 35 * len(df)))
+    pick = st.selectbox(
+        "Chart one", [f'{r["id"]} — {r["title"][:70]}' for r in results])
+    if st.button("Chart it \u2192"):
+        st.session_state["quote_query"] = ("fred", pick.split(" — ")[0],
+                                           "")
+        st.session_state.pop("fred_search", None)
+        st.rerun()
+    theme.note("Popularity is FRED's own usage rank — a decent proxy for "
+               "'the series people actually mean'. Check Freq and Units "
+               "before trusting a chart: same concept, five variants "
+               "(SA vs NSA, level vs %-change) is the classic FRED trap.")
+
+
+search_q = st.session_state.get("fred_search")
+if search_q is not None:
+    fred_search_ui(search_q)
+    st.stop()
+
 q = st.session_state.get("quote_query")
 if not q:
     st.markdown(
@@ -27,7 +70,10 @@ if not q:
         "| `GOOG DES` | same, profile open |\n"
         "| `CPI` / `NFP` / `EFFR` / `SOFR` / `10Y` / `CURVE` | the FRED "
         "series, charted |\n"
-        "| `FRED DGS30` | any FRED series by ID |")
+        "| `FRED DGS30` | any FRED series by ID |\n"
+        "| `SEARCH housing starts` | search FRED's catalog |")
+    st.divider()
+    fred_search_ui()
     st.stop()
 
 kind, sym, func = q
@@ -42,17 +88,43 @@ if kind == "fred":
     years = st.selectbox("Lookback (years)", [1, 2, 5, 10, 20, 35],
                          index=2)
     tail = data.tail_years(s, years)
-    theme.panel_bar(f"FRED · {sym}", f"{float(s.iloc[-1]):,.2f}  "
+    meta = data.fred_meta(sym)
+    title = meta.get("title") or f"FRED \u00b7 {sym}"
+    theme.panel_bar(title, f"{float(s.iloc[-1]):,.2f}  "
                     f"({s.index[-1]:%d-%b-%Y})")
+    meta_bits = [f"FRED:{sym}"] + [meta[k] for k in
+                 ("freq", "units", "sa") if meta.get(k)]
+    if meta.get("updated"):
+        meta_bits.append(f"updated {meta['updated']}")
+    st.markdown(
+        f'<div class="desk-note">{" \u00b7 ".join(meta_bits)} \u00b7 '
+        f'<a href="https://fred.stlouisfed.org/series/{sym}" '
+        f'target="_blank" style="color:{theme.AMBER}">view on FRED'
+        f'</a></div>', unsafe_allow_html=True)
     fig = go.Figure(go.Scatter(x=tail.index, y=tail.values, mode="lines",
                                line=dict(width=1.8, color=theme.AMBER)))
     theme.recession_bands(fig, data.usrec(), start=tail.index.min(),
                           end=tail.index.max())
     st.plotly_chart(theme.style_fig(fig, None, height=380),
                     use_container_width=True)
+    pts = data.series_hist_points(s)
+    if pts:
+        cols = st.columns(len(pts))
+        for c, (label, txt) in zip(cols, pts):
+            with c:
+                st.markdown(
+                    f'<div style="background:{theme.PANEL};'
+                    f'padding:6px 10px;border-radius:2px;'
+                    f'font-family:\'IBM Plex Mono\',monospace">'
+                    f'<span class="desk-eyebrow" '
+                    f'style="color:{theme.MUTED}">{label}</span><br>'
+                    f'<span style="color:{theme.TEXT};'
+                    f'font-size:0.9rem">{txt}</span></div>',
+                    unsafe_allow_html=True)
     theme.note("Tier 1 primary-source data via FRED. Gray bands = NBER "
-               "recessions. If this series belongs on a panel, the ECO "
-               "page is its curated home.")
+               "recessions. 1Y \u0394 is in the series' native units. "
+               "If this series belongs on a panel, the ECO page is its "
+               "curated home.")
     st.stop()
 
 # -------------------------------------------------------- ticker mode --

@@ -97,6 +97,10 @@ _ROUTES = {
     "WIRE": "pages/5_Wire.py",
     "BLP": "pages/00_Launchpad.py", "PAD": "pages/00_Launchpad.py",
     "Q": "pages/6_Quote.py", "QUOTE": "pages/6_Quote.py",
+    "FUT": "pages/8_Futures.py", "CTM": "pages/8_Futures.py",
+    "CMDTY": "pages/8_Futures.py",
+    "GC": "pages/7_Rates.py", "YC": "pages/7_Rates.py",
+    "RATES": "pages/7_Rates.py", "CRV": "pages/7_Rates.py",
 }
 
 _FUNC_TOKENS = {"GP", "DES", "FA"}
@@ -118,6 +122,8 @@ def _parse_command(c: str) -> tuple:
         return ("page", _ROUTES[toks[0]])
     if toks[0] == "FRED" and len(toks) >= 2:
         return ("quote", "fred", toks[1], "")
+    if toks[0] in ("SEARCH", "FIND") and len(toks) >= 2:
+        return ("search", " ".join(toks[1:]))
     if len(toks) == 1 and toks[0] in _data.FRED_ALIASES:
         return ("quote", "fred", _data.FRED_ALIASES[toks[0]], "")
     if re.fullmatch(r"[A-Z0-9.\-^=]{1,12}", toks[0]):
@@ -136,9 +142,12 @@ _HELP = """
 | `VIX` / `VOL` | Volatility | VIX Index GP, VCAL |
 | `NOTE` | Notebook | NOTE — notes & ideas |
 | `TOP` / `N` | News Wire | TOP — top news · N — news |
+| `GC` / `YC` | Rates & Credit | GC — graph curves · yield curve + OAS |
+| `CTM` / `FUT` | Futures | CTM — contract table · board + term structure |
 | `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
 | `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
+| `SEARCH <words>` | Quote | search FRED's catalog, e.g. SEARCH housing starts |
 
 Type the function, hit **GO** (or Enter). Same habit as the terminal:
 navigate by mnemonic, not by mouse.
@@ -163,6 +172,11 @@ def command_line() -> None:
         st.switch_page(action[1])
     elif action[0] == "quote":
         st.session_state["quote_query"] = action[1:]
+        st.session_state.pop("fred_search", None)
+        st.switch_page("pages/6_Quote.py")
+    elif action[0] == "search":
+        st.session_state["fred_search"] = action[1]
+        st.session_state.pop("quote_query", None)
         st.switch_page("pages/6_Quote.py")
     elif action[0] == "unknown":
         st.markdown(

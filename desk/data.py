@@ -349,3 +349,234 @@ def ticker_financials(t: str) -> pd.DataFrame:
         return out
     except Exception:
         return pd.DataFrame()
+
+
+TREASURY_TENORS = [
+    ("1M", "DGS1MO"), ("3M", "DGS3MO"), ("6M", "DGS6MO"),
+    ("1Y", "DGS1"), ("2Y", "DGS2"), ("3Y", "DGS3"), ("5Y", "DGS5"),
+    ("7Y", "DGS7"), ("10Y", "DGS10"), ("20Y", "DGS20"), ("30Y", "DGS30"),
+]
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def treasury_curve(start: str = "2015-01-01") -> pd.DataFrame:
+    """Constant-maturity par yields, columns = tenors. All FRED, Tier 1."""
+    cols = {}
+    for label, sid in TREASURY_TENORS:
+        s = fred_series(sid, start=start)
+        if not s.empty:
+            cols[label] = s
+    return pd.DataFrame(cols).sort_index() if cols else pd.DataFrame()
+
+
+def shape_surface(raw: pd.DataFrame, spot: float) -> pd.DataFrame:
+    """Pure transform: raw option rows -> OTM surface points.
+
+    Expects columns strike / impliedVolatility / type / dte / expiry.
+    Keeps 70-125%% moneyness, drops junk IVs, and uses the standard
+    OTM construction: puts below spot, calls above.
+    """
+    if raw.empty or not spot:
+        return pd.DataFrame()
+    out = raw.copy()
+    out["moneyness"] = out["strike"] / spot * 100
+    out = out[(out.moneyness > 70) & (out.moneyness < 125)
+              & (out.impliedVolatility > 0.01)
+              & (out.impliedVolatility < 3.0)]
+    out = out[((out.type == "put") & (out.moneyness <= 100.5))
+              | ((out.type == "call") & (out.moneyness > 100.5))]
+    return out
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def spy_iv_surface(target_dtes: tuple = (15, 30, 60, 90)) -> tuple[
+        pd.DataFrame, float | None]:
+    """SPY IV across ~4 expiries. (surface_points, spot); empty on failure.
+
+    One chain call per expiry against Yahoo's rate-limited endpoint —
+    each expiry fails independently.
+    """
+    import yfinance as yf
+
+    try:
+        tk = yf.Ticker("SPY")
+        spot = tk.fast_info["last_price"]
+        today = dt.date.today()
+        avail = [(e, (dt.date.fromisoformat(e) - today).days)
+                 for e in tk.options]
+        avail = [x for x in avail if x[1] > 0]
+        chosen = []
+        for tgt in target_dtes:
+            if not avail:
+                break
+            pick = min(avail, key=lambda x: abs(x[1] - tgt))
+            if pick not in chosen:
+                chosen.append(pick)
+        frames = []
+        for expiry, dte in chosen:
+            try:
+                ch = tk.option_chain(expiry)
+                for typ, df in (("put", ch.puts), ("call", ch.calls)):
+                    part = df[["strike", "impliedVolatility"]].copy()
+                    part["type"], part["dte"], part["expiry"] = typ, dte, expiry
+                    frames.append(part)
+            except Exception:
+                continue
+        if not frames:
+            return pd.DataFrame(), spot
+        return shape_surface(pd.concat(frames), spot), spot
+    except Exception:
+        return pd.DataFrame(), None
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def fred_meta(series_id: str) -> dict:
+    """Series metadata (title, units, frequency…). {} without an API key
+    or on failure — the Quote page degrades to showing the raw ID."""
+    key = _fred_key()
+    if not key:
+        return {}
+    try:
+        r = requests.get(
+            "https://api.stlouisfed.org/fred/series",
+            params={"series_id": series_id, "api_key": key,
+                    "file_type": "json"},
+            timeout=15)
+        r.raise_for_status()
+        s = r.json()["seriess"][0]
+        return {"title": s.get("title", ""),
+                "units": s.get("units_short", s.get("units", "")),
+                "freq": s.get("frequency_short", ""),
+                "sa": s.get("seasonal_adjustment_short", ""),
+                "updated": s.get("last_updated", "")[:10]}
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fred_search(text: str, limit: int = 15) -> list[dict]:
+    """Search FRED's catalog, popularity-ranked. [] without a key."""
+    key = _fred_key()
+    if not key or not text.strip():
+        return []
+    try:
+        r = requests.get(
+            "https://api.stlouisfed.org/fred/series/search",
+            params={"search_text": text, "api_key": key,
+                    "file_type": "json", "limit": limit,
+                    "order_by": "popularity", "sort_order": "desc"},
+            timeout=15)
+        r.raise_for_status()
+        return [{"id": s["id"], "title": s.get("title", ""),
+                 "freq": s.get("frequency_short", ""),
+                 "units": s.get("units_short", ""),
+                 "pop": s.get("popularity", 0)}
+                for s in r.json().get("seriess", [])]
+    except Exception:
+        return []
+
+
+def series_hist_points(s: pd.Series) -> list[tuple[str, str]]:
+    """Compact historics for the Quote page: latest and lookbacks.
+    Change shown in native units (safe for both levels and rates)."""
+    s = s.dropna()
+    if s.empty:
+        return []
+    last_dt = s.index[-1]
+    latest = float(s.iloc[-1])
+    out = [("LATEST", f"{latest:,.2f}")]
+    for label, off in (("1M AGO", pd.DateOffset(months=1)),
+                       ("6M AGO", pd.DateOffset(months=6)),
+                       ("1Y AGO", pd.DateOffset(years=1))):
+        v = s.asof(last_dt - off)
+        if pd.notna(v):
+            out.append((label, f"{float(v):,.2f}"))
+    y = s.asof(last_dt - pd.DateOffset(years=1))
+    if pd.notna(y):
+        out.append(("1Y \u0394", f"{latest - float(y):+,.2f}"))
+    return out
+
+
+# ------------------------------------------------------------ FUTURES ----
+
+FUTURES_COMPLEXES = {
+    "ENERGY": [("CL=F", "WTI Crude"), ("BZ=F", "Brent"),
+               ("NG=F", "Nat Gas"), ("RB=F", "RBOB Gasoline")],
+    "METALS": [("GC=F", "Gold"), ("SI=F", "Silver"),
+               ("HG=F", "Copper"), ("PL=F", "Platinum")],
+    "GRAINS": [("ZC=F", "Corn"), ("ZS=F", "Soybeans"),
+               ("ZW=F", "Wheat"), ("ZL=F", "Soybean Oil")],
+    "SOFTS": [("KC=F", "Coffee"), ("SB=F", "Sugar"),
+              ("CC=F", "Cocoa"), ("CT=F", "Cotton")],
+    "LIVESTOCK": [("LE=F", "Live Cattle"), ("HE=F", "Lean Hogs")],
+}
+
+_MONTH_CODES = {1: "F", 2: "G", 3: "H", 4: "J", 5: "K", 6: "M",
+                7: "N", 8: "Q", 9: "U", 10: "V", 11: "X", 12: "Z"}
+
+# Contract-month cycles and Yahoo exchange suffixes for curve building.
+FUT_SPECS = {
+    "CL": (".NYM", set(range(1, 13))),            # WTI: every month
+    "NG": (".NYM", set(range(1, 13))),
+    "GC": (".CMX", {2, 4, 6, 8, 10, 12}),
+    "SI": (".CMX", {3, 5, 7, 9, 12}),
+    "HG": (".CMX", {3, 5, 7, 9, 12}),
+    "ZC": (".CBT", {3, 5, 7, 9, 12}),
+    "ZS": (".CBT", {1, 3, 5, 7, 8, 9, 11}),
+    "ZW": (".CBT", {3, 5, 7, 9, 12}),
+}
+
+
+def next_contracts(root: str, n: int = 6,
+                   today: dt.date | None = None) -> list[tuple[str, str]]:
+    """Next n listed contract months for a root -> [(yahoo_symbol,
+    'Mon-YY' label)]. Pure; starts NEXT calendar month so a front
+    contract mid-expiry never sneaks in."""
+    if root not in FUT_SPECS:
+        return []
+    suffix, cycle = FUT_SPECS[root]
+    today = today or dt.date.today()
+    y, m = today.year, today.month
+    out = []
+    while len(out) < n:
+        m += 1
+        if m > 12:
+            m, y = 1, y + 1
+        if m in cycle:
+            sym = f"{root}{_MONTH_CODES[m]}{str(y)[2:]}{suffix}"
+            out.append((sym, dt.date(y, m, 1).strftime("%b-%y")))
+    return out
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def futures_board(period: str = "1y") -> pd.DataFrame:
+    """Front-month closes for every board contract. Columns = tickers."""
+    import yfinance as yf
+
+    tickers = [t for grp in FUTURES_COMPLEXES.values() for t, _ in grp]
+    try:
+        raw = yf.download(tickers, period=period, interval="1d",
+                          auto_adjust=True, progress=False,
+                          group_by="column")
+        closes = raw["Close"] if "Close" in raw else raw
+        return closes.dropna(how="all")
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def futures_curve(root: str, n: int = 6) -> pd.DataFrame:
+    """Term structure: one quote per listed month (n calls against
+    Yahoo). Each contract fails independently; rows = whatever resolved."""
+    import yfinance as yf
+
+    rows = []
+    for sym, label in next_contracts(root, n):
+        try:
+            px = yf.Ticker(sym).fast_info["last_price"]
+            if px and px > 0:
+                rows.append({"contract": label, "symbol": sym,
+                             "price": float(px)})
+        except Exception:
+            continue
+    return pd.DataFrame(rows)

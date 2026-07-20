@@ -18,6 +18,8 @@ display glass only. Colors mean **direction, not advice**.
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
 | Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision, JSON export/restore |
 | Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
+| Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS |
+| Futures | `CTM` | Commodity board by complex (energy/metals/grains/softs/livestock) + real term-structure curves |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30` |
 
 Every page has a **command line** at the top — type a function, hit GO.
@@ -61,7 +63,8 @@ dry). Roughly once a year:
 
 ## Data sources (all free)
 
-- **FRED** — all macro series, USREC recession indicator (1h cache)
+- **FRED** — all macro series, the full Treasury constant-maturity
+  curve, TIPS real yields, ICE BofA credit OAS, USREC (1h cache)
 - **Yahoo Finance / yfinance** — market history, OHLC, SPY options chain
   (15 min cache; delayed and occasionally rate-limited, charts recover
   on refresh — the skew curve legitimately fails sometimes)
