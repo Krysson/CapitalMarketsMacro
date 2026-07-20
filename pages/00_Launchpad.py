@@ -123,7 +123,7 @@ with c2:
          fmt="{:.2f}")
 
 with c3:
-    theme.panel_bar("Wire", "last 8 · TOP <GO>")
+    theme.panel_bar("Wire", "3 primary + 5 media · TOP <GO>")
     items, dead = wire.fetch_tape(wire.PRIMARY_FEEDS
                                   + wire.NARRATIVE_FEEDS)
     if dead:
@@ -131,9 +131,14 @@ with c3:
                     f'FEED DOWN: {", ".join(dead)}</div>',
                     unsafe_allow_html=True)
     if items:
+        # Reserved slots, not raw recency: media feeds print dozens of
+        # headlines a day, the agencies a few a week — pure newest-first
+        # would bury the primary tape every day. Primary leads, always.
         primary = {s for s, _ in wire.PRIMARY_FEEDS}
+        prim = [it for it in items if it["src"] in primary][:3]
+        narr = [it for it in items if it["src"] not in primary][:5]
         lines = []
-        for it in items[:8]:
+        for it in prim + narr:
             colr = theme.AMBER if it["src"] in primary else theme.PURPLE
             stamp = (it["when"].strftime("%d-%b %H:%M") if it["when"]
                      else "--:--")
