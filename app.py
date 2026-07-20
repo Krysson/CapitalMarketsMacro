@@ -1,183 +1,101 @@
-"""Capital Markets Desk — Summary page."""
-import json
+"""Launchpad — everything at once, nothing scrolls far, no prose.
 
-import pandas as pd
-import streamlit as st
-import streamlit.components.v1 as components
-
-from desk import data, events, signals, theme
-
-st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
-                   layout="wide")
-
-# TradingView ticker tape — official free embed. Display-only glass:
-# every computed signal below still runs on FRED / yfinance.
-#
-# GOTCHA (licensing, not syntax): Cboe indices (VIX), ICE's DXY, and
-# TVC:US10Y are NOT licensed for third-party embeds — they render as
-# "only available on TradingView". Embed-safe sources instead:
-#   - CAPITALCOM:* — live CFD mirrors of DXY / VIX / 10Y yield
-#   - FRED:*       — daily official values; proven in TradingView's own
-#                    widget demos (FRED:SP500 etc.)
-# If a CAPITALCOM symbol ever stops rendering, swap in the FRED fallback
-# on the same line.
-TAPE_SYMBOLS = [
-    {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-    {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
-    {"proName": "FRED:DGS10", "title": "US 10Y"},   # fb: FRED:DGS10
-    {"proName": "CAPITALCOM:DXY", "title": "Dollar"},    # fb: FRED:DTWEXBGS
-    {"proName": "TVC:GOLD", "title": "Gold"},
-    {"proName": "TVC:USOIL", "title": "WTI"},
-    {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
-    {"proName": "CAPITALCOM:VIX", "title": "VIX"},       # fb: FRED:VIXCLS
-]
-
-_TAPE = f"""
-<div class="tradingview-widget-container">
-  <div class="tradingview-widget-container__widget"></div>
-  <script type="text/javascript"
-    src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
-    async>
-  {{
-    "symbols": {json.dumps(TAPE_SYMBOLS)},
-    "showSymbolLogo": false,
-    "colorTheme": "dark",
-    "isTransparent": true,
-    "displayMode": "regular",
-    "locale": "en"
-  }}
-  </script>
-</div>
+The teaching notes live on the other pages; this one is pure glass and
+numbers, tiled the way the machine tiles them. BLP <GO>.
 """
-components.html(_TAPE, height=48)
+import pandas as pd
+import plotly.graph_objects as go
+import streamlit as st
 
-theme.header(
-    "THE FREE DESK · SUMMARY",
-    "Capital Markets Desk",
-    "Green = rising / loose · Red = falling / tight · Yellow = mixed. "
-    "Colors show direction, not good vs. bad — quick-glance heuristics for a "
-    "learning desk, not trading signals or investment advice.")
+from desk import data, events, signals, theme, wire
 
-cpi, nfp, fomc = events.next_cpi(), events.next_nfp(), events.next_fomc()
-e1, e2, e3 = st.columns(3)
-for col, ev, blurb in (
-    (e1, cpi, "the month's inflation print — vol event at 8:30 a.m."),
-    (e2, nfp, "jobs day — the biggest labor print, 8:30 a.m."),
-    (e3, fomc, "rate decision + presser — vol event at 2:00 p.m."),
-):
-    with col:
-        st.markdown(
-            f'''
-            <div style="border-radius:2px;padding:10px 14px;
-                        background:{theme.PANEL};
-                        border-left:3px solid {theme.AMBER};
-                        margin-bottom:6px">
-              <span class="desk-eyebrow" style="color:{theme.MUTED}">
-                next {ev.name}</span>
-              <span style="font-family:'IBM Plex Mono',monospace;
-                           font-size:0.95rem;color:{theme.TEXT};
-                           margin-left:10px">{ev.when}</span>
-              <div class="desk-note" style="margin-top:2px">{blurb}</div>
-            </div>
-            ''',
-            unsafe_allow_html=True,
-        )
+st.set_page_config(page_title="Launchpad — Desk", page_icon="🟧",
+                   layout="wide")
+theme.header("BOOK III · LAUNCHPAD", "Launchpad")
 
-with st.expander("Full economic calendar — TradingView (display glass)"):
-    components.html(
-        """
-        <div class="tradingview-widget-container">
-          <div class="tradingview-widget-container__widget"></div>
-          <script type="text/javascript"
-            src="https://s3.tradingview.com/external-embedding/embed-widget-events.js"
-            async>
-          {
-            "colorTheme": "dark",
-            "isTransparent": true,
-            "width": "100%",
-            "height": 450,
-            "locale": "en",
-            "importanceFilter": "0,1",
-            "countryFilter": "us"
-          }
-          </script>
-        </div>
-        """,
-        height=460)
-    theme.note("Everything between the two anchors above — claims every "
-               "Thursday, PCE, payrolls, auctions. The amber strip is "
-               "computed from published schedules and is the desk's source "
-               "of truth; this widget is glass for everything else.")
-
-with st.spinner("Pulling FRED data…"):
-    bundle = data.macro_bundle()
-
+bundle = data.macro_bundle()
 sigs = signals.compute_signals(bundle)
+hist = data.market_history(period="1y")
+nl = data.net_liquidity(bundle)
 
-if all(s.loading for s in sigs):
-    st.warning(
-        "No FRED data loaded. If this persists, add a FRED_API_KEY in "
-        "App settings → Secrets:  `FRED_API_KEY = \"your_key_here\"`")
 
-# One representative 1y trace per card. All series already live in the
-# bundle (net liquidity is derived from it), so this costs zero extra
-# FRED calls. Sparklines render in amber — the house accent — rather
-# than the card's score color, so the line doesn't imply a judgment.
-SPARKS = {
-    "Growth": (data.yoy_pct(bundle.get("PAYEMS", pd.Series(dtype=float))),
-               "Payrolls YoY %"),
-    "Inflation": (data.yoy_pct(bundle.get("PCEPILFE", pd.Series(dtype=float))),
-                  "Core PCE YoY %"),
-    "Policy": (bundle.get("DFEDTARU", pd.Series(dtype=float)),
-               "Fed funds upper %"),
-    "Liquidity": (data.net_liquidity(bundle) / 1_000_000,
-                  "Net liquidity $tn"),
-}
+def col_series(t: str) -> pd.Series:
+    if hist.empty or t not in hist.columns:
+        return pd.Series(dtype=float)
+    return hist[t].dropna()
 
-cols = st.columns(4)
-for col, s in zip(cols, sigs):
-    spark_series, spark_label = SPARKS.get(s.category,
-                                           (pd.Series(dtype=float), ""))
-    svg = theme.sparkline_svg(data.tail_years(spark_series, 1))
-    spark_html = (f'{svg}<div class="desk-note" style="margin-top:4px">'
-                  f'{spark_label} · 1y</div>') if svg else ""
-    with col:
+
+def mini(s: pd.Series, title: str, color: str, hline: float | None = None,
+         fmt: str = "{:,.2f}") -> None:
+    if s.empty:
+        theme.panel_bar(title, "—")
+        st.markdown('<div class="desk-note">no data</div>',
+                    unsafe_allow_html=True)
+        return
+    theme.panel_bar(title, fmt.format(float(s.iloc[-1])))
+    fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines",
+                               line=dict(width=1.4, color=color)))
+    if hline is not None:
+        fig.add_hline(y=hline, line=dict(color=theme.RED, width=1,
+                                         dash="dash"))
+    st.plotly_chart(theme.style_fig(fig, None, height=150),
+                    use_container_width=True,
+                    config={"displayModeBar": False})
+
+
+# ------------------------------------------------ row A: dials + dates --
+cols = st.columns([1, 1, 1, 1, 1.4])
+for c, s in zip(cols, sigs):
+    with c:
         st.markdown(
-            f"""
-            <div style="border-radius:2px;padding:18px 16px;
-                        background:{theme.PANEL};
-                        border-left:4px solid {s.color};min-height:176px">
-              <div class="desk-eyebrow" style="color:{theme.MUTED}">
-                {s.category}</div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:1.2rem;
-                          font-weight:600;color:{s.color};line-height:1.2;
-                          margin:4px 0 6px 0">{s.label}</div>
-              <div class="desk-note">score {s.score} / 4</div>
-              {spark_html}
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            f'<div style="border-radius:2px;padding:8px 10px;'
+            f'background:{theme.PANEL};border-left:3px solid {s.color};'
+            f'min-height:64px">'
+            f'<span class="desk-eyebrow" style="color:{theme.MUTED}">'
+            f'{s.category}</span><br>'
+            f'<span style="font-family:\'IBM Plex Mono\',monospace;'
+            f'color:{s.color};font-size:0.92rem">{s.label} · {s.score}/4'
+            f'</span></div>', unsafe_allow_html=True)
+with cols[4]:
+    rows = "".join(
+        f'<div style="display:flex;justify-content:space-between">'
+        f'<span style="color:{theme.AMBER}">{ev.name}</span>'
+        f'<span style="color:{theme.TEXT}">{ev.when}</span></div>'
+        for ev in (events.next_cpi(), events.next_nfp(),
+                   events.next_fomc()))
+    st.markdown(
+        f'<div style="border-radius:2px;padding:8px 10px;'
+        f'background:{theme.PANEL};border-left:3px solid {theme.AMBER};'
+        f'min-height:64px;font-family:\'IBM Plex Mono\',monospace;'
+        f'font-size:0.78rem">{rows}</div>', unsafe_allow_html=True)
 
-st.divider()
+# ---------------------------------------------------- row B: mini charts --
+b1, b2, b3, b4 = st.columns(4)
+with b1:
+    mini(col_series("^GSPC"), "SPX · 1Y", theme.TEXT)
+with b2:
+    vix, v3 = col_series("^VIX"), col_series("^VIX3M")
+    r = (vix / v3).dropna() if not vix.empty and not v3.empty \
+        else pd.Series(dtype=float)
+    mini(r, "VIX/VIX3M", theme.PURPLE, hline=1.0, fmt="{:.3f}")
+with b3:
+    rsp, spy = col_series("RSP"), col_series("SPY")
+    r = (rsp / spy).dropna() if not rsp.empty and not spy.empty \
+        else pd.Series(dtype=float)
+    mini(r, "RSP/SPY", theme.BLUE, fmt="{:.4f}")
+with b4:
+    h, l = col_series("HYG"), col_series("LQD")
+    r = (h / l).dropna() if not h.empty and not l.empty \
+        else pd.Series(dtype=float)
+    mini(r, "HYG/LQD", theme.GREEN, fmt="{:.4f}")
 
-left, right = st.columns([3, 2])
+# ---------------------------------- row C: table · liquidity · headlines --
+c1, c2, c3 = st.columns([2, 1.4, 2])
 
-with left:
-    st.subheader("Under the hood")
-    st.markdown('<div class="desk-caption">The four checks behind each '
-                'signal.</div>', unsafe_allow_html=True)
-    for s in sigs:
-        with st.expander(f"{s.category} — {s.label}  ·  {s.score}/4"):
-            for c in s.checks:
-                icon = "✅" if c.passed else ("❌" if c.passed is False else "⏳")
-                st.markdown(f"{icon} {c.label}")
-
-with right:
-    st.subheader("Cross-asset, today")
-    hist = data.market_history(period="3mo")
+with c1:
+    theme.panel_bar("Cross-asset", "1d chg")
     if hist.empty:
-        st.warning("Market data unavailable (Yahoo Finance).")
+        st.warning("Market data unavailable.")
     else:
         rows = []
         for tkr, name in data.MARKET_TICKERS.items():
@@ -195,11 +113,45 @@ with right:
                 if isinstance(v, float) else "",
                 subset=["Chg %"],
             ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
-            hide_index=True, height=430, use_container_width=True,
-        )
+            hide_index=True, height=390, use_container_width=True)
 
-st.markdown('<div class="desk-note">Data: FRED (St. Louis Fed) · Yahoo '
-            'Finance, delayed · TradingView tape is display glass · Pages: '
-            'Daily Circuit / Macro / Market / Volatility / Notebook / '
-            'Wire in '
-            'the sidebar</div>', unsafe_allow_html=True)
+with c2:
+    mini(data.tail_years(nl, 2) / 1_000_000, "Net liquidity $tn",
+         theme.AMBER)
+    spark = data.yoy_pct(bundle.get("PCEPILFE", pd.Series(dtype=float)))
+    mini(data.tail_years(spark, 2), "Core PCE YoY %", theme.YELLOW,
+         fmt="{:.2f}")
+
+with c3:
+    theme.panel_bar("Wire", "last 8 · TOP <GO>")
+    items, dead = wire.fetch_tape(wire.PRIMARY_FEEDS
+                                  + wire.NARRATIVE_FEEDS)
+    if dead:
+        st.markdown(f'<div class="desk-note" style="color:{theme.RED}">'
+                    f'FEED DOWN: {", ".join(dead)}</div>',
+                    unsafe_allow_html=True)
+    if items:
+        primary = {s for s, _ in wire.PRIMARY_FEEDS}
+        lines = []
+        for it in items[:8]:
+            colr = theme.AMBER if it["src"] in primary else theme.PURPLE
+            stamp = (it["when"].strftime("%d-%b %H:%M") if it["when"]
+                     else "--:--")
+            title = it["title"].replace("<", "&lt;").replace(">", "&gt;")
+            lines.append(
+                f'<div style="padding:2px 0;border-bottom:1px solid '
+                f'rgba(232,230,225,0.06);white-space:nowrap;'
+                f'overflow:hidden;text-overflow:ellipsis">'
+                f'<span style="color:{theme.MUTED}">{stamp}</span>'
+                f'<span style="color:{colr};margin:0 8px">{it["src"]}'
+                f'</span>'
+                f'<a href="{it["link"]}" target="_blank" style="color:'
+                f'{theme.TEXT};text-decoration:none">{title}</a></div>')
+        st.markdown(
+            f'<div style="font-family:\'IBM Plex Mono\',monospace;'
+            f'font-size:0.76rem;background:{theme.PANEL};'
+            f'padding:8px 12px;border-radius:0 0 2px 2px">'
+            + "".join(lines) + "</div>", unsafe_allow_html=True)
+    else:
+        st.markdown('<div class="desk-note">wire unreachable</div>',
+                    unsafe_allow_html=True)

@@ -1,95 +1,164 @@
-# Capital Markets Desk (Streamlit)
+"""Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
+import plotly.graph_objects as go
+import streamlit as st
+import streamlit.components.v1 as components
 
-Free, self-hosted companion to the book: a terminal-styled training desk.
-Every signal is computed from free primary sources; TradingView embeds are
-display glass only. Colors mean **direction, not advice**.
+from desk import data, theme
 
-**Live:** https://capitalmarketsmacro.streamlit.app/
+st.set_page_config(page_title="Market — Desk", page_icon="📈", layout="wide")
+theme.header("BOOK III · CH. 5", "Market Dashboard",
+             "Trend, participation, and cross-asset confirmation.")
 
-## Pages
+period = st.selectbox("Lookback", ["6mo", "1y", "2y", "5y"], index=1)
+hist = data.market_history(period=period)
 
-| Page | Command | What it is |
-|---|---|---|
-| Summary | `HOME` | Four scored signal cards with sparklines, CPI / NFP / FOMC countdown strip, cross-asset table |
-| Daily Circuit | `CIR` | The book's 90-second read as a guided sequence, ending at the Notebook |
-| Macro | `ECO` | 15 FRED series + Net Liquidity (WALCL − TGA − RRP), NBER recession bands |
-| Market | `WEI` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
-| Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
-| Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision, JSON export/restore |
-| Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
+if hist.empty:
+    st.error("Market data unavailable — Yahoo Finance may be rate-limiting. "
+             "Try again in a minute.")
+    st.stop()
 
-Every page has a **command line** at the top — type a function, hit GO.
-`HELP <GO>` lists all functions with their real Bloomberg equivalents.
-The point is transferable muscle memory: navigate by mnemonic, not mouse.
+# ---- Trend: SPX candlesticks with the MA ribbon ----
+spx_ohlc = data.ohlc("^GSPC", period=period)
+spx = hist["^GSPC"].dropna()
+fig = go.Figure()
+if not spx_ohlc.empty:
+    fig.add_trace(theme.candles(spx_ohlc, "S&P 500"))
+else:
+    fig.add_scatter(x=spx.index, y=spx.values, mode="lines", name="S&P 500",
+                    line=dict(width=2, color=theme.TEXT))
+for win, color in [(20, theme.GREEN), (50, theme.BLUE), (200, theme.RED)]:
+    ma = spx.rolling(win).mean()
+    fig.add_scatter(x=ma.index, y=ma.values, mode="lines", name=f"SMA {win}",
+                    line=dict(width=1.1, color=color))
+fig.update_layout(xaxis_rangeslider_visible=False)
+st.plotly_chart(
+    theme.style_fig(fig, "S&P 500 — trend vs 20 / 50 / 200-day",
+                    height=420, unified_hover=False),
+    use_container_width=True)
 
-## Deploy on Streamlit Community Cloud (free)
+above200 = spx.iloc[-1] > spx.rolling(200).mean().iloc[-1]
+st.markdown(f"**Trend check:** price is currently "
+            f"{'**above** ✅' if above200 else '**below** ❌'} the 200-day.")
+theme.note("Price above a rising 200-day = uptrend regime; below = defense. "
+           "Ribbon order (20 over 50 over 200) and slope show trend health; "
+           "long candle wicks show sessions where conviction failed.")
 
-1. Put this folder in a GitHub repo (public or private).
-2. share.streamlit.io → New app → pick the repo, main file `app.py`.
-3. App settings → Secrets → add:
+st.divider()
 
-       FRED_API_KEY = "your_key_here"
 
-   (The app also works without a key via FRED's public CSV endpoint,
-   but the key is more reliable.)
-4. Deploy. First load takes ~1 min while data caches. If a dependency
-   changed (e.g. feedparser), reboot the app from the Cloud dashboard.
+def ratio_chart(num, den, title, note):
+    if num not in hist or den not in hist:
+        st.warning(f"{title}: data missing")
+        return
+    r = (hist[num] / hist[den]).dropna()
+    ma50 = r.rolling(50).mean()
+    fig = go.Figure()
+    fig.add_scatter(x=r.index, y=r.values, mode="lines", name="ratio",
+                    line=dict(width=1.8, color=theme.PURPLE))
+    fig.add_scatter(x=ma50.index, y=ma50.values, mode="lines", name="50d MA",
+                    line=dict(width=1, color=theme.MUTED, dash="dot"))
+    st.plotly_chart(theme.style_fig(fig, title, height=290),
+                    use_container_width=True)
+    theme.note(note)
 
-## Run locally
 
-    pip install -r requirements.txt
-    export FRED_API_KEY=your_key   # optional
-    streamlit run app.py
+c1, c2 = st.columns(2)
+with c1:
+    ratio_chart("RSP", "SPY", "RSP / SPY — equal weight vs cap weight",
+                "Rising = broad participation · Falling = narrow leadership. "
+                "Breadth proxy; full internals (S5TH, ADD) live on TradingView.")
+with c2:
+    ratio_chart("HYG", "LQD", "HYG / LQD — credit risk appetite",
+                "Falling = high yield underperforming investment grade — "
+                "credit smelling trouble before equities admit it.")
 
-## Maintenance calendar
+with st.expander("S&P 500 heatmap — TradingView (display glass)"):
+    components.html(
+        """
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript"
+            src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js"
+            async>
+          {
+            "dataSource": "SPX500",
+            "exchanges": [],
+            "grouping": "sector",
+            "blockSize": "market_cap_basic",
+            "blockColor": "change",
+            "hasTopBar": false,
+            "isDataSetEnabled": false,
+            "isZoomEnabled": true,
+            "hasSymbolTooltip": true,
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "locale": "en",
+            "width": "100%",
+            "height": 480
+          }
+          </script>
+        </div>
+        """,
+        height=490)
+    theme.note("The RSP/SPY ratio, drawn as a picture. Index green while "
+               "the map is mostly red — a few giant blocks doing all the "
+               "lifting — IS narrow leadership. Block size = market cap, "
+               "so your eye weighs stocks exactly the way SPY does; RSP "
+               "weighs every block equally.")
 
-`desk/events.py` hardcodes published release schedules on purpose — no
-API, nothing to rate-limit. The trade: refresh the lists when agencies
-publish new calendars (the Summary strip shows a nudge when a list runs
-dry). Roughly once a year:
+st.divider()
+st.subheader("Cross-asset (normalized)")
+sel = st.multiselect(
+    "Compare", options=list(data.MARKET_TICKERS.keys()),
+    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "BTC-USD"],
+    format_func=lambda t: data.MARKET_TICKERS[t])
+if sel:
+    fig = go.Figure()
+    palette = [theme.TEXT, theme.AMBER, theme.BLUE, theme.GREEN,
+               theme.PURPLE, theme.RED, theme.MUTED]
+    for i, t in enumerate(sel):
+        s = hist[t].dropna()
+        if len(s) > 1:
+            fig.add_scatter(x=s.index, y=(s / s.iloc[0] - 1) * 100,
+                            mode="lines", name=data.MARKET_TICKERS[t],
+                            line=dict(width=1.6,
+                                      color=palette[i % len(palette)]))
+    fig.update_layout(yaxis_title="% change over lookback")
+    st.plotly_chart(theme.style_fig(fig, height=380),
+                    use_container_width=True)
+    theme.note("Confirmation check: does the rest of the world agree with "
+               "equities? Stocks rising alone — while copper, credit, and "
+               "crypto sag — is a divergence worth a Notebook entry. Broad "
+               "agreement = regime confirmation.")
 
-- **CPI + NFP** — BLS posts next-year schedules in the second half of the
-  year: `bls.gov/schedule/news_release/cpi.htm` and `…/empsit.htm`
-- **FOMC** — `federalreserve.gov/monetarypolicy/fomccalendars.htm`
-  (dates beyond the current year are tentative until confirmed)
 
-## Data sources (all free)
-
-- **FRED** — all macro series, USREC recession indicator (1h cache)
-- **Yahoo Finance / yfinance** — market history, OHLC, SPY options chain
-  (15 min cache; delayed and occasionally rate-limited, charts recover
-  on refresh — the skew curve legitimately fails sometimes)
-- **RSS** — Fed / BLS / BEA press feeds (primary tape), CNBC /
-  MarketWatch (narrative tape); each feed fails independently
-- **TradingView embeds** — ticker tape and optional widgets; display
-  glass only, never inputs to computed signals
-
-## House conventions
-
-- Every chart carries a `theme.note()` reading note — the dashboard
-  teaches you how to read it.
-- Data claims follow the book's reliability tiers; the Wire's two-tape
-  split is that appendix made visible.
-- Signal heuristics label direction (rising/loose vs falling/tight),
-  never good/bad, and are not trading signals or investment advice.
-
-## Gotchas (learned the hard way — don't regress)
-
-- Never blanket-override fonts on `[class*="st-"]` — it breaks
-  Streamlit's Material Symbols icon font. `theme.py` explicitly restores
-  `[data-testid="stIconMaterial"]`.
-- Streamlit Cloud runs current pandas: `Series.last("30D")` is gone —
-  use `data.tail_years()`. Weekly FRED series need resample-to-monthly
-  before `shift(12)` for YoY — use `data.yoy_pct()`.
-- TradingView embed failures on index symbols are usually **licensing,
-  not typos** (Cboe VIX, ICE DXY, TVC US10Y won't render in embeds).
-  Swap the data source — CAPITALCOM CFDs or `FRED:` symbols — not the
-  widget. Fallbacks are commented in `app.py`'s `TAPE_SYMBOLS`.
-- Format dataframes with `.style.format` or floats print six decimals.
-
-## Known limitations
-
-- Notebook entries persist to a local JSON file; on Community Cloud it
-  resets on redeploy — use the download/restore buttons.
-- Breadth internals (S5TH, ADD) exist in no free API; RSP/SPY is the
-  in-app proxy and TradingView remains the home for full internals.
+st.divider()
+with st.expander("Live SPX — TradingView (display glass)"):
+    components.html(
+        """
+        <div class="tradingview-widget-container">
+          <div id="tv_spx"></div>
+          <script src="https://s3.tradingview.com/tv.js"></script>
+          <script>
+          new TradingView.widget({
+            "container_id": "tv_spx",
+            "symbol": "FOREXCOM:SPXUSD",
+            "interval": "D",
+            "timezone": "America/New_York",
+            "theme": "dark",
+            "style": "1",
+            "locale": "en",
+            "hide_top_toolbar": false,
+            "hide_legend": false,
+            "allow_symbol_change": true,
+            "width": "100%",
+            "height": 500
+          });
+          </script>
+        </div>
+        """,
+        height=510)
+    theme.note("Official TradingView embed — live intraday glass, useful "
+               "for watching a session unfold. Display only: every "
+               "computed check on this desk still runs on FRED and Yahoo "
+               "data, so a widget outage never touches the signals.")
