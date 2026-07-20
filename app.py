@@ -24,20 +24,41 @@ if all(s.loading for s in sigs):
         "No FRED data loaded. If this persists, add a FRED_API_KEY in "
         "App settings → Secrets:  `FRED_API_KEY = \"your_key_here\"`")
 
+# One representative 1y trace per card. All series already live in the
+# bundle (net liquidity is derived from it), so this costs zero extra
+# FRED calls. Sparklines render in amber — the house accent — rather
+# than the card's score color, so the line doesn't imply a judgment.
+SPARKS = {
+    "Growth": (data.yoy_pct(bundle.get("PAYEMS", pd.Series(dtype=float))),
+               "Payrolls YoY %"),
+    "Inflation": (data.yoy_pct(bundle.get("PCEPILFE", pd.Series(dtype=float))),
+                  "Core PCE YoY %"),
+    "Policy": (bundle.get("DFEDTARU", pd.Series(dtype=float)),
+               "Fed funds upper %"),
+    "Liquidity": (data.net_liquidity(bundle) / 1_000_000,
+                  "Net liquidity $tn"),
+}
+
 cols = st.columns(4)
 for col, s in zip(cols, sigs):
+    spark_series, spark_label = SPARKS.get(s.category,
+                                           (pd.Series(dtype=float), ""))
+    svg = theme.sparkline_svg(data.tail_years(spark_series, 1))
+    spark_html = (f'{svg}<div class="desk-note" style="margin-top:4px">'
+                  f'{spark_label} · 1y</div>') if svg else ""
     with col:
         st.markdown(
             f"""
             <div style="border-radius:10px;padding:18px 16px;
                         background:{theme.PANEL};
-                        border-left:4px solid {s.color};min-height:118px">
+                        border-left:4px solid {s.color};min-height:176px">
               <div class="desk-eyebrow" style="color:{theme.MUTED}">
                 {s.category}</div>
               <div style="font-family:'Spectral',serif;font-size:1.45rem;
                           font-weight:600;color:{s.color};line-height:1.2;
                           margin:4px 0 6px 0">{s.label}</div>
               <div class="desk-note">score {s.score} / 4</div>
+              {spark_html}
             </div>
             """,
             unsafe_allow_html=True,
