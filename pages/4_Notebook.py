@@ -5,7 +5,9 @@ from pathlib import Path
 
 import streamlit as st
 
-from desk import theme
+import pandas as pd
+
+from desk import data, theme
 
 st.set_page_config(page_title="Notebook — Desk", page_icon="📓", layout="wide")
 theme.header("BOOK I · CH. 15", "Analyst's Notebook",
@@ -46,11 +48,17 @@ with st.form("entry", clear_on_submit=True):
         "Falsification — what proves it wrong, how fast would I know?",
         height=80)
     decision = st.text_input("Decision", placeholder="No action. Carry X forward.")
+    cc1, cc2 = st.columns(2)
+    call = cc1.selectbox("Directional call (feeds the post-mortem "
+                         "scorecard)", ["No call", "Risk-on", "Risk-off"])
+    instrument = cc2.text_input("Instrument (optional — default ^GSPC)",
+                                placeholder="^GSPC")
     if st.form_submit_button("Save entry"):
         entries.insert(0, {
             "date": str(date), "evidence": evidence,
             "interpretation": interpretation, "risks": risks,
             "falsification": falsification, "decision": decision,
+            "call": call, "instrument": instrument.strip() or "^GSPC",
         })
         save(entries)
         st.success("Saved.")
@@ -82,6 +90,76 @@ if uploaded is not None:
         st.success(f"Restored {len(restored)} entries — refresh the page.")
     except Exception:
         st.error("Could not parse that file.")
+
+# ------------------------------------------------- post-mortem desk ----
+graded_pool = [e for e in entries
+               if e.get("call") in ("Risk-on", "Risk-off")]
+if graded_pool:
+    st.divider()
+    theme.panel_bar("Post-mortem scorecard",
+                    "your calls vs what the market then did")
+    auto_hits, auto_total = 0, 0
+    rows = []
+    for e in graded_pool:
+        tkr = e.get("instrument", "^GSPC")
+        s = data.px_history(tkr)
+        fwd = data.fwd_from_series(s, pd.Timestamp(e["date"]))
+        r1m = fwd.get(21)
+        hit = None
+        if r1m is not None:
+            hit = (r1m > 0) == (e["call"] == "Risk-on")
+            auto_total += 1
+            auto_hits += int(hit)
+        rows.append((e, tkr, fwd, hit))
+    if auto_total:
+        pct = auto_hits / auto_total * 100
+        theme.readout(
+            theme.GREEN if pct >= 55 else
+            (theme.AMBER if pct >= 45 else theme.RED),
+            f"Directional hit rate: {auto_hits}/{auto_total} calls "
+            f"right at 1 month ({pct:.0f}%). Coin-flip is 50 — the "
+            f"scorecard only means something after ~20 calls.")
+    for e, tkr, fwd, hit in rows:
+        mark = ("✔" if hit else "✘") if hit is not None else "…"
+        with st.expander(f"{mark} {e['date']} · {e['call']} · {tkr} — "
+                         f"{(e.get('decision') or '')[:50]}"):
+            if fwd:
+                cells = st.columns(len(fwd))
+                for c, (h, v) in zip(cells, fwd.items()):
+                    lbl = {5: "1W", 21: "1M", 63: "3M"}.get(h, f"{h}d")
+                    with c:
+                        st.markdown(
+                            f'<div style="background:{theme.PANEL};'
+                            f'padding:6px 10px;border-radius:2px;'
+                            f'font-family:\'IBM Plex Mono\',monospace">'
+                            f'<span class="desk-eyebrow" style="color:'
+                            f'{theme.MUTED}">{tkr} +{lbl}</span><br>'
+                            f'<span style="color:'
+                            f'{theme.GREEN if v > 0 else theme.RED}">'
+                            f'{v:+.2f}%</span></div>',
+                            unsafe_allow_html=True)
+            else:
+                st.markdown('<div class="desk-note">Too recent — '
+                            'forward window still open.</div>',
+                            unsafe_allow_html=True)
+            g = st.selectbox(
+                "Your grade (direction is not the whole story)",
+                ["ungraded", "right, right reason",
+                 "right, WRONG reason", "wrong"],
+                index=["ungraded", "right, right reason",
+                       "right, WRONG reason",
+                       "wrong"].index(e.get("grade", "ungraded")),
+                key=f"grade_{e['date']}_{id(e)}")
+            if g != e.get("grade", "ungraded"):
+                e["grade"] = g
+                save(entries)
+                st.success("Grade saved.")
+    theme.note("The machine grades DIRECTION; only you can grade "
+               "REASONING — and 'right for the wrong reason' is the "
+               "grade that matters most, because it's the one that "
+               "quietly builds bad habits. Post-mortems are Book III's "
+               "whole thesis: the notebook is a feedback loop, not a "
+               "diary.")
 
 if entries:
     st.subheader(f"Entries ({len(entries)})")

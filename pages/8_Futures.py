@@ -149,3 +149,54 @@ if st.session_state.get("fut_curve_root"):
                    "Gold is the exception: it's a currency wearing a "
                    "commodity costume, so its curve is just interest "
                    "rates and almost always in contango.")
+
+
+st.divider()
+
+# ----------------------------------------------------- positioning ----
+theme.panel_bar("Positioning — CFTC Commitments of Traders",
+                "official weekly filings · Tier 1\u20132")
+cot_root = st.selectbox(
+    "Contract", list(data.COT_CODES),
+    format_func=lambda r: f"{data.COT_CODES[r][1]} ({r})",
+    key="cot_root")
+code, cot_name = data.COT_CODES[cot_root]
+cot = data.cot_series(code)
+if cot.empty:
+    st.warning("CFTC data unavailable — the public API may be busy; "
+               "try again shortly.")
+else:
+    net = cot["net_mm"]
+    tail5 = data.tail_years(net, 5)
+    pct = float((net.tail(260).rank(pct=True)).iloc[-1] * 100)
+    fig = go.Figure(go.Scatter(
+        x=tail5.index, y=tail5.values, mode="lines",
+        line=dict(width=1.6, color=theme.BLUE), fill="tozeroy",
+        fillcolor="rgba(77,166,255,0.10)"))
+    fig.add_hline(y=0, line=dict(color=theme.MUTED, width=1))
+    theme.plot(theme.style_fig(
+        fig, f"{cot_name.upper()} — MANAGED MONEY NET POSITION "
+             f"(CONTRACTS, 5Y)", height=300))
+    if pct >= 90:
+        theme.readout(theme.AMBER,
+                      f"Net {net.iloc[-1]:+,.0f} contracts — "
+                      f"{pct:.0f}th percentile of 5y. CROWDED LONG — "
+                      f"fuel for a squeeze the other way.")
+    elif pct <= 10:
+        theme.readout(theme.AMBER,
+                      f"Net {net.iloc[-1]:+,.0f} contracts — "
+                      f"{pct:.0f}th percentile of 5y. CROWDED SHORT — "
+                      f"fuel for a squeeze higher.")
+    else:
+        theme.readout(theme.GREEN,
+                      f"Net {net.iloc[-1]:+,.0f} contracts — "
+                      f"{pct:.0f}th percentile of 5y. Positioning "
+                      f"unremarkable.")
+    theme.note("Reported, not estimated: funds file these positions "
+               "with the CFTC every week (Tuesday's data, released "
+               "Friday — mind the lag). Crowding is a FRAGILITY read, "
+               "not a timing signal: extremes mark where a squeeze has "
+               "fuel, and extremes can extend for months. Speculators "
+               "net long means commercials — the people who actually "
+               "hold the barrels and bushels — are net short, and "
+               "they're usually the ones who know something.")

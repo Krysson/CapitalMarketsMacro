@@ -14,12 +14,15 @@ display glass only. Colors mean **direction, not advice**.
 | Summary | `HOME` | Four scored signal cards with sparklines, CPI / NFP / FOMC countdown strip, cross-asset table |
 | Daily Circuit | `CIR` | The book's 90-second read as a guided sequence, ending at the Notebook |
 | Macro | `ECO` | 15 FRED series + Net Liquidity (WALCL − TGA − RRP), NBER recession bands |
-| Market | `WEI` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
+| Market | `MKT` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
 | Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision, JSON export/restore |
 | Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
 | Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS |
 | Futures | `CTM` | Commodity board by complex (energy/metals/grains/softs/livestock) + real term-structure curves |
+| Global | `WEI` | World index board (Americas/EMEA/APAC) + G8 FX cross matrix + DXY readout |
+| Fed Diff | `DIFF` | The FOMC statement redlined against the prior one — added/removed words, churn readout |
+| Time Machine | `TM` | The desk as of any past date: ALFRED macro vintages + price history cut at the date + "what happened next" |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30` |
 
 Every page has a **command line** at the top — type a function, hit GO.
@@ -29,6 +32,10 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `10Y`, `CURVE`) chart the FRED series; `FRED <ID>` charts anything.
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
+
+Current version: **v3.0** (shown in the sidebar). Flaky endpoints
+(Yahoo options chains) serve the last good pull with a timestamp when
+throttled, instead of erroring.
 
 ## Deploy on Streamlit Community Cloud (free)
 
@@ -68,6 +75,8 @@ dry). Roughly once a year:
 - **Yahoo Finance / yfinance** — market history, OHLC, SPY options chain
   (15 min cache; delayed and occasionally rate-limited, charts recover
   on refresh — the skew curve legitimately fails sometimes)
+- **CFTC** — Commitments of Traders positioning (official weekly
+  filings, public API); **TreasuryDirect** — auction calendar
 - **RSS** — Fed / BLS / BEA press feeds (primary tape), CNBC /
   MarketWatch (narrative tape); fetched concurrently with short
   timeouts so one dead feed can never hang a page. Known limitation:

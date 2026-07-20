@@ -49,12 +49,13 @@ if "^VIX" in hist and "^VIX3M" in hist:
                         height=320),
         use_container_width=True)
     last = ratio.iloc[-1]
-    st.markdown(f"**Current: {last:.2f}** — "
-                + ("🟢 contango, near-term risk priced calm."
-                   if last < 0.95 else
-                   ("🟡 flattening — watch closely." if last < 1.0
-                    else "🔴 **inverted** — the market is paying up for "
-                         "near-term protection.")))
+    color, msg = ((theme.GREEN, "contango — near-term risk priced calm. "
+                   "Normal regime.") if last < 0.95 else
+                  ((theme.AMBER, "flattening toward the tripwire — watch "
+                    "closely.") if last < 1.0 else
+                   (theme.RED, "INVERTED — the market is paying up for "
+                    "near-term protection. Stress regime.")))
+    theme.readout(color, f"VIX/VIX3M = {last:.3f} — {msg}")
     theme.note("The regime tripwire. Normally near-term vol is cheaper than "
                "3-month vol (ratio below 1). A push above 1.0 means the "
                "market pays MORE for immediate protection — the signature "
@@ -67,7 +68,13 @@ st.markdown('<div class="desk-caption">IV by strike, expiration nearest 45 '
             'days. The upward slope to the left IS the skew — crash '
             'insurance priced richer than upside.</div>',
             unsafe_allow_html=True)
-curve, expiry = data.spy_skew_curve()
+curve, expiry, skew_stale = data.spy_skew_curve()
+if skew_stale:
+    import datetime as _dt
+    st.markdown(f'<div class="desk-note" style="color:{theme.YELLOW}">'
+                f'Yahoo throttling — showing the last good options pull '
+                f'({_dt.datetime.fromtimestamp(skew_stale):%H:%M}).</div>',
+                unsafe_allow_html=True)
 if curve.empty:
     st.warning("Options chain unavailable right now (Yahoo rate-limits this "
                "endpoint). Try refresh in a minute.")
@@ -101,7 +108,13 @@ st.markdown('<div class="desk-caption">The skew above is one slice; the '
 if st.button("Build surface — 4 chain calls"):
     st.session_state["iv_surface"] = True
 if st.session_state.get("iv_surface"):
-    surf, spot = data.spy_iv_surface()
+    surf, spot, surf_stale = data.spy_iv_surface()
+    if surf_stale:
+        import datetime as _dt
+        st.markdown(f'<div class="desk-note" style="color:{theme.YELLOW}">'
+                    f'Yahoo throttling — showing the last good surface '
+                    f'({_dt.datetime.fromtimestamp(surf_stale):%H:%M}).</div>',
+                    unsafe_allow_html=True)
     if surf.empty:
         st.warning("Chains unavailable (Yahoo rate limit) — try again "
                    "in a minute.")

@@ -83,6 +83,16 @@ if not s_2s10s.empty:
                           end=tail.index.max())
 theme.plot(theme.style_fig(fig, "CURVE SPREADS (pp)", height=300),
                 use_container_width=True)
+if not s_2s10s.empty:
+    v = float(s_2s10s.iloc[-1])
+    days = ""
+    if v < 0:
+        run = (s_2s10s < 0)[::-1]
+        n = int(run.cummin().sum())
+        days = f" ({n} sessions and counting)"
+    theme.readout(theme.RED if v < 0 else theme.GREEN,
+                  f"2s10s {v:+.2f}pp — "
+                  + (f"INVERTED{days}." if v < 0 else "positive slope."))
 theme.note("The classic recession machinery. 3m10y is the academic "
            "favorite (the Fed's own recession-probability input); 2s10s "
            "is the market's shorthand. Inversion is the warning; the "
@@ -107,6 +117,19 @@ if not nom.empty and not real.empty:
         theme.style_fig(fig, "10Y DECOMPOSITION — NOMINAL = REAL + "
                              "BREAKEVEN (%)", height=300),
         use_container_width=True)
+    def d63(s):
+        s = s.dropna()
+        return (float(s.iloc[-1]) - float(s.iloc[-64])) * 100 \
+            if len(s) > 63 else None
+    dn, dr, db = d63(nom), d63(real), d63(be)
+    if None not in (dn, dr, db):
+        driver = ("REAL RATES", dr) if abs(dr) >= abs(db) \
+            else ("BREAKEVENS", db)
+        theme.readout(
+            theme.BLUE if driver[0] == "REAL RATES" else theme.AMBER,
+            f"10Y {dn:+,.0f}bp over 3 months — driven by {driver[0]} "
+            f"({driver[1]:+,.0f}bp vs "
+            f"{db if driver[0] == 'REAL RATES' else dr:+,.0f}bp).")
     theme.note("Which component is moving is the whole story. Yields up "
                "on RISING BREAKEVENS = inflation fear (bad for bonds AND "
                "stocks). Yields up on RISING REAL RATES = tightening "
@@ -136,6 +159,14 @@ else:
     theme.plot(theme.style_fig(fig, "OAS OVER TREASURIES (%)",
                                     height=320),
                     use_container_width=True)
+    if not hy.empty:
+        v = float(hy.iloc[-1])
+        color, msg = ((theme.YELLOW, "priced for perfection — no cushion "
+                       "for bad news.") if v < 3.5 else
+                      ((theme.GREEN, "normal range.") if v < 5.0 else
+                       (theme.RED, "STRESS — credit demanding real "
+                        "compensation.")))
+        theme.readout(color, f"HY OAS {v:.2f}% — {msg}")
     theme.note("What the bond market charges for default risk, index-"
                "wide — the real thing, not a proxy. HY under ~3.5%% = "
                "priced for perfection; a fast widening while equities "
@@ -157,3 +188,29 @@ else:
         theme.note("Compression = reach-for-yield, risk appetite high. "
                    "Rapid widening = flight to quality WITHIN credit — "
                    "often visible before the equity index reacts.")
+
+
+st.divider()
+
+# ------------------------------------------------ auction calendar ----
+theme.panel_bar("Upcoming Treasury auctions",
+                "TreasuryDirect · supply meets demand")
+auc = data.treasury_auctions()
+if auc.empty:
+    st.warning("Auction schedule unavailable — TreasuryDirect API busy; "
+               "try again shortly.")
+else:
+    show = auc.rename(columns={
+        "auctionDate": "Auction", "securityType": "Type",
+        "securityTerm": "Term", "offeringAmount": "Size $bn"}).head(15)
+    st.dataframe(
+        show.style.format({"Size $bn": "{:,.0f}"}, na_rep="TBA"),
+        hide_index=True, use_container_width=True,
+        height=min(580, 40 + 36 * len(show)))
+    theme.note("Every auction is a live test of demand at these yields. "
+               "Bills roll constantly and rarely matter; the COUPON "
+               "auctions (notes and bonds) are where a weak bid — a "
+               "'tail' — can reprice the whole curve above in an "
+               "afternoon. Heavy coupon supply landing while the TGA "
+               "rebuilds (Macro page) is a double liquidity drain — the "
+               "two pages are one story.")

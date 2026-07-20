@@ -106,3 +106,21 @@ def next_nfp(today: dt.date | None = None) -> NextEvent:
     today = today or dt.date.today()
     return NextEvent("NFP", _next(NFP_RELEASES, today), "8:30 a.m. ET",
                      today)
+
+
+# Past FOMC statement days (for the statement-diff tool). Post-meeting
+# dates from FOMC_STATEMENTS are appended automatically once they pass.
+FOMC_PAST_STATEMENTS = [
+    dt.date(2025, 1, 29), dt.date(2025, 3, 19), dt.date(2025, 5, 7),
+    dt.date(2025, 6, 18), dt.date(2025, 7, 30), dt.date(2025, 9, 17),
+    dt.date(2025, 10, 29), dt.date(2025, 12, 10),
+    dt.date(2026, 1, 28), dt.date(2026, 3, 18), dt.date(2026, 4, 29),
+    dt.date(2026, 6, 17),
+]
+
+
+def past_statements(today: dt.date | None = None) -> list[dt.date]:
+    """All statement days that have occurred, newest first."""
+    today = today or dt.date.today()
+    all_ = FOMC_PAST_STATEMENTS + [d for d in FOMC_STATEMENTS if d <= today]
+    return sorted(set(all_), reverse=True)

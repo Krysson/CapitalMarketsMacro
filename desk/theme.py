@@ -14,6 +14,8 @@ import streamlit as st
 
 from desk import data as _data
 
+VERSION = "3.0.0"
+
 INK = "#000000"
 PANEL = "#0D0D0D"
 TEXT = "#E8E6E1"
@@ -90,13 +92,18 @@ _ROUTES = {
     "HOME": "app.py", "SUM": "app.py",
     "CIR": "pages/0_Daily_Circuit.py", "CIRCUIT": "pages/0_Daily_Circuit.py",
     "ECO": "pages/1_Macro.py", "MACRO": "pages/1_Macro.py",
-    "WEI": "pages/2_Market.py", "MKT": "pages/2_Market.py",
+    "WEI": "pages/9_Global.py", "FXC": "pages/9_Global.py",
+    "GLOBAL": "pages/9_Global.py",
+    "MKT": "pages/2_Market.py",
     "VOL": "pages/3_Volatility.py", "VIX": "pages/3_Volatility.py",
     "NOTE": "pages/4_Notebook.py", "NB": "pages/4_Notebook.py",
     "TOP": "pages/5_Wire.py", "N": "pages/5_Wire.py",
     "WIRE": "pages/5_Wire.py",
     "BLP": "pages/00_Launchpad.py", "PAD": "pages/00_Launchpad.py",
     "Q": "pages/6_Quote.py", "QUOTE": "pages/6_Quote.py",
+    "FED": "pages/10_Fed.py", "DIFF": "pages/10_Fed.py",
+    "TIME": "pages/11_Time_Machine.py", "TM": "pages/11_Time_Machine.py",
+    "REWIND": "pages/11_Time_Machine.py",
     "FUT": "pages/8_Futures.py", "CTM": "pages/8_Futures.py",
     "CMDTY": "pages/8_Futures.py",
     "GC": "pages/7_Rates.py", "YC": "pages/7_Rates.py",
@@ -138,12 +145,15 @@ _HELP = """
 | `BLP` | Launchpad | BLP — Launchpad, everything tiled at once |
 | `CIR` | Daily Circuit | (house function — your routine) |
 | `ECO` | Macro | ECO — economic data & calendar |
-| `WEI` | Market | WEI — world equity indices |
+| `MKT` | Market (US) | trend, breadth, credit ratios |
+| `WEI` / `FXC` | Global | WEI — world equity indices · FXC — FX crosses |
 | `VIX` / `VOL` | Volatility | VIX Index GP, VCAL |
 | `NOTE` | Notebook | NOTE — notes & ideas |
 | `TOP` / `N` | News Wire | TOP — top news · N — news |
 | `GC` / `YC` | Rates & Credit | GC — graph curves · yield curve + OAS |
-| `CTM` / `FUT` | Futures | CTM — contract table · board + term structure |
+| `CTM` / `FUT` | Futures | CTM — contract table · board + term structure + COT |
+| `DIFF` / `FED` | Fed Statement Diff | redline vs the prior statement |
+| `TM` / `TIME` | Time Machine | the desk as of any past date (ALFRED vintages) |
 | `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
 | `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
@@ -188,6 +198,10 @@ def command_line() -> None:
 def header(eyebrow: str, title: str, caption: str | None = None) -> None:
     """Terminal page header: command line, eyebrow, title, amber rule."""
     st.markdown(_CSS, unsafe_allow_html=True)
+    st.sidebar.markdown(
+        f'<div class="desk-note" style="text-align:center;'
+        f'letter-spacing:0.12em;margin-top:6px">CAPITAL MARKETS DESK '
+        f'&middot; v{VERSION}</div>', unsafe_allow_html=True)
     command_line()
     st.markdown(f'<div class="desk-eyebrow">{eyebrow}</div>',
                 unsafe_allow_html=True)
@@ -335,4 +349,18 @@ def panel_bar(title: str, right: str = "") -> None:
         f'text-transform:uppercase">{title}</span>'
         f'<span style="font-family:\'IBM Plex Mono\',monospace;'
         f'font-size:0.78rem;color:{TEXT}">{right}</span></div>',
+        unsafe_allow_html=True)
+
+
+def readout(color: str, text: str) -> None:
+    """Live verdict line under a chart: what it shows RIGHT NOW.
+
+    The static note() teaches how to read the chart; this states the
+    current reading. Color = regime/direction, never good vs. bad.
+    """
+    st.markdown(
+        f'<div style="border-left:3px solid {color};padding:6px 12px;'
+        f'background:{PANEL};border-radius:0;'
+        f'margin:8px 0 4px 0;font-family:\'IBM Plex Mono\',monospace;'
+        f'font-size:0.9rem;color:{TEXT}">{text}</div>',
         unsafe_allow_html=True)

@@ -36,9 +36,13 @@ theme.plot(
                     height=420, unified_hover=False),
     use_container_width=True)
 
-above200 = spx.iloc[-1] > spx.rolling(200).mean().iloc[-1]
-st.markdown(f"**Trend check:** price is currently "
-            f"{'**above** ✅' if above200 else '**below** ❌'} the 200-day.")
+ma200 = spx.rolling(200).mean().iloc[-1]
+dist = (spx.iloc[-1] / ma200 - 1) * 100
+theme.readout(
+    theme.GREEN if dist >= 0 else theme.RED,
+    f"SPX {spx.iloc[-1]:,.0f} — {abs(dist):.1f}% "
+    f"{'ABOVE' if dist >= 0 else 'BELOW'} the 200-day ({ma200:,.0f}). "
+    f"{'Uptrend regime.' if dist >= 0 else 'Defensive regime.'}")
 theme.note("Price above a rising 200-day = uptrend regime; below = defense. "
            "Ribbon order (20 over 50 over 200) and slope show trend health; "
            "long candle wicks show sessions where conviction failed.")
@@ -46,7 +50,7 @@ theme.note("Price above a rising 200-day = uptrend regime; below = defense. "
 st.divider()
 
 
-def ratio_chart(num, den, title, note):
+def ratio_chart(num, den, title, note, up_txt, dn_txt):
     if num not in hist or den not in hist:
         st.warning(f"{title}: data missing")
         return
@@ -59,6 +63,11 @@ def ratio_chart(num, den, title, note):
                     line=dict(width=1, color=theme.MUTED, dash="dot"))
     theme.plot(theme.style_fig(fig, title, height=290),
                     use_container_width=True)
+    if len(r) > 21:
+        d = (r.iloc[-1] / r.iloc[-22] - 1) * 100
+        theme.readout(theme.GREEN if d > 0 else theme.AMBER,
+                      f"{r.iloc[-1]:.4f} · {d:+.2f}% over ~1 month — "
+                      + (up_txt if d > 0 else dn_txt))
     theme.note(note)
 
 
@@ -66,11 +75,16 @@ c1, c2 = st.columns(2)
 with c1:
     ratio_chart("RSP", "SPY", "RSP / SPY — equal weight vs cap weight",
                 "Rising = broad participation · Falling = narrow leadership. "
-                "Breadth proxy; full internals (S5TH, ADD) live on TradingView.")
+                "Breadth proxy; full internals (S5TH, ADD) live on TradingView.",
+                "the average stock is keeping up. BROAD participation.",
+                "cap-weight leading. NARROW leadership — the index is "
+                "being carried, not lifted.")
 with c2:
     ratio_chart("HYG", "LQD", "HYG / LQD — credit risk appetite",
                 "Falling = high yield underperforming investment grade — "
-                "credit smelling trouble before equities admit it.")
+                "credit smelling trouble before equities admit it.",
+                "credit CONFIRMING risk appetite.",
+                "credit DISSENTING — junk lagging quality.")
 
 with st.expander("S&P 500 heatmap — TradingView (display glass)"):
     components.html(
@@ -110,7 +124,7 @@ st.divider()
 st.subheader("Cross-asset (normalized)")
 sel = st.multiselect(
     "Compare", options=list(data.MARKET_TICKERS.keys()),
-    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "IWM"],
+    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "BTC-USD"],
     format_func=lambda t: data.MARKET_TICKERS[t])
 if sel:
     fig = go.Figure()

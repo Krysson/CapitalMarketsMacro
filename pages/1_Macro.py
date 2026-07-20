@@ -87,6 +87,15 @@ if not nl.empty:
         theme.style_fig(fig, "Net Liquidity = Fed Balance Sheet − TGA − "
                              "ON RRP  ($tn)", height=320),
         use_container_width=True)
+    prior = nl.asof(nl.index[-1] - pd.DateOffset(weeks=13))
+    if pd.notna(prior):
+        d_bn = (float(nl.iloc[-1]) - float(prior)) / 1_000
+        theme.readout(
+            theme.GREEN if d_bn > 0 else theme.RED,
+            f"{float(nl.iloc[-1]) / 1_000_000:.2f}tn — "
+            f"{d_bn:+,.0f}bn over 13 weeks. "
+            + ("Liquidity ADDING — tailwind for risk assets."
+               if d_bn > 0 else "Liquidity DRAINING — headwind."))
     theme.note("The book's rule of thumb for cash actually available to "
                "markets. Rising = tailwind for risk assets · Falling = "
                "drain. Direction over weeks matters; daily wiggles are "

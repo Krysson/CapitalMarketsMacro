@@ -165,33 +165,89 @@ def market_history(period: str = "2y") -> pd.DataFrame:
 
 
 @st.cache_data(ttl=900, show_spinner=False)
-def spy_skew_curve(target_dte: int = 45) -> tuple[pd.DataFrame, str]:
-    """IV-by-strike for the SPY expiration nearest target_dte.
+@st.cache_resource
+def _lastgood() -> dict:
+    """Cross-rerun store of last successful pulls from flaky endpoints."""
+    return {}
 
-    Returns (frame with strike/moneyness/iv/type, expiration label).
+
+def _resilient(key: str, fetcher, ttl: int = 900, retry_gap: int = 120,
+               _now=None):
+    """Fetch with success-TTL, failure cool-down, and stale fallback.
+
+    Returns (value, fetched_ts, stale). Raises only if there has never
+    been a successful pull AND the fetch fails.
     """
+    import time as _time
+    store = _lastgood()
+    now = _now if _now is not None else _time.time()
+    if key in store:
+        val, ts = store[key]
+        if now - ts < ttl:
+            return val, ts, False
+    if store.get(key + "._fail", 0) > now - retry_gap:
+        if key in store:
+            val, ts = store[key]
+            return val, ts, True
+        raise RuntimeError("endpoint cooling down; no cached value yet")
+    try:
+        val = fetcher()
+        store[key] = (val, now)
+        store.pop(key + "._fail", None)
+        return val, now, False
+    except Exception:
+        store[key + "._fail"] = now
+        if key in store:
+            val, ts = store[key]
+            return val, ts, True
+        raise
+
+
+def _fetch_skew(target_dte: int) -> tuple[pd.DataFrame, str]:
+    """Raw chain pull; retries once with a pause before giving up."""
+    import time as _time
+
     import yfinance as yf
 
+    last_err = None
+    for attempt in range(2):
+        try:
+            tk = yf.Ticker("SPY")
+            spot = tk.fast_info["last_price"]
+            today = dt.date.today()
+            expiries = [(e, abs((dt.date.fromisoformat(e) - today).days
+                                - target_dte)) for e in tk.options]
+            expiry = min(expiries, key=lambda x: x[1])[0]
+            chain = tk.option_chain(expiry)
+            frames = []
+            for typ, df in (("put", chain.puts), ("call", chain.calls)):
+                d = df[["strike", "impliedVolatility"]].copy()
+                d["type"] = typ
+                frames.append(d)
+            out = pd.concat(frames)
+            out["moneyness"] = out["strike"] / spot * 100
+            out = out[(out.moneyness > 60) & (out.moneyness < 130)
+                      & (out.impliedVolatility > 0.01)]
+            if out.empty:
+                raise ValueError("empty chain")
+            return out, expiry
+        except Exception as ex:
+            last_err = ex
+            _time.sleep(1.5)
+    raise last_err
+
+
+def spy_skew_curve(target_dte: int = 45) -> tuple[pd.DataFrame, str,
+                                                  float | None]:
+    """(frame, expiry, stale_ts). stale_ts is the epoch of the last good
+    pull when Yahoo is throttling and we're serving it; None when fresh.
+    Empty frame only if there has never been a successful pull."""
     try:
-        tk = yf.Ticker("SPY")
-        spot = tk.fast_info["last_price"]
-        today = dt.date.today()
-        expiries = [(e, abs((dt.date.fromisoformat(e) - today).days - target_dte))
-                    for e in tk.options]
-        expiry = min(expiries, key=lambda x: x[1])[0]
-        chain = tk.option_chain(expiry)
-        frames = []
-        for typ, df in (("put", chain.puts), ("call", chain.calls)):
-            d = df[["strike", "impliedVolatility"]].copy()
-            d["type"] = typ
-            frames.append(d)
-        out = pd.concat(frames)
-        out["moneyness"] = out["strike"] / spot * 100
-        out = out[(out.moneyness > 60) & (out.moneyness < 130)
-                  & (out.impliedVolatility > 0.01)]
-        return out, expiry
+        (df, expiry), ts, stale = _resilient(
+            "skew", lambda: _fetch_skew(target_dte))
+        return df, expiry, (ts if stale else None)
     except Exception:
-        return pd.DataFrame(), ""
+        return pd.DataFrame(), "", None
 
 
 def pct_chg(s: pd.Series, days: int = 1) -> float | None:
@@ -388,17 +444,12 @@ def shape_surface(raw: pd.DataFrame, spot: float) -> pd.DataFrame:
     return out
 
 
-@st.cache_data(ttl=900, show_spinner=False)
-def spy_iv_surface(target_dtes: tuple = (15, 30, 60, 90)) -> tuple[
-        pd.DataFrame, float | None]:
-    """SPY IV across ~4 expiries. (surface_points, spot); empty on failure.
+def _fetch_surface(target_dtes: tuple) -> tuple[pd.DataFrame, float]:
+    import time as _time
 
-    One chain call per expiry against Yahoo's rate-limited endpoint —
-    each expiry fails independently.
-    """
     import yfinance as yf
 
-    try:
+    if True:
         tk = yf.Ticker("SPY")
         spot = tk.fast_info["last_price"]
         today = dt.date.today()
@@ -413,8 +464,10 @@ def spy_iv_surface(target_dtes: tuple = (15, 30, 60, 90)) -> tuple[
             if pick not in chosen:
                 chosen.append(pick)
         frames = []
-        for expiry, dte in chosen:
+        for i, (expiry, dte) in enumerate(chosen):
             try:
+                if i:
+                    _time.sleep(0.8)      # pace the rate-limited endpoint
                 ch = tk.option_chain(expiry)
                 for typ, df in (("put", ch.puts), ("call", ch.calls)):
                     part = df[["strike", "impliedVolatility"]].copy()
@@ -423,10 +476,20 @@ def spy_iv_surface(target_dtes: tuple = (15, 30, 60, 90)) -> tuple[
             except Exception:
                 continue
         if not frames:
-            return pd.DataFrame(), spot
+            raise ValueError("no chains resolved")
         return shape_surface(pd.concat(frames), spot), spot
+
+
+def spy_iv_surface(target_dtes: tuple = (15, 30, 60, 90)) -> tuple[
+        pd.DataFrame, float | None, float | None]:
+    """(surface, spot, stale_ts) — stale_ts set when serving the last
+    good pull during a Yahoo throttle; empty only if never succeeded."""
+    try:
+        (df, spot), ts, stale = _resilient(
+            "surface", lambda: _fetch_surface(target_dtes), ttl=1800)
+        return df, spot, (ts if stale else None)
     except Exception:
-        return pd.DataFrame(), None
+        return pd.DataFrame(), None, None
 
 
 @st.cache_data(ttl=86400, show_spinner=False)
@@ -580,3 +643,220 @@ def futures_curve(root: str, n: int = 6) -> pd.DataFrame:
         except Exception:
             continue
     return pd.DataFrame(rows)
+
+
+# ------------------------------------------------------ COT / GLOBAL ----
+
+# CFTC contract codes for the disaggregated COT report (weekly filings).
+COT_CODES = {
+    "CL": ("067651", "WTI Crude"), "NG": ("023651", "Nat Gas"),
+    "GC": ("088691", "Gold"), "SI": ("084691", "Silver"),
+    "HG": ("085692", "Copper"), "ZC": ("002602", "Corn"),
+    "ZS": ("005602", "Soybeans"), "ZW": ("001602", "Wheat (SRW)"),
+}
+
+
+def cot_transform(rows: list[dict]) -> pd.DataFrame:
+    """Pure: raw CFTC records -> weekly net managed-money DataFrame."""
+    df = pd.DataFrame(rows)
+    need = {"report_date_as_yyyy_mm_dd", "m_money_positions_long_all",
+            "m_money_positions_short_all"}
+    if df.empty or not need.issubset(df.columns):
+        return pd.DataFrame()
+    df["date"] = pd.to_datetime(df["report_date_as_yyyy_mm_dd"])
+    for c in ("m_money_positions_long_all", "m_money_positions_short_all",
+              "open_interest_all"):
+        if c in df:
+            df[c] = pd.to_numeric(df[c], errors="coerce")
+    df["net_mm"] = (df["m_money_positions_long_all"]
+                    - df["m_money_positions_short_all"])
+    keep = ["net_mm"] + (["open_interest_all"]
+                         if "open_interest_all" in df else [])
+    return df.set_index("date")[keep].dropna(subset=["net_mm"]).sort_index()
+
+
+@st.cache_data(ttl=21600, show_spinner=False)
+def cot_series(code: str) -> pd.DataFrame:
+    """~10y of weekly COT for one contract, straight from the CFTC's
+    public API (official filings — reported, not estimated)."""
+    try:
+        r = requests.get(
+            "https://publicreporting.cftc.gov/resource/72hh-3qpy.json",
+            params={"cftc_contract_market_code": code,
+                    "$select": ("report_date_as_yyyy_mm_dd,"
+                                "m_money_positions_long_all,"
+                                "m_money_positions_short_all,"
+                                "open_interest_all"),
+                    "$order": "report_date_as_yyyy_mm_dd", "$limit": 600},
+            timeout=15)
+        r.raise_for_status()
+        return cot_transform(r.json())
+    except Exception:
+        return pd.DataFrame()
+
+
+GLOBAL_INDICES = {
+    "AMERICAS": [("^GSPC", "S&P 500"), ("^IXIC", "Nasdaq"),
+                 ("^GSPTSE", "TSX"), ("^BVSP", "Bovespa"),
+                 ("^MXX", "Mexico IPC")],
+    "EMEA": [("^FTSE", "FTSE 100"), ("^GDAXI", "DAX"),
+             ("^FCHI", "CAC 40"), ("^STOXX50E", "Euro Stoxx 50"),
+             ("^SSMI", "Swiss SMI")],
+    "APAC": [("^N225", "Nikkei 225"), ("^HSI", "Hang Seng"),
+             ("000001.SS", "Shanghai Comp"), ("^KS11", "KOSPI"),
+             ("^AXJO", "ASX 200"), ("^BSESN", "Sensex")],
+}
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def global_board(period: str = "1y") -> pd.DataFrame:
+    import yfinance as yf
+
+    tickers = [t for grp in GLOBAL_INDICES.values() for t, _ in grp]
+    tickers.append("DX-Y.NYB")
+    try:
+        raw = yf.download(tickers, period=period, interval="1d",
+                          auto_adjust=True, progress=False,
+                          group_by="column")
+        closes = raw["Close"] if "Close" in raw else raw
+        return closes.dropna(how="all")
+    except Exception:
+        return pd.DataFrame()
+
+
+# Yahoo pairs: value = units of QUOTE per 1 BASE.
+FX_PAIRS = {"EUR": ("EURUSD=X", True), "GBP": ("GBPUSD=X", True),
+            "AUD": ("AUDUSD=X", True), "JPY": ("JPY=X", False),
+            "CHF": ("CHF=X", False), "CAD": ("CAD=X", False),
+            "CNY": ("CNY=X", False)}
+
+
+def fx_cross(usd_per: dict[str, float]) -> pd.DataFrame:
+    """Pure triangulation: {ccy: USD value of 1 unit} -> cross matrix
+    where cell[base][quote] = units of quote per 1 base."""
+    ccys = list(usd_per)
+    return pd.DataFrame(
+        {q: [usd_per[b] / usd_per[q] for b in ccys] for q in ccys},
+        index=ccys)
+
+
+@st.cache_data(ttl=900, show_spinner=False)
+def fx_matrix() -> tuple[pd.DataFrame, pd.DataFrame]:
+    """(cross matrix today, 1d %-change matrix). Empty frames on failure."""
+    import yfinance as yf
+
+    try:
+        raw = yf.download([p for p, _ in FX_PAIRS.values()], period="5d",
+                          interval="1d", progress=False,
+                          group_by="column")
+        closes = (raw["Close"] if "Close" in raw else raw).dropna(how="all")
+        if len(closes) < 2:
+            return pd.DataFrame(), pd.DataFrame()
+
+        def usd_per(row) -> dict[str, float]:
+            out = {"USD": 1.0}
+            for ccy, (pair, direct) in FX_PAIRS.items():
+                px = row.get(pair)
+                if pd.notna(px) and px > 0:
+                    out[ccy] = float(px) if direct else 1.0 / float(px)
+            return out
+
+        today = fx_cross(usd_per(closes.iloc[-1]))
+        prior = fx_cross(usd_per(closes.iloc[-2]))
+        chg = (today / prior - 1) * 100
+        return today, chg
+    except Exception:
+        return pd.DataFrame(), pd.DataFrame()
+
+
+@st.cache_data(ttl=21600, show_spinner=False)
+def treasury_auctions() -> pd.DataFrame:
+    """Upcoming auctions from TreasuryDirect's public API (no key)."""
+    try:
+        r = requests.get("https://www.treasurydirect.gov/TA_WS/"
+                         "securities/upcoming?format=json", timeout=15)
+        r.raise_for_status()
+        df = pd.DataFrame(r.json())
+        if df.empty:
+            return df
+        keep = [c for c in ("auctionDate", "securityType", "securityTerm",
+                            "offeringAmount") if c in df.columns]
+        df = df[keep].copy()
+        if "offeringAmount" in df:
+            df["offeringAmount"] = (
+                pd.to_numeric(df["offeringAmount"], errors="coerce") / 1e9)
+        if "auctionDate" in df:
+            df["auctionDate"] = pd.to_datetime(
+                df["auctionDate"]).dt.strftime("%a %d-%b")
+        return df
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def px_history(ticker: str, start: str = "2006-01-01") -> pd.Series:
+    """Long daily close history for one ticker (time machine, grading)."""
+    import yfinance as yf
+
+    try:
+        raw = yf.download(ticker, start=start, interval="1d",
+                          auto_adjust=True, progress=False)
+        s = raw["Close"]
+        if isinstance(s, pd.DataFrame):
+            s = s.iloc[:, 0]
+        return s.dropna()
+    except Exception:
+        return pd.Series(dtype=float)
+
+
+def fwd_from_series(s: pd.Series, entry: pd.Timestamp,
+                    horizons: tuple = (5, 21, 63)) -> dict[int, float]:
+    """Pure: forward %-returns from the first session on/after entry."""
+    s = s.dropna()
+    out = {}
+    idx = s.index.searchsorted(pd.Timestamp(entry))
+    if idx >= len(s):
+        return out
+    base = float(s.iloc[idx])
+    for h in horizons:
+        j = idx + h
+        if j < len(s):
+            out[h] = (float(s.iloc[j]) / base - 1) * 100
+    return out
+
+
+@st.cache_data(ttl=86400 * 7, show_spinner=False)
+def fred_series_asof(series_id: str, asof: str,
+                     start: str = "2000-01-01") -> pd.Series:
+    """ALFRED vintage: the series as it was KNOWN on `asof` — revisions
+    that came later do not exist. Needs FRED_API_KEY; empty without."""
+    key = _fred_key()
+    if not key:
+        return pd.Series(dtype=float)
+    try:
+        r = requests.get(
+            "https://api.stlouisfed.org/fred/series/observations",
+            params={"series_id": series_id, "api_key": key,
+                    "file_type": "json", "observation_start": start,
+                    "observation_end": asof, "realtime_start": asof,
+                    "realtime_end": asof},
+            timeout=20)
+        r.raise_for_status()
+        obs = r.json().get("observations", [])
+        s = pd.Series(
+            {pd.Timestamp(o["date"]): float(o["value"])
+             for o in obs if o.get("value") not in (".", None)})
+        return s.sort_index()
+    except Exception:
+        return pd.Series(dtype=float)
+
+
+@st.cache_data(ttl=86400 * 7, show_spinner=False)
+def vintage_bundle(asof: str) -> dict[str, pd.Series]:
+    """The full macro bundle as known on `asof` (one ALFRED call per
+    series; cached a week per date)."""
+    out = {}
+    for panel in MACRO_SERIES.values():
+        for sid, _, _ in panel:
+            out[sid] = fred_series_asof(sid, asof)
+    return out

@@ -41,13 +41,7 @@ def step(n: int, title: str) -> None:
         f'</span></div>', unsafe_allow_html=True)
 
 
-def verdict(color: str, text: str) -> None:
-    st.markdown(
-        f'<div style="border-left:3px solid {color};padding:6px 12px;'
-        f'background:{theme.PANEL};border-radius:0;'
-        f'margin:8px 0 4px 0;font-family:\'IBM Plex Mono\',monospace;'
-        f'font-size:0.9rem;color:{theme.TEXT}">{text}</div>',
-        unsafe_allow_html=True)
+verdict = theme.readout
 
 
 def col_series(t: str) -> pd.Series:
