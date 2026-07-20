@@ -53,7 +53,11 @@ h3 { font-size: 0.95rem !important; }
   border-radius: 2px !important;
   font-family: 'IBM Plex Mono', monospace !important; }
 #MainMenu, footer { visibility: hidden; }
-.block-container { padding-top: 1.6rem; max-width: 1400px; }
+/* Streamlit floats a ~3.75rem toolbar over the page; padding must clear
+   it or the tape / command bar render underneath. Solid black background
+   so content scrolling beneath it looks intentional, not clipped. */
+[data-testid="stHeader"] { background: #000000; }
+.block-container { padding-top: 4.6rem; max-width: 1400px; }
 .desk-eyebrow { font-family:'IBM Plex Mono',monospace; font-size:0.72rem;
   letter-spacing:0.24em; color:#FF9F1C; text-transform:uppercase; }
 .desk-rule { height:1px; border:0; margin:0.45rem 0 0.9rem 0;
