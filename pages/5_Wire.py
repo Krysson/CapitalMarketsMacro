@@ -30,10 +30,10 @@ ET = ZoneInfo("America/New_York")
 # pull the four majors individually. They merge under one BLS source tag.
 PRIMARY_FEEDS = [
     ("FED", "https://www.federalreserve.gov/feeds/press_all.xml"),
-    ("BLS", "https://www.bls.gov/feed/cpi.rss"),
-    ("BLS", "https://www.bls.gov/feed/empsit.rss"),
-    ("BLS", "https://www.bls.gov/feed/ppi.rss"),
-    ("BLS", "https://www.bls.gov/feed/jolts.rss"),
+    ("BLS", "https://www.bls.gov/feeds/cpi.rss"),
+    ("BLS", "https://www.bls.gov/feeds/empsit.rss"),
+    ("BLS", "https://www.bls.gov/feeds/ppi.rss"),
+    ("BLS", "https://www.bls.gov/feeds/jolts.rss"),
     ("BEA", "https://apps.bea.gov/rss/rss.xml"),
 ]
 NARRATIVE_FEEDS = [
