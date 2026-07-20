@@ -714,7 +714,10 @@ def cot_series(code: str, kind: str = "disagg") -> pd.DataFrame:
             params={"cftc_contract_market_code": code,
                     "$select": (f"report_date_as_yyyy_mm_dd,{lcol},"
                                 f"{scol},open_interest_all"),
-                    "$order": "report_date_as_yyyy_mm_dd", "$limit": 600},
+                    # DESC: Socrata applies $limit AFTER ordering — asc
+                    # returns the OLDEST 600 weeks (ends ~2017)
+                    "$order": "report_date_as_yyyy_mm_dd DESC",
+                    "$limit": 600},
             timeout=15)
         r.raise_for_status()
         return cot_transform(r.json(), lcol, scol)
