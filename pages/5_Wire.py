@@ -30,10 +30,10 @@ ET = ZoneInfo("America/New_York")
 # pull the four majors individually. They merge under one BLS source tag.
 PRIMARY_FEEDS = [
     ("FED", "https://www.federalreserve.gov/feeds/press_all.xml"),
-    ("BLS", "https://www.bls.gov/feeds/cpi.rss"),
-    ("BLS", "https://www.bls.gov/feeds/empsit.rss"),
-    ("BLS", "https://www.bls.gov/feeds/ppi.rss"),
-    ("BLS", "https://www.bls.gov/feeds/jolts.rss"),
+    ("BLS", "https://www.bls.gov/feed/cpi.rss"),
+    ("BLS", "https://www.bls.gov/feed/empsit.rss"),
+    ("BLS", "https://www.bls.gov/feed/ppi.rss"),
+    ("BLS", "https://www.bls.gov/feed/jolts.rss"),
     ("BEA", "https://apps.bea.gov/rss/rss.xml"),
 ]
 NARRATIVE_FEEDS = [
@@ -46,20 +46,52 @@ NARRATIVE_FEEDS = [
 @st.cache_data(ttl=300, show_spinner=False)
 def fetch_tape(feeds: list[tuple[str, str]]) -> tuple[list[dict], list[str]]:
     """Pull and merge feeds, newest first. Returns (items, dead_sources)."""
+    import urllib.parse
+
     import feedparser
     import requests
 
-    # Several agencies (BLS especially) 403 non-browser user agents, and
-    # feedparser has no timeout — so fetch ourselves, then parse the text.
-    headers = {"User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) "
-                              "AppleWebKit/537.36 (KHTML, like Gecko) "
-                              "Chrome/126.0 Safari/537.36")}
-    items, dead = [], []
+    # Several agencies 403 non-browser requests, and feedparser has no
+    # timeout — so fetch ourselves, then parse. BLS specifically sits
+    # behind Akamai, which can block datacenter IPs (like Streamlit
+    # Cloud's) outright — the feed works from a home browser and fails
+    # from the server. For that case we retry once through a public
+    # read-only mirror (allorigins). Deliberate, narrow exception to the
+    # no-third-party rule: fallback only, public data only.
+    headers = {
+        "User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) "
+                       "AppleWebKit/537.36 (KHTML, like Gecko) "
+                       "Chrome/126.0 Safari/537.36"),
+        "Accept": ("application/atom+xml, application/rss+xml, "
+                   "application/xml;q=0.9, */*;q=0.8"),
+        "Accept-Language": "en-US,en;q=0.9",
+    }
+
+    def _get(u: str, timeout: int = 10) -> bytes:
+        r = requests.get(u, headers=headers, timeout=timeout)
+        r.raise_for_status()
+        return r.content
+
+    def _reason(ex: Exception) -> str:
+        if isinstance(ex, requests.HTTPError) and ex.response is not None:
+            return f"HTTP {ex.response.status_code}"
+        if isinstance(ex, requests.Timeout):
+            return "timeout"
+        return type(ex).__name__
+
+    items, dead = [], {}
     for src, url in feeds:
         try:
-            r = requests.get(url, headers=headers, timeout=10)
-            r.raise_for_status()
-            parsed = feedparser.parse(r.content)
+            try:
+                content = _get(url)
+            except Exception as first:
+                mirror = ("https://api.allorigins.win/raw?url="
+                          + urllib.parse.quote(url, safe=""))
+                try:
+                    content = _get(mirror, timeout=15)
+                except Exception:
+                    raise first
+            parsed = feedparser.parse(content)
             if parsed.bozo and not parsed.entries:
                 raise ValueError("unparseable feed")
             for e in parsed.entries[:25]:
@@ -70,12 +102,11 @@ def fetch_tape(feeds: list[tuple[str, str]]) -> tuple[list[dict], list[str]]:
                 if title:
                     items.append({"src": src, "when": when, "title": title,
                                   "link": e.get("link", "")})
-        except Exception:
-            if src not in dead:
-                dead.append(src)
+        except Exception as ex:
+            dead.setdefault(src, _reason(ex))
     items.sort(key=lambda x: x["when"] or dt.datetime.min.replace(
         tzinfo=ET), reverse=True)
-    return items[:40], dead
+    return items[:40], [f"{s} ({r})" for s, r in dead.items()]
 
 
 def tape(label: str, tier: str, feeds: list[tuple[str, str]],
