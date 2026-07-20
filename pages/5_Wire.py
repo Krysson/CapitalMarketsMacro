@@ -25,9 +25,15 @@ theme.header(
 
 ET = ZoneInfo("America/New_York")
 
+# BLS has no all-releases feed — bls.gov/feed lists per-release feeds
+# (and bls_latest.rss is a single-item digest, useless on a tape), so we
+# pull the four majors individually. They merge under one BLS source tag.
 PRIMARY_FEEDS = [
     ("FED", "https://www.federalreserve.gov/feeds/press_all.xml"),
-    ("BLS", "https://www.bls.gov/feed/news_release.rss"),
+    ("BLS", "https://www.bls.gov/feed/cpi.rss"),
+    ("BLS", "https://www.bls.gov/feed/empsit.rss"),
+    ("BLS", "https://www.bls.gov/feed/ppi.rss"),
+    ("BLS", "https://www.bls.gov/feed/jolts.rss"),
     ("BEA", "https://apps.bea.gov/rss/rss.xml"),
 ]
 NARRATIVE_FEEDS = [
@@ -41,11 +47,19 @@ NARRATIVE_FEEDS = [
 def fetch_tape(feeds: list[tuple[str, str]]) -> tuple[list[dict], list[str]]:
     """Pull and merge feeds, newest first. Returns (items, dead_sources)."""
     import feedparser
+    import requests
 
+    # Several agencies (BLS especially) 403 non-browser user agents, and
+    # feedparser has no timeout — so fetch ourselves, then parse the text.
+    headers = {"User-Agent": ("Mozilla/5.0 (X11; Linux x86_64) "
+                              "AppleWebKit/537.36 (KHTML, like Gecko) "
+                              "Chrome/126.0 Safari/537.36")}
     items, dead = [], []
     for src, url in feeds:
         try:
-            parsed = feedparser.parse(url)
+            r = requests.get(url, headers=headers, timeout=10)
+            r.raise_for_status()
+            parsed = feedparser.parse(r.content)
             if parsed.bozo and not parsed.entries:
                 raise ValueError("unparseable feed")
             for e in parsed.entries[:25]:
@@ -57,7 +71,8 @@ def fetch_tape(feeds: list[tuple[str, str]]) -> tuple[list[dict], list[str]]:
                     items.append({"src": src, "when": when, "title": title,
                                   "link": e.get("link", "")})
         except Exception:
-            dead.append(src)
+            if src not in dead:
+                dead.append(src)
     items.sort(key=lambda x: x["when"] or dt.datetime.min.replace(
         tzinfo=ET), reverse=True)
     return items[:40], dead
