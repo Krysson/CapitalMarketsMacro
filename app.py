@@ -1,18 +1,73 @@
 """Capital Markets Desk — Summary page."""
 import pandas as pd
 import streamlit as st
+import streamlit.components.v1 as components
 
-from desk import data, signals, theme
+from desk import data, events, signals, theme
 
 st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
                    layout="wide")
 
+# TradingView ticker tape — official free embed. Display-only glass:
+# every computed signal below still runs on FRED / yfinance.
+_TAPE = """
+<div class="tradingview-widget-container">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript"
+    src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
+    async>
+  {
+    "symbols": [
+      {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+      {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
+      {"proName": "TVC:US10Y", "title": "US 10Y"},
+      {"proName": "TVC:DXY", "title": "Dollar"},
+      {"proName": "TVC:GOLD", "title": "Gold"},
+      {"proName": "TVC:USOIL", "title": "WTI"},
+      {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
+      {"proName": "TVC:VIX", "title": "VIX"}
+    ],
+    "showSymbolLogo": false,
+    "colorTheme": "dark",
+    "isTransparent": true,
+    "displayMode": "regular",
+    "locale": "en"
+  }
+  </script>
+</div>
+"""
+components.html(_TAPE, height=48)
+
 theme.header(
-    "THE FREE DESK · DAILY CIRCUIT",
+    "THE FREE DESK · SUMMARY",
     "Capital Markets Desk",
     "Green = rising / loose · Red = falling / tight · Yellow = mixed. "
     "Colors show direction, not good vs. bad — quick-glance heuristics for a "
     "learning desk, not trading signals or investment advice.")
+
+cpi, fomc = events.next_cpi(), events.next_fomc()
+e1, e2 = st.columns(2)
+for col, ev, blurb in (
+    (e1, cpi, "the month's inflation print — vol event at 8:30 a.m."),
+    (e2, fomc, "rate decision + presser — vol event at 2:00 p.m."),
+):
+    with col:
+        st.markdown(
+            f'''
+            <div style="border-radius:8px;padding:10px 14px;
+                        background:{theme.PANEL};
+                        border-left:3px solid {theme.AMBER};
+                        margin-bottom:6px">
+              <span class="desk-eyebrow" style="color:{theme.MUTED}">
+                next {ev.name}</span>
+              <span style="font-family:'IBM Plex Mono',monospace;
+                           font-size:0.95rem;color:{theme.TEXT};
+                           margin-left:10px">{ev.when}</span>
+              <div class="desk-note" style="margin-top:2px">{blurb}</div>
+            </div>
+            ''',
+            unsafe_allow_html=True,
+        )
 
 with st.spinner("Pulling FRED data…"):
     bundle = data.macro_bundle()
@@ -104,5 +159,6 @@ with right:
         )
 
 st.markdown('<div class="desk-note">Data: FRED (St. Louis Fed) · Yahoo '
-            'Finance, delayed · Pages: Macro / Market / Volatility / '
-            'Notebook in the sidebar</div>', unsafe_allow_html=True)
+            'Finance, delayed · TradingView tape is display glass · Pages: '
+            'Daily Circuit / Macro / Market / Volatility / Notebook in '
+            'the sidebar</div>', unsafe_allow_html=True)
