@@ -651,9 +651,15 @@ def futures_curve(root: str, n: int = 6) -> pd.DataFrame:
 # "disaggregated" report (speculators = managed money), financial
 # futures in the TFF report (speculators = leveraged funds). Same API,
 # different dataset IDs and column prefixes.
+# GOTCHA (verified against live API responses): the two datasets use
+# DIFFERENT column conventions — disaggregated has an "_all" suffix on
+# position columns, TFF does not. Asking Socrata for the wrong name
+# returns an error, not empty data.
 _COT_DATASETS = {
-    "disagg": ("72hh-3qpy", "m_money", "MANAGED MONEY"),
-    "tff": ("gpe5-46if", "lev_money", "LEVERAGED FUNDS"),
+    "disagg": ("72hh-3qpy", "m_money_positions_long_all",
+               "m_money_positions_short_all", "MANAGED MONEY"),
+    "tff": ("gpe5-46if", "lev_money_positions_long",
+            "lev_money_positions_short", "LEVERAGED FUNDS"),
 }
 
 # (cftc_code, display_name, dataset_kind)
@@ -677,12 +683,12 @@ COT_CODES = {
 
 
 def cot_transform(rows: list[dict],
-                  prefix: str = "m_money") -> pd.DataFrame:
+                  lcol: str = "m_money_positions_long_all",
+                  scol: str = "m_money_positions_short_all"
+                  ) -> pd.DataFrame:
     """Pure: raw CFTC records -> weekly net-speculator DataFrame.
-    prefix = 'm_money' (disaggregated) or 'lev_money' (TFF)."""
+    Column names differ per dataset — pass them explicitly."""
     df = pd.DataFrame(rows)
-    lcol, scol = (f"{prefix}_positions_long_all",
-                  f"{prefix}_positions_short_all")
     need = {"report_date_as_yyyy_mm_dd", lcol, scol}
     if df.empty or not need.issubset(df.columns):
         return pd.DataFrame()
@@ -701,19 +707,17 @@ def cot_series(code: str, kind: str = "disagg") -> pd.DataFrame:
     """~10y of weekly COT for one contract from the CFTC's public API
     (official filings — reported, not estimated). kind selects the
     dataset: 'disagg' for commodities, 'tff' for financials."""
-    dataset, prefix, _ = _COT_DATASETS[kind]
+    dataset, lcol, scol, _ = _COT_DATASETS[kind]
     try:
         r = requests.get(
             f"https://publicreporting.cftc.gov/resource/{dataset}.json",
             params={"cftc_contract_market_code": code,
-                    "$select": ("report_date_as_yyyy_mm_dd,"
-                                f"{prefix}_positions_long_all,"
-                                f"{prefix}_positions_short_all,"
-                                "open_interest_all"),
+                    "$select": (f"report_date_as_yyyy_mm_dd,{lcol},"
+                                f"{scol},open_interest_all"),
                     "$order": "report_date_as_yyyy_mm_dd", "$limit": 600},
             timeout=15)
         r.raise_for_status()
-        return cot_transform(r.json(), prefix)
+        return cot_transform(r.json(), lcol, scol)
     except Exception:
         return pd.DataFrame()
 

@@ -161,7 +161,7 @@ cot_root = st.selectbox(
     format_func=lambda r: f"{data.COT_CODES[r][1]} ({r})",
     key="cot_root")
 code, cot_name, cot_kind = data.COT_CODES[cot_root]
-spec_label = data._COT_DATASETS[cot_kind][2]
+spec_label = data._COT_DATASETS[cot_kind][3]
 cot = data.cot_series(code, cot_kind)
 if cot.empty:
     st.warning("CFTC data unavailable — the public API may be busy; "
