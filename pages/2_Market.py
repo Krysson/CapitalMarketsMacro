@@ -72,6 +72,40 @@ with c2:
                 "Falling = high yield underperforming investment grade — "
                 "credit smelling trouble before equities admit it.")
 
+with st.expander("S&P 500 heatmap — TradingView (display glass)"):
+    components.html(
+        """
+        <div class="tradingview-widget-container">
+          <div class="tradingview-widget-container__widget"></div>
+          <script type="text/javascript"
+            src="https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js"
+            async>
+          {
+            "dataSource": "SPX500",
+            "exchanges": [],
+            "grouping": "sector",
+            "blockSize": "market_cap_basic",
+            "blockColor": "change",
+            "hasTopBar": false,
+            "isDataSetEnabled": false,
+            "isZoomEnabled": true,
+            "hasSymbolTooltip": true,
+            "colorTheme": "dark",
+            "isTransparent": true,
+            "locale": "en",
+            "width": "100%",
+            "height": 480
+          }
+          </script>
+        </div>
+        """,
+        height=490)
+    theme.note("The RSP/SPY ratio, drawn as a picture. Index green while "
+               "the map is mostly red — a few giant blocks doing all the "
+               "lifting — IS narrow leadership. Block size = market cap, "
+               "so your eye weighs stocks exactly the way SPY does; RSP "
+               "weighs every block equally.")
+
 st.divider()
 st.subheader("Cross-asset (normalized)")
 sel = st.multiselect(
