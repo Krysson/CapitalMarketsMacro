@@ -14,7 +14,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.2.1"
+VERSION = "3.3.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -91,7 +91,8 @@ div[data-baseweb="input"]:has(> input[placeholder^="COMMAND"]) {
 _ROUTES = {
     "HOME": "app.py", "SUM": "app.py",
     "CIR": "pages/0_Daily_Circuit.py", "CIRCUIT": "pages/0_Daily_Circuit.py",
-    "ECO": "pages/1_Macro.py", "MACRO": "pages/1_Macro.py",
+    "MAC": "pages/1_Macro.py", "MACRO": "pages/1_Macro.py",
+    "ECO": "pages/13_Calendar.py", "CAL": "pages/13_Calendar.py",
     "WEI": "pages/9_Global.py", "FXC": "pages/9_Global.py",
     "GLOBAL": "pages/9_Global.py",
     "MKT": "pages/2_Market.py",
@@ -147,7 +148,8 @@ _HELP = """
 | `HOME` | Summary | HOME — your start page |
 | `BLP` | Launchpad | BLP — Launchpad, everything tiled at once |
 | `CIR` | Daily Circuit | (house function — your routine) |
-| `ECO` | Macro | ECO — economic data & calendar |
+| `MAC` | Macro | macro dials & panels |
+| `ECO` / `CAL` | Calendar | ECO — economic calendar · anchors + full schedule |
 | `MKT` | Market (US) | trend, breadth, credit ratios |
 | `WEI` / `FXC` | Global | WEI — world equity indices · FXC — FX crosses |
 | `VIX` / `VOL` | Volatility | VIX Index GP, VCAL |

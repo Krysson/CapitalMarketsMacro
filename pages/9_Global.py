@@ -85,8 +85,52 @@ else:
 
 st.divider()
 
+# ------------------------------------------------- FX majors monitor ----
+theme.panel_bar("FX majors", "live · market convention quotes")
+import streamlit.components.v1 as components
+
+_FX_MAJORS = """
+<div class="tradingview-widget-container">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript"
+    src="https://s3.tradingview.com/external-embedding/embed-widget-market-quotes.js"
+    async>
+  {
+    "width": "100%",
+    "height": 430,
+    "symbolsGroups": [
+      {"name": "MAJORS", "symbols": [
+        {"name": "FX:EURUSD", "displayName": "EUR/USD"},
+        {"name": "FX:USDJPY", "displayName": "USD/JPY"},
+        {"name": "FX:GBPUSD", "displayName": "GBP/USD"},
+        {"name": "FX:USDCHF", "displayName": "USD/CHF"},
+        {"name": "FX:USDCAD", "displayName": "USD/CAD"},
+        {"name": "FX:AUDUSD", "displayName": "AUD/USD"},
+        {"name": "FX:NZDUSD", "displayName": "NZD/USD"}
+      ]}
+    ],
+    "showSymbolLogo": false,
+    "isTransparent": true,
+    "colorTheme": "dark",
+    "locale": "en"
+  }
+  </script>
+</div>"""
+components.html(_FX_MAJORS, height=440)
+theme.note("Live quotes (spot FX carries no exchange licensing, so "
+           "free real-time is genuinely real-time). Convention matters "
+           "and is itself worth learning: EUR, GBP, AUD, NZD quote as "
+           "currency-per-dollar-INVERSE (dollars per 1 unit — 'cable' "
+           "up = dollar down), while JPY, CHF, CAD quote as units per "
+           "dollar (USD/JPY up = dollar UP). Same tide, two sign "
+           "conventions — misreading this is the classic first-week "
+           "FX mistake.")
+
+st.divider()
+
 # ---------------------------------------------------- FX cross matrix ----
-theme.panel_bar("FX cross matrix", "row = 1 unit of · col = priced in")
+theme.panel_bar("FX cross matrix — FXC",
+                "row = 1 unit of · col = priced in · daily closes")
 if not board.empty and "DX-Y.NYB" in board.columns:
     dxy = board["DX-Y.NYB"].dropna()
     d = ret(dxy, 21)
@@ -115,7 +159,11 @@ else:
         axis=0)
     st.dataframe(styled, use_container_width=True,
                  height=40 + 36 * len(cross))
-    theme.note("Triangulated from USD pairs (Yahoo, delayed) — read a "
+    theme.note("The Bloomberg FXC function is exactly this grid. Ours "
+               "is triangulated from USD pairs (daily closes) — kept "
+               "deliberately, because computing EUR/JPY from EUR/USD "
+               "and USD/JPY is how cross rates actually work, and the "
+               "book teaches the mechanism. Read a "
                "row as 'one unit of this buys…'. Green = that cross "
                "rose vs yesterday. The crosses that matter most to the "
                "desk: USDJPY (the carry trade's heartbeat — violent "

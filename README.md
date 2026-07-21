@@ -13,7 +13,7 @@ display glass only. Colors mean **direction, not advice**.
 | Launchpad | `BLP` | Everything tiled at once — dials, tripwire, breadth, credit, liquidity, wire; no prose |
 | Summary | `HOME` | Four scored signal cards with sparklines, CPI / NFP / FOMC countdown strip, cross-asset table |
 | Daily Circuit | `CIR` | The book's 90-second read as a guided sequence, ending at the Notebook |
-| Macro | `ECO` | 15 FRED series + Net Liquidity (WALCL − TGA − RRP), NBER recession bands |
+| Macro | `MAC` | 15 FRED series + Net Liquidity (WALCL − TGA − RRP), NBER recession bands |
 | Market | `MKT` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
 | Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision, JSON export/restore |
@@ -24,6 +24,7 @@ display glass only. Colors mean **direction, not advice**.
 | Fed Diff | `DIFF` | The FOMC statement redlined against the prior one — added/removed words, churn readout |
 | Time Machine | `TM` | The desk as of any past date: ALFRED macro vintages + price history cut at the date + "what happened next" |
 | Desk Analyst | `ASK` | Claude wired to the live desk: morning reads, positioning views in desk grammar, Notebook drafts, teaching (needs ANTHROPIC_API_KEY; set DESK_CHAT_PASSCODE on public deployments) |
+| Calendar | `ECO` | Verified CPI/NFP/FOMC anchors + live full economic calendar (TradingView events widget) |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30` |
 
 Every page has a **command line** at the top — type a function, hit GO.
@@ -34,7 +35,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.1** (shown in the sidebar). Flaky endpoints
+Current version: **v3.3** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
