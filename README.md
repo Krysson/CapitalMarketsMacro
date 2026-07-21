@@ -77,6 +77,8 @@ dry). Roughly once a year:
 - **Yahoo Finance / yfinance** — market history, OHLC, SPY options chain
   (15 min cache; delayed and occasionally rate-limited, charts recover
   on refresh — the skew curve legitimately fails sometimes)
+- **Google News RSS** — query-based aggregator lanes for the news
+  ticker (keyless; also the CPI/NFP fast path where BLS is blocked)
 - **CFTC** — Commitments of Traders positioning (official weekly
   filings, public API); **TreasuryDirect** — auction calendar
 - **RSS** — Fed / BLS / BEA press feeds (primary tape), CNBC /

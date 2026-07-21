@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.5.0"
+VERSION = "3.6.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -239,10 +239,51 @@ def tape() -> None:
     components.html(html, height=48)
 
 
+def news_marquee() -> None:
+    """Scrolling headline ticker: Tier 1 agencies amber and first,
+    aggregator/media purple behind them. Hover pauses."""
+    try:
+        from desk import wire
+        items = wire.ticker_items()
+    except Exception:
+        items = []
+    if not items:
+        return
+    spans = []
+    for i in items:
+        color = AMBER if i.get("primary") else "#B39DDB"
+        src = i.get("src", "")
+        title = (i["title"][:110].replace("<", "&lt;")
+                 .replace("$", "&#36;"))
+        link = i.get("link") or "#"
+        spans.append(
+            f'<a href="{link}" target="_blank" style="color:{color};'
+            f'text-decoration:none"><span style="opacity:0.6">{src}'
+            f'</span> {title}</a>')
+    track = ' <span style="color:#3A3A3A">\u25c6</span> '.join(spans)
+    dur = max(40, 7 * len(items))
+    st.markdown(
+        f'<style>@keyframes deskscroll {{from{{transform:translateX(0)}}'
+        f'to{{transform:translateX(-50%)}}}}'
+        f'.desk-marquee:hover .desk-track'
+        f'{{animation-play-state:paused}}</style>'
+        f'<div class="desk-marquee" style="overflow:hidden;'
+        f'white-space:nowrap;border-top:1px solid #1B1B1B;'
+        f'border-bottom:1px solid #1B1B1B;padding:3px 0;'
+        f'margin-bottom:6px">'
+        f'<div class="desk-track" style="display:inline-block;'
+        f'white-space:nowrap;font-family:\'IBM Plex Mono\',monospace;'
+        f'font-size:0.72rem;letter-spacing:0.02em;'
+        f'animation:deskscroll {dur}s linear infinite">'
+        f'{track} <span style="color:#3A3A3A">\u25c6</span> {track}'
+        f'</div></div>', unsafe_allow_html=True)
+
+
 def header(eyebrow: str, title: str, caption: str | None = None) -> None:
     """Terminal page header: command line, eyebrow, title, amber rule."""
     st.markdown(_CSS, unsafe_allow_html=True)
     tape()
+    news_marquee()
     st.sidebar.markdown(
         f'<div class="desk-note" style="text-align:center;'
         f'letter-spacing:0.12em;margin-top:6px">CAPITAL MARKETS DESK '
