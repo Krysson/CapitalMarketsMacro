@@ -50,6 +50,12 @@ GOOGLE_FEEDS = [
     ("G-MKT", google_url("stock market when:1d")),
 ]
 
+# The release-chaser subset: aggregator lanes that track BLS releases,
+# used as the visible backup when Akamai blocks the direct BLS feeds.
+BLS_BACKUP_FEEDS = [f for f in GOOGLE_FEEDS if f[0] in ("G-CPI", "G-JOBS")]
+GOOGLE_NARRATIVE_FEEDS = [f for f in GOOGLE_FEEDS
+                          if f[0] not in ("G-CPI", "G-JOBS")]
+
 NARRATIVE_FEEDS = [
     ("CNBC", "https://search.cnbc.com/rs/search/combinedcms/view.xml"
              "?partnerId=wrss01&id=20910258"),
