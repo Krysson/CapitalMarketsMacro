@@ -22,7 +22,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-OWNER = "OWNER"  # <-- your GitHub username, one-time edit
+OWNER = "Krysson"  # <-- your GitHub username, one-time edit
 REPO = "CapitalMarketsMacro"
 RAW_URL = (f"https://raw.githubusercontent.com/{OWNER}/{REPO}"
            "/data/history/signals.csv")
