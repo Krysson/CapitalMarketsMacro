@@ -108,6 +108,22 @@ def desk_snapshot() -> str:
         return "RATES/CREDIT: " + " | ".join(out)
     lines.append(_try(rates))
 
+    def cmdty():
+        board = data.futures_board()
+        out = []
+        for tkr, label in (("CL=F", "WTI"), ("BZ=F", "Brent"),
+                           ("NG=F", "NatGas"), ("GC=F", "Gold"),
+                           ("SI=F", "Silver"), ("HG=F", "Copper")):
+            if tkr in board.columns:
+                s = board[tkr].dropna()
+                if len(s) > 21:
+                    out.append(
+                        f"{label} {float(s.iloc[-1]):,.2f} "
+                        f"({(s.iloc[-1] / s.iloc[-22] - 1) * 100:+.1f}%/1m)")
+        return ("COMMODITIES (front-month, Tier 2): " + " | ".join(out)
+                if out else "")
+    lines.append(_try(cmdty))
+
     def wires():
         items, _ = __import__("desk.wire", fromlist=["wire"]).fetch_tape(
             __import__("desk.wire", fromlist=["wire"]).PRIMARY_FEEDS)
