@@ -14,6 +14,7 @@ you which case you're in.
 from __future__ import annotations
 
 import datetime as dt
+import re
 from concurrent.futures import ThreadPoolExecutor
 from zoneinfo import ZoneInfo
 
@@ -42,13 +43,44 @@ def google_url(query: str) -> str:
 # serve as the CPI/NFP fast path on Streamlit Cloud, where Akamai blocks
 # the direct BLS feeds.
 GOOGLE_FEEDS = [
-    ("G-FED", google_url("federal reserve FOMC when:2d")),
-    ("G-CPI", google_url("CPI inflation report when:2d")),
-    ("G-JOBS", google_url("jobs report nonfarm payrolls when:2d")),
-    ("G-RATES", google_url("treasury yields auction when:2d")),
+    ("G-FED", google_url("Federal Reserve FOMC when:2d")),
+    ("G-CPI", google_url("US CPI inflation report when:2d")),
+    ("G-JOBS", google_url("US jobs report nonfarm payrolls when:2d")),
+    ("G-RATES", google_url("US treasury yields when:2d")),
     ("G-OIL", google_url("oil prices OPEC supply when:2d")),
-    ("G-MKT", google_url("stock market when:1d")),
+    ("G-MKT", google_url("Wall Street stock market when:1d")),
 ]
+
+# US-relevance filter for the aggregator lanes. A foreign mention only
+# drops a headline when NO US marker appears beside it — "China tariffs
+# raise US inflation" stays; "China CPI rises 0.2%" goes. Direct-agency
+# and named-media feeds are never filtered.
+_US_MARKERS = re.compile(
+    r"\bU\.?S\.?A?\b|\bUnited States\b|\bAmerica[n]?s?\b|"
+    r"\bFed\b|\bFederal Reserve\b|\bFOMC\b|\bBLS\b|"
+    r"\bTreasur(y|ies)\b|\bWall Street\b|\bnonfarm\b|"
+    r"\bS&P\b|\bNasdaq\b|\bDow\b")
+_FOREIGN_NOISE = re.compile(
+    r"\bUK\b|\bU\.K\.\b|\bBritain\b|\bBritish\b|\bEngland\b|"
+    r"\bChina\b|\bChinese\b|\bHong Kong\b|\bJapan(ese)?\b|"
+    r"\bNew Zealand\b|\bAustralia[n]?\b|\bCanada\b|\bCanadian\b|"
+    r"\bIndia[n]?\b|\bEurozone\b|\beuro (zone|area)\b|"
+    r"\bGermany\b|\bFrance\b|\bECB\b|\bBOE\b|\bBOJ\b|"
+    r"\bRBA\b|\bRBNZ\b|\bPBOC\b|\bBank of \w+|\bReserve Bank\b",
+    re.IGNORECASE)
+
+
+def us_filter(items: list[dict]) -> list[dict]:
+    """Pure: drop foreign-macro noise from G-* lanes only."""
+    out = []
+    for it in items:
+        if it.get("src", "").startswith("G-"):
+            title = it.get("title", "")
+            if _FOREIGN_NOISE.search(title) and \
+                    not _US_MARKERS.search(title):
+                continue
+        out.append(it)
+    return out
 
 # The release-chaser subset: aggregator lanes that track BLS releases,
 # used as the visible backup when Akamai blocks the direct BLS feeds.
@@ -167,7 +199,7 @@ def merge_ticker(primary_items: list[dict], other_items: list[dict],
 def _ticker_cached(ttl: int, bucket: int) -> list[dict]:
     prim, _ = fetch_tape(PRIMARY_FEEDS)
     other, _ = fetch_tape(NARRATIVE_FEEDS + GOOGLE_FEEDS)
-    return merge_ticker(prim, other)
+    return merge_ticker(prim, us_filter(other))
 
 
 def ticker_items() -> list[dict]:

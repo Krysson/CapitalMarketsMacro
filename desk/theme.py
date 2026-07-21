@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.6.1"
+VERSION = "3.6.2"
 
 INK = "#000000"
 PANEL = "#0D0D0D"

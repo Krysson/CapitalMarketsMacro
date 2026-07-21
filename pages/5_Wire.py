@@ -27,6 +27,7 @@ def tape(label: str, tier: str, feeds: list[tuple[str, str]],
     else:
         with st.spinner("Pulling the tape…"):
             items, dead = wire.fetch_tape(feeds)
+    items = wire.us_filter(items)
     if dead:
         st.markdown(f'<div class="desk-note" style="color:{theme.RED}">'
                     f'FEED DOWN: {", ".join(dead)} — tape continues '
