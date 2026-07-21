@@ -208,7 +208,7 @@ TAPE_SYMBOLS = [
     {"proName": "FOREXCOM:NSXUSD",  "title": "Nasdaq 100"},   # RT CFD
     {"proName": "CAPITALCOM:RTY",   "title": "Russell 2000"}, # RT CFD (verify — see note)
     {"proName": "FOREXCOM:DJI",     "title": "Dow"},          # RT CFD
-    {"proName": "FRED:DGS10",       "title": "US 10Y"},       # FRED:DGS10
+    {"proName": "US10Y",       "title": "US 10Y"},       # FRED:DGS10
     {"proName": "CAPITALCOM:DXY",   "title": "Dollar"},       # RT CFD
     {"proName": "TVC:GOLD",         "title": "Gold"},         # RT spot
     {"proName": "TVC:SILVER",       "title": "SILVER"},         # RT spot
