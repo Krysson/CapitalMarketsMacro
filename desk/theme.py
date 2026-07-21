@@ -204,7 +204,6 @@ def command_line() -> None:
 
 
 TAPE_SYMBOLS = [
-    TAPE_SYMBOLS = [
     {"proName": "FOREXCOM:SPXUSD",  "title": "S&P 500"},      # RT CFD
     {"proName": "FOREXCOM:NSXUSD",  "title": "Nasdaq 100"},   # RT CFD
     {"proName": "CAPITALCOM:RTY",   "title": "Russell 2000"}, # RT CFD (verify — see note)
@@ -218,7 +217,6 @@ TAPE_SYMBOLS = [
     {"proName": "FX:EURUSD",        "title": "EUR/USD"},      # RT
     {"proName": "BITSTAMP:BTCUSD",  "title": "Bitcoin"},      # RT
     {"proName": "CAPITALCOM:VIX",   "title": "VIX"},          # RT CFD mirror
-]
 ]
 
 
