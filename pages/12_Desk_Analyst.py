@@ -16,8 +16,9 @@ theme.header(
     "BOOK III · THE DESK ANALYST",
     "Desk Analyst",
     "An analyst wired to this desk's live readings. Ask for the morning "
-    "read, a positioning view, a Notebook draft, or an explanation of "
-    "anything on any page. It reasons in the book's framework — "
+    "read, a positioning view, a Notebook draft, an explanation of "
+    "anything on any page — or bring your own trade idea for "
+    "validation through the Part V protocol. It reasons in the book's framework — "
     "positioning grammar, evidence tiers, mandatory falsification. "
     "Training desk — direction, not advice.")
 
@@ -61,6 +62,29 @@ with c1:
 
 if "analyst_chat" not in st.session_state:
     st.session_state["analyst_chat"] = []
+
+# ---- Part V: idea validation (always available, any point in chat) ----
+with st.expander("🔬 Validate a trade idea — Book III Part V protocol"):
+    st.markdown('<div class="desk-note">State your idea in your own '
+                'words — instruments, direction, and why. Any '
+                'instrument is fair game here (futures, options, '
+                'bonds, sectors, ETFs, single stocks). The analyst '
+                'runs it through the Part V gates — thesis, structure, '
+                'edge, what\'s priced in, crowd, falsification, '
+                'evidence tiers — and returns VALID / INVALID / '
+                'INCOMPLETE with reasons. It validates; it never '
+                'proposes trades.</div>', unsafe_allow_html=True)
+    idea = st.text_area(
+        "Your idea", height=120,
+        placeholder="e.g. Long oil futures, short oil options and "
+                    "short treasury bonds to capture the spread with "
+                    "protection…")
+    if st.button("Run the validation") and idea.strip():
+        st.session_state["analyst_chat"].append(
+            {"role": "user",
+             "content": "VALIDATE THIS IDEA through the Part V "
+                        "protocol:\n\n" + idea.strip()})
+        st.rerun()
 
 # canned openers — the workflows this page exists for
 if not st.session_state["analyst_chat"]:
