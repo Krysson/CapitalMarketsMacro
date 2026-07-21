@@ -1,0 +1,89 @@
+# Nightly signal snapshot — the desk's live-accrued track record.
+#
+# Runs weekdays after the US close, computes one row via
+# scripts/snapshot.py, and commits history/signals.csv to the `data`
+# branch. NEVER to main: Streamlit Cloud redeploys on every push to
+# main, and a redeploy wipes the Notebook's JSON storage — a nightly
+# commit to main would erase the user's entries every night.
+#
+# The `data` branch holds ONLY history/signals.csv, append-only. Every
+# row is a timestamped commit — the record is tamper-evident by
+# construction; anyone can audit the git history.
+#
+# Setup (once): add FRED_API_KEY under Settings -> Secrets and
+# variables -> Actions, then run this workflow manually from the
+# Actions tab to create the data branch and the first row.
+
+name: Nightly signal snapshot
+
+on:
+  schedule:
+    - cron: "30 22 * * 1-5"   # weekdays 22:30 UTC — after the 4pm ET close
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: snapshot
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install requirements
+        run: pip install -r requirements.txt
+
+      - name: Restore existing history from the data branch
+        run: |
+          # GOTCHA (verified in a local two-run simulation): checkout@v4
+          # configures a SINGLE-BRANCH fetch refspec, so a plain
+          # `git fetch origin data` never creates origin/data — the
+          # branch-exists check would fail every night and the push
+          # would be rejected from night two on. Explicit refspec fixes it.
+          git fetch origin +refs/heads/data:refs/remotes/origin/data || true
+          if git rev-parse --verify --quiet origin/data >/dev/null; then
+            git checkout origin/data -- history/signals.csv || true
+            git reset -q -- history/signals.csv || true
+          fi
+
+      - name: Compute today's row
+        env:
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+        run: python scripts/snapshot.py
+
+      - name: Commit to the data branch (never main)
+        run: |
+          if [ ! -f history/signals.csv ]; then
+            echo "no CSV produced (holiday skip or first-run failure) — nothing to commit"
+            exit 0
+          fi
+          cp history/signals.csv /tmp/signals.csv
+          rm -f history/signals.csv
+          git config user.name "desk-snapshot-bot"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin +refs/heads/data:refs/remotes/origin/data || true
+          if git rev-parse --verify --quiet origin/data >/dev/null; then
+            git checkout -B data origin/data
+          else
+            # First run: orphan branch containing only the history file.
+            git checkout --orphan data
+            git rm -rf --cached . >/dev/null 2>&1 || true
+          fi
+          mkdir -p history
+          cp /tmp/signals.csv history/signals.csv
+          git add history/signals.csv
+          if git commit -m "snapshot $(date -u +%F)"; then
+            git push origin data
+          else
+            echo "no changes to commit"
+          fi
