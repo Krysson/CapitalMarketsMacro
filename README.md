@@ -25,6 +25,7 @@ display glass only. Colors mean **direction, not advice**.
 | Time Machine | `TM` | The desk as of any past date: ALFRED macro vintages + price history cut at the date + "what happened next" |
 | Desk Analyst | `ASK` | Claude wired to the live desk: morning reads, positioning views in desk grammar, Notebook drafts, teaching (needs ANTHROPIC_API_KEY; set DESK_CHAT_PASSCODE on public deployments) |
 | Calendar | `ECO` | Verified CPI/NFP/FOMC anchors + live full economic calendar (TradingView events widget) |
+| Regime History | `HIST` | The four dials recorded nightly by a bot — colored strips over SPX, current streaks, and (once >30 rows) what SPX did after each red flip |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30` |
 
 Every page has a **command line** at the top — type a function, hit GO.
@@ -35,7 +36,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.3** (shown in the sidebar). Flaky endpoints
+Current version: **v3.7.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -57,6 +58,36 @@ throttled, instead of erroring.
     pip install -r requirements.txt
     export FRED_API_KEY=your_key   # optional
     streamlit run app.py
+
+## Nightly signal snapshot (the track record)
+
+A GitHub Action (`.github/workflows/snapshot.yml`) runs
+`scripts/snapshot.py` weekdays at 22:30 UTC — after the US close — and
+appends one row (dial scores + SPX, VIX, VIX/VIX3M, RSP/SPY, HYG/LQD,
+2s10s, HY OAS, net liquidity, DXY) to `history/signals.csv`. The row is
+committed to the **`data` branch, never main** — Streamlit Cloud
+redeploys on every push to main, and a redeploy wipes the Notebook's
+JSON storage. The `data` branch holds only the CSV, append-only; the
+Regime History page (`HIST`) reads it over raw.githubusercontent,
+cached an hour.
+
+One-time setup:
+
+1. Repo → Settings → Secrets and variables → **Actions** → New
+   repository secret: `FRED_API_KEY` (same key as the app's).
+2. Set the `OWNER` constant at the top of `desk/history.py` to your
+   GitHub username (or add a `HISTORY_CSV_URL` app secret pointing at
+   the raw CSV — the secret wins if both are set).
+3. Actions tab → *Nightly signal snapshot* → **Run workflow** once.
+   This first run creates the `data` branch and writes row one. (If
+   Actions are disabled for the repo, enable them on that tab first.)
+4. Nothing else. The cron takes over on the next weekday close. Market
+   holidays skip themselves (the script refuses to stamp a stale SPX
+   bar with a fresh date; `SNAPSHOT_FORCE=1` overrides).
+
+Headless note: the desk modules import Streamlit, so the script's log
+shows "No runtime found" cache warnings. Harmless — the fetchers run
+uncached and the row computes identically.
 
 ## Maintenance calendar
 
@@ -88,6 +119,9 @@ dry). Roughly once a year:
   lane works when the desk runs locally
 - **TradingView embeds** — ticker tape and optional widgets; display
   glass only, never inputs to computed signals
+- **GitHub Actions + the `data` branch** — the nightly snapshot bot;
+  the History page's only input is the CSV it commits (raw URL, 1h
+  cache, fail-soft before the first run)
 
 ## House conventions
 
@@ -97,6 +131,10 @@ dry). Roughly once a year:
   split is that appendix made visible.
 - Signal heuristics label direction (rising/loose vs falling/tight),
   never good/bad, and are not trading signals or investment advice.
+- The track record is **live-accrued and tamper-evident**: every
+  nightly row is a timestamped git commit on the `data` branch, nothing
+  is backfilled. A reconstructed record is a claim; this one is
+  evidence anyone can audit.
 
 ## Gotchas (learned the hard way — don't regress)
 

@@ -1,0 +1,16 @@
+Capital Markets Desk — v3.7.0 — Nightly signal snapshot + Regime History
+Changed/new files (full replacements; paste into GitHub at these paths):
+
+desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
+desk/history.py  ::  """Reader for the desk's live-accrued signal history.
+scripts/snapshot.py  ::  """Nightly signal snapshot — one row of the desk's live track record.
+.github/workflows/snapshot.yml  ::  # Nightly signal snapshot — the desk's live-accrued track record.
+pages/14_History.py  ::  """Regime History — the desk's live-accrued track record."""
+README.md  ::  # Capital Markets Desk (Streamlit)
+
+New since 3.6.3: HIST/TRACK route; nightly GitHub Action writing
+history/signals.csv to the `data` branch (never main); desk/history.py
+reader (raw URL, 1h cache, fail-soft); pages/14_History.py with dial
+strips over SPX, streaks, and the >30-row track-record block.
+ONE-TIME EDITS: set OWNER in desk/history.py; add FRED_API_KEY to
+GitHub Actions secrets; run the workflow once from the Actions tab.

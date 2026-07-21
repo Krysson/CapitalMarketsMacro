@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.6.2"
+VERSION = "3.7.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -114,6 +114,8 @@ _ROUTES = {
     "CMDTY": "pages/8_Futures.py",
     "GC": "pages/7_Rates.py", "YC": "pages/7_Rates.py",
     "RATES": "pages/7_Rates.py", "CRV": "pages/7_Rates.py",
+    "HIST": "pages/14_History.py", "TRACK": "pages/14_History.py",
+    "HISTORY": "pages/14_History.py",
 }
 
 _FUNC_TOKENS = {"GP", "DES", "FA"}
@@ -161,6 +163,7 @@ _HELP = """
 | `CTM` / `FUT` | Futures | CTM — contract table · board + term structure + COT |
 | `DIFF` / `FED` | Fed Statement Diff | redline vs the prior statement |
 | `TM` / `TIME` | Time Machine | the desk as of any past date (ALFRED vintages) |
+| `HIST` / `TRACK` | Regime History | the dials' live-accrued track record, one git commit per night |
 | `ASK` / `IB` | Desk Analyst | chat with the desk's AI analyst (IB — chat, on the machine) |
 | `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
