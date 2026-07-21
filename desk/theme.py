@@ -205,10 +205,10 @@ def command_line() -> None:
 
 TAPE_SYMBOLS = [
     {"proName": "SPX500USD", "title": "S&P 500"},
-    {"proName": "TVC:NDQ", "title": "Nasdaq 100"},
+    {"proName": "NDQ", "title": "Nasdaq 100"},
     {"proName": "AMEX:IWM", "title": "Russell2K"},
-    {"proName": "TVC:US10Y", "title": "US 10Y"},  # daily official close
-    {"proName": "TVC:DXY", "title": "Dollar"},
+    {"proName": "US10Y", "title": "US 10Y"},  # daily official close
+    {"proName": "DXY", "title": "Dollar"},
     {"proName": "TVC:GOLD", "title": "Gold"},
     {"proName": "TVC:USOIL", "title": "WTI"},
     {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
