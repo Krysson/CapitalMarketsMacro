@@ -134,8 +134,11 @@ if chat and chat[-1]["role"] == "user":
         try:
             from anthropic import Anthropic
             client = Anthropic(api_key=api_key)
+            is_validation = chat[-1]["content"].startswith(
+                "VALIDATE THIS IDEA")
             with client.messages.stream(
-                    model=model, max_tokens=1500,
+                    model=model,
+                    max_tokens=2000 if is_validation else 1500,
                     system=system, messages=history) as stream:
                 reply = st.write_stream(stream.text_stream)
         except Exception as ex:
