@@ -33,7 +33,7 @@ for win, color in [(20, theme.GREEN), (50, theme.BLUE), (200, theme.RED)]:
 fig.update_layout(xaxis_rangeslider_visible=False)
 theme.plot(theme.style_fig(
     fig, "S&P 500 — trend vs 20 / 50 / 200-day",
-    height=400, unified_hover=False,
+    height=380, unified_hover=False,
     right_text=(f"{float(spx.iloc[-1]):,.2f}  "
                 f"{(float(spx.iloc[-1]) / float(spx.iloc[-2]) - 1) * 100:+.2f}%"
                 "  · delayed"),
