@@ -31,9 +31,14 @@ for win, color in [(20, theme.GREEN), (50, theme.BLUE), (200, theme.RED)]:
     fig.add_scatter(x=ma.index, y=ma.values, mode="lines", name=f"SMA {win}",
                     line=dict(width=1.1, color=color))
 fig.update_layout(xaxis_rangeslider_visible=False)
-theme.plot(
-    theme.style_fig(fig, "S&P 500 — trend vs 20 / 50 / 200-day",
-                    height=420, unified_hover=False),
+theme.plot(theme.style_fig(
+    fig, "S&P 500 — trend vs 20 / 50 / 200-day",
+    height=400, unified_hover=False,
+    right_text=(f"{float(spx.iloc[-1]):,.2f}  "
+                f"{(float(spx.iloc[-1]) / float(spx.iloc[-2]) - 1) * 100:+.2f}%"
+                "  · delayed"),
+    right_color=(theme.GREEN if spx.iloc[-1] >= spx.iloc[-2]
+                 else theme.RED)),
     use_container_width=True)
 
 ma200 = spx.rolling(200).mean().iloc[-1]
