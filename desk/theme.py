@@ -204,7 +204,7 @@ def command_line() -> None:
 
 
 TAPE_SYMBOLS = [
-    {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+    {"proName": "SPX500USD", "title": "S&P 500"},
     {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
     {"proName": "FRED:DGS10", "title": "US 10Y"},  # daily official close
     {"proName": "CAPITALCOM:DXY", "title": "Dollar"},
