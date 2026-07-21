@@ -113,11 +113,17 @@ if not st.session_state["analyst_chat"]:
                 {"role": "user", "content": prompt})
             st.rerun()
 
+def _md_safe(text: str) -> str:
+    """Escape $ so Streamlit doesn't eat dollar amounts as LaTeX math
+    ("$83 and $100" otherwise renders everything between as garbage)."""
+    return text.replace("\\$", "$").replace("$", "\\$")
+
+
 for msg in st.session_state["analyst_chat"]:
     with st.chat_message(msg["role"],
                          avatar="🖥️" if msg["role"] == "assistant"
                          else "🧑‍💻"):
-        st.markdown(msg["content"])
+        st.markdown(_md_safe(msg["content"]))
 
 prompt = st.chat_input("Ask the desk…")
 if prompt:
@@ -140,7 +146,13 @@ if chat and chat[-1]["role"] == "user":
                     model=model,
                     max_tokens=2000 if is_validation else 1500,
                     system=system, messages=history) as stream:
-                reply = st.write_stream(stream.text_stream)
+                # escape $ per chunk (single char — safe across chunk
+                # boundaries) so live streaming doesn't LaTeX-mangle
+                safe_chunks = (c.replace("$", "\\$")
+                               for c in stream.text_stream)
+                reply = st.write_stream(safe_chunks)
+            if reply:
+                reply = reply.replace("\\$", "$")   # store clean text
         except Exception as ex:
             reply = None
             st.error(f"API call failed: {type(ex).__name__} — check the "
