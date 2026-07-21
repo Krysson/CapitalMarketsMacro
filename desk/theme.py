@@ -204,15 +204,21 @@ def command_line() -> None:
 
 
 TAPE_SYMBOLS = [
-    {"proName": "SPX500USD", "title": "S&P 500"},
-    {"proName": "NDQ", "title": "Nasdaq 100"},
-    {"proName": "AMEX:IWM", "title": "Russell2K"},
-    {"proName": "US10Y", "title": "US 10Y"},  # daily official close
-    {"proName": "DXY", "title": "Dollar"},
-    {"proName": "TVC:GOLD", "title": "Gold"},
-    {"proName": "TVC:USOIL", "title": "WTI"},
-    {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
-    {"proName": "VIX", "title": "VIX"},
+    TAPE_SYMBOLS = [
+    {"proName": "FOREXCOM:SPXUSD",  "title": "S&P 500"},      # RT CFD
+    {"proName": "FOREXCOM:NSXUSD",  "title": "Nasdaq 100"},   # RT CFD
+    {"proName": "CAPITALCOM:RTY",   "title": "Russell 2000"}, # RT CFD (verify — see note)
+    {"proName": "FOREXCOM:DJI",     "title": "Dow"},          # RT CFD
+    {"proName": "CAPITALCOM:US10",  "title": "US 10Y"},       # FRED:DGS10
+    {"proName": "CAPITALCOM:DXY",   "title": "Dollar"},       # RT CFD
+    {"proName": "TVC:GOLD",         "title": "Gold"},         # RT spot
+    {"proName": "TVC:SILVER",       "title": "SILVER"},         # RT spot
+    {"proName": "TVC:USOIL",        "title": "WTI"},          # RT CFD
+    {"proName": "CAPITALCOM:NATURALGAS", "title": "NatGas"},  # RT CFD (verify)
+    {"proName": "FX:EURUSD",        "title": "EUR/USD"},      # RT
+    {"proName": "BITSTAMP:BTCUSD",  "title": "Bitcoin"},      # RT
+    {"proName": "CAPITALCOM:VIX",   "title": "VIX"},          # RT CFD mirror
+]
 ]
 
 
