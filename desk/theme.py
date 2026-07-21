@@ -315,14 +315,22 @@ def plot(fig: go.Figure, **kwargs) -> None:
 
 
 def style_fig(fig: go.Figure, title: str | None = None,
-              height: int = 300, unified_hover: bool = True) -> go.Figure:
-    """House chart style: black terminal, right-side scale, quiet grid."""
+              height: int = 300, unified_hover: bool = True,
+              right_text: str | None = None,
+              right_color: str | None = None) -> go.Figure:
+    """House chart style: black terminal, right-side scale, quiet grid.
+
+    Top-band layout (the un-mashing): title row on top, legend row
+    BELOW it, plot below that — they no longer share one margin band.
+    right_text renders on the title row, right-aligned (last price,
+    current value, etc.).
+    """
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
         font=dict(family="IBM Plex Mono, monospace", size=11, color=TEXT),
         height=height,
-        margin=dict(l=8, r=8, t=38 if title else 14, b=8),
-        legend=dict(orientation="h", y=1.1, x=0,
+        margin=dict(l=8, r=8, t=70 if title else 34, b=8),
+        legend=dict(orientation="h", y=1.0, yanchor="bottom", x=0,
                     bgcolor="rgba(0,0,0,0)", font=dict(size=10.5)),
         hovermode="x unified" if unified_hover else "closest",
         hoverlabel=dict(bgcolor=PANEL,
@@ -332,8 +340,16 @@ def style_fig(fig: go.Figure, title: str | None = None,
     if title:
         fig.update_layout(title=dict(
             text=title.upper(), x=0.0, xanchor="left",
+            y=0.985, yanchor="top",
             font=dict(family="IBM Plex Mono, monospace", size=12.5,
                       color=AMBER)))
+    if right_text:
+        fig.add_annotation(
+            text=right_text, xref="paper", yref="paper",
+            x=1.0, y=1.0, xanchor="right", yanchor="bottom",
+            yshift=26 if title else 4, showarrow=False,
+            font=dict(family="IBM Plex Mono, monospace", size=12.5,
+                      color=right_color or TEXT))
     fig.update_xaxes(showgrid=False, linecolor="rgba(232,230,225,0.25)",
                      tickcolor="rgba(232,230,225,0.25)")
     fig.update_yaxes(side="right", showgrid=True, zeroline=False,
