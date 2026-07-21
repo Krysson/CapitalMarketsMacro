@@ -156,7 +156,7 @@ with st.expander("Live SPX — TradingView (display glass)"):
           <script>
           new TradingView.widget({
             "container_id": "tv_spx",
-            "symbol": "FOREXCOM:SPXUSD",
+            "symbol": "SPX500USD",
             "interval": "D",
             "timezone": "America/New_York",
             "theme": "dark",
