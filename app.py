@@ -21,36 +21,6 @@ st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
 #                    widget demos (FRED:SP500 etc.)
 # If a CAPITALCOM symbol ever stops rendering, swap in the FRED fallback
 # on the same line.
-TAPE_SYMBOLS = [
-    {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
-    {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
-    {"proName": "FRED:DGS10", "title": "US 10Y"},  # daily official close
-    {"proName": "CAPITALCOM:DXY", "title": "Dollar"},    # fb: FRED:DTWEXBGS
-    {"proName": "TVC:GOLD", "title": "Gold"},
-    {"proName": "TVC:USOIL", "title": "WTI"},
-    {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
-    {"proName": "CAPITALCOM:VIX", "title": "VIX"},       # fb: FRED:VIXCLS
-]
-
-_TAPE = f"""
-<div class="tradingview-widget-container">
-  <div class="tradingview-widget-container__widget"></div>
-  <script type="text/javascript"
-    src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
-    async>
-  {{
-    "symbols": {json.dumps(TAPE_SYMBOLS)},
-    "showSymbolLogo": false,
-    "colorTheme": "dark",
-    "isTransparent": true,
-    "displayMode": "regular",
-    "locale": "en"
-  }}
-  </script>
-</div>
-"""
-components.html(_TAPE, height=48)
-
 theme.header(
     "THE FREE DESK · SUMMARY",
     "Capital Markets Desk",

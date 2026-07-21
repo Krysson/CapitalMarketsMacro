@@ -10,11 +10,13 @@ import re
 
 import pandas as pd
 import plotly.graph_objects as go
+import json
+
 import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.4.1"
+VERSION = "3.5.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -201,9 +203,46 @@ def command_line() -> None:
             unsafe_allow_html=True)
 
 
+TAPE_SYMBOLS = [
+    {"proName": "FOREXCOM:SPXUSD", "title": "S&P 500"},
+    {"proName": "FOREXCOM:NSXUSD", "title": "Nasdaq 100"},
+    {"proName": "FRED:DGS10", "title": "US 10Y"},  # daily official close
+    {"proName": "CAPITALCOM:DXY", "title": "Dollar"},
+    {"proName": "TVC:GOLD", "title": "Gold"},
+    {"proName": "TVC:USOIL", "title": "WTI"},
+    {"proName": "BITSTAMP:BTCUSD", "title": "Bitcoin"},
+    {"proName": "CAPITALCOM:VIX", "title": "VIX"},
+]
+
+
+def tape() -> None:
+    """The terminal's ticker tape — rendered by header() on every page."""
+    import streamlit.components.v1 as components
+
+    html = f"""
+<div class="tradingview-widget-container">
+  <div class="tradingview-widget-container__widget"></div>
+  <script type="text/javascript"
+    src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js"
+    async>
+  {{
+    "symbols": {json.dumps(TAPE_SYMBOLS)},
+    "showSymbolLogo": false,
+    "colorTheme": "dark",
+    "isTransparent": true,
+    "displayMode": "regular",
+    "locale": "en"
+  }}
+  </script>
+</div>
+"""
+    components.html(html, height=48)
+
+
 def header(eyebrow: str, title: str, caption: str | None = None) -> None:
     """Terminal page header: command line, eyebrow, title, amber rule."""
     st.markdown(_CSS, unsafe_allow_html=True)
+    tape()
     st.sidebar.markdown(
         f'<div class="desk-note" style="text-align:center;'
         f'letter-spacing:0.12em;margin-top:6px">CAPITAL MARKETS DESK '
