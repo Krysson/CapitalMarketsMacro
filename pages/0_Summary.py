@@ -6,7 +6,7 @@ import streamlit as st
 
 from desk import data, events, signals, theme
 
-st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
+st.set_page_config(page_title="Capital Markets Desk", page_icon="▪",
                    layout="wide")
 
 # TradingView ticker tape — official free embed. Display-only glass:
@@ -145,7 +145,7 @@ with left:
     for s in sigs:
         with st.expander(f"{s.category} — {s.label}  ·  {s.score}/4"):
             for c in s.checks:
-                icon = "✅" if c.passed else ("❌" if c.passed is False else "⏳")
+                icon = "✔" if c.passed else ("✘" if c.passed is False else "…")
                 st.markdown(f"{icon} {c.label}")
 
 with right:
@@ -172,6 +172,43 @@ with right:
             ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
             hide_index=True, height=430, use_container_width=True,
         )
+
+# ------------------------------------------------ bot status strip ----
+# The one thing the app previously couldn't tell you: is the nightly
+# bot alive? Computed from data already cached; fail-soft.
+try:
+    import datetime as _dt
+
+    from desk import flow as _flow
+    from desk import history as _history
+    from desk import instflow as _inst
+    _h = _history.load()
+    _fl = _flow.compute_flows(_flow.load())
+    _fp = _inst.load_footprints()
+    if _h.empty:
+        _line, _col = ("BOT: no record yet — run the snapshot workflow "
+                       "once (README)"), theme.YELLOW
+    else:
+        _last = _h.index.max()
+        _age = ((_dt.date.today() - _last.date()).days)
+        _stale = _age > 4          # > long weekend = something's wrong
+        _line = (f"BOT: last row {_last:%a %d-%b} · "
+                 f"{len(_h)} session{'s' if len(_h) != 1 else ''} · "
+                 f"flows {_fl['date'].nunique() if not _fl.empty else 0}"
+                 f" session{'s' if _fl.empty or _fl['date'].nunique() != 1 else ''} · "
+                 f"footprints {0 if _fp.empty else len(_fp)}")
+        if _stale:
+            _line += (f" · STALE ({_age}d old) — check the Actions tab")
+        _col = theme.RED if _stale else theme.GREEN
+    from desk.history import OWNER as _o, REPO as _r
+    _links = (f' &nbsp;<a href="https://github.com/{_o}/{_r}/actions" '
+              f'target="_blank" style="color:{theme.AMBER}">runs</a> · '
+              f'<a href="https://github.com/{_o}/{_r}/tree/data" '
+              f'target="_blank" style="color:{theme.AMBER}">record</a>')
+    st.markdown(f'<div class="desk-note" style="color:{_col}">{_line}'
+                f'{_links}</div>', unsafe_allow_html=True)
+except Exception:
+    pass
 
 st.markdown('<div class="desk-note">Data: FRED (St. Louis Fed) · Yahoo '
             'Finance, delayed · TradingView tape is display glass · Pages: '

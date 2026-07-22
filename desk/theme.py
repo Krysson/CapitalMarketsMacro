@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.15.0"
+VERSION = "3.16.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -85,6 +85,33 @@ input[placeholder^="COMMAND"]::placeholder {
 div[data-baseweb="input"]:has(> input[placeholder^="COMMAND"]) {
   background:#FF9F1C !important;
   border-color:#FF9F1C !important; border-radius:2px !important; }
+
+/* ---- terminal chrome: navigation & controls (v3.16) ---- */
+section[data-testid="stSidebar"] {
+  background: #000; border-right: 1px solid #1A1A1A; }
+[data-testid="stSidebarNav"] span,
+section[data-testid="stSidebar"] a span {
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 0.76rem !important; letter-spacing: 0.07em;
+  text-transform: uppercase; }
+[data-testid="stSidebarNav"] header,
+section[data-testid="stSidebar"] [data-testid="stNavSectionHeader"] {
+  font-family: 'IBM Plex Mono', monospace !important;
+  color: #FF9F1C !important; letter-spacing: 0.14em;
+  text-transform: uppercase; font-size: 0.66rem !important; }
+.stButton > button, .stDownloadButton > button,
+.stFormSubmitButton > button {
+  font-family: 'IBM Plex Mono', monospace !important;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  border-radius: 2px !important; font-size: 0.78rem !important; }
+.stTabs [data-baseweb="tab"] {
+  font-family: 'IBM Plex Mono', monospace !important;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  font-size: 0.74rem !important; }
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] summary p {
+  font-family: 'IBM Plex Mono', monospace !important;
+  font-size: 0.78rem !important; letter-spacing: 0.05em; }
 </style>
 """
 

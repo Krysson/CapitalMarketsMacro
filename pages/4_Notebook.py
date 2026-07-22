@@ -9,7 +9,7 @@ import pandas as pd
 
 from desk import data, publish, theme
 
-st.set_page_config(page_title="Notebook — Desk", page_icon="📓", layout="wide")
+st.set_page_config(page_title="Notebook — Desk", page_icon="▪", layout="wide")
 theme.header("BOOK I · CH. 15", "Analyst's Notebook",
              "Evidence → Interpretation → Risks → Falsification → Decision. "
              "Tag evidence [F] fact, [E] estimate, [I] inference. The "
@@ -54,7 +54,7 @@ st.warning(
     "Storage note: on Streamlit Community Cloud this scratchpad file resets "
     "whenever the app redeploys or restarts. **Download your notebook "
     "regularly** and re-upload to restore. Entries published to the record "
-    "are immune — they live as git commits on the `data` branch.", icon="💾")
+    "are immune — they live as git commits on the `data` branch.")
 
 # --------------------------------------------------------- the blotter ----
 theme.panel_bar("Blotter — quick notes",
@@ -190,10 +190,10 @@ if entries or jots:
         md_lines += ["## Blotter", ""]
         md_lines += [f"- `{j['ts']}` {j['text']}" for j in jots] + [""]
     c1, c2 = st.columns(2)
-    c1.download_button("⬇️ Download notebook (markdown)",
+    c1.download_button("DOWNLOAD NOTEBOOK (MARKDOWN)",
                        "\n".join(md_lines),
                        file_name="analysts_notebook.md")
-    c2.download_button("⬇️ Download backup (JSON)",
+    c2.download_button("DOWNLOAD BACKUP (JSON)",
                        json.dumps({"entries": entries, "jots": jots},
                                   indent=2),
                        file_name="notebook_backup.json")
@@ -297,8 +297,8 @@ if graded_pool:
 if entries:
     st.subheader(f"Entries ({len(entries)})")
     for e in entries:
-        tag = " · 📡 ON THE RECORD" if e.get("published_path") else ""
-        with st.expander(f"📅 {e['date']} — "
+        tag = " · ● ON THE RECORD" if e.get("published_path") else ""
+        with st.expander(f"{e['date']} — "
                          f"{e['decision'][:60] or 'entry'}{tag}"):
             for field in ("evidence", "interpretation", "risks",
                           "falsification", "decision"):
@@ -323,7 +323,7 @@ if record:
         link = (f'<a href="{f["url"]}" target="_blank" '
                 f'style="color:{theme.AMBER}">{f["name"]}</a>'
                 if f.get("url") else f["name"])
-        st.markdown(f'<div class="desk-note">📡 {link}</div>',
+        st.markdown(f'<div class="desk-note">● {link}</div>',
                     unsafe_allow_html=True)
     theme.note("Every file above is a dated commit made at save time — "
                "calls timestamped before outcomes, post-mortems appended "

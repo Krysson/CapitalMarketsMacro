@@ -10,7 +10,7 @@ import streamlit as st
 
 from desk import events, fed, theme
 
-st.set_page_config(page_title="Fed Diff — Desk", page_icon="🏛️",
+st.set_page_config(page_title="Fed Diff — Desk", page_icon="▪",
                    layout="wide")
 theme.header(
     "BOOK II · CH. 4 COMPANION",

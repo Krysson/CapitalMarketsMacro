@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data, flow, instflow, theme
 
-st.set_page_config(page_title="Flow — Desk", page_icon="🌊", layout="wide")
+st.set_page_config(page_title="Flow — Desk", page_icon="▪", layout="wide")
 theme.header(
     "BOOK III · CH. 15 · G6 — THE FLOW SCAN",
     "Flow Desk",
@@ -322,4 +322,4 @@ else:
 
 st.page_link("pages/15_Ideas.py",
              label="Streak forming? Run it through the eight "
-                   "generators → Idea Desk", icon="⚡")
+                   "generators → Idea Desk")

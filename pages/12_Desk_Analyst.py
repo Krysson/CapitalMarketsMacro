@@ -10,7 +10,7 @@ import streamlit as st
 
 from desk import analyst, theme
 
-st.set_page_config(page_title="Analyst — Desk", page_icon="🤖",
+st.set_page_config(page_title="Analyst — Desk", page_icon="▪",
                    layout="wide")
 theme.header(
     "BOOK III · THE DESK ANALYST",
@@ -22,7 +22,16 @@ theme.header(
     "positioning grammar, evidence tiers, mandatory falsification. "
     "Training desk — direction, not advice.")
 
-api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
+def _secret(name: str, default: str = "") -> str:
+    """st.secrets.get RAISES when no secrets file exists at all (fine
+    on Cloud, fatal locally) — wrap it so the page runs anywhere."""
+    try:
+        return st.secrets.get(name, default)
+    except Exception:
+        return default
+
+
+api_key = _secret("ANTHROPIC_API_KEY")
 if not api_key:
     st.error("No ANTHROPIC_API_KEY in app secrets. Add it in Streamlit "
              "Cloud → App settings → Secrets:")
@@ -33,7 +42,7 @@ if not api_key:
 
 # Cost gate: this page spends real API credits per message. On a public
 # deployment, set DESK_CHAT_PASSCODE so strangers can't run your tab.
-passcode = st.secrets.get("DESK_CHAT_PASSCODE", "")
+passcode = _secret("DESK_CHAT_PASSCODE")
 if passcode and not st.session_state.get("analyst_ok"):
     entered = st.text_input("Desk passcode", type="password")
     if entered and entered == passcode:
@@ -64,7 +73,7 @@ if "analyst_chat" not in st.session_state:
     st.session_state["analyst_chat"] = []
 
 # ---- Part V: idea validation (always available, any point in chat) ----
-with st.expander("🔬 Validate a trade idea — Book III Part V protocol"):
+with st.expander("Validate a trade idea — Book III Part V protocol"):
     st.markdown('<div class="desk-note">State your idea in your own '
                 'words — instruments, direction, and why. Any '
                 'instrument is fair game here (futures, options, '
@@ -120,9 +129,7 @@ def _md_safe(text: str) -> str:
 
 
 for msg in st.session_state["analyst_chat"]:
-    with st.chat_message(msg["role"],
-                         avatar="🖥️" if msg["role"] == "assistant"
-                         else "🧑‍💻"):
+    with st.chat_message(msg["role"]):
         st.markdown(_md_safe(msg["content"]))
 
 prompt = st.chat_input("Ask the desk…")
@@ -133,7 +140,7 @@ if prompt:
 
 chat = st.session_state["analyst_chat"]
 if chat and chat[-1]["role"] == "user":
-    with st.chat_message("assistant", avatar="🖥️"):
+    with st.chat_message("assistant"):
         with st.spinner("Reading the desk…"):
             snapshot = analyst.desk_snapshot()
         system, history = analyst.build_messages(chat, snapshot)

@@ -5,7 +5,7 @@ import streamlit as st
 
 from desk import data, theme
 
-st.set_page_config(page_title="Macro — Desk", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Macro — Desk", page_icon="▪", layout="wide")
 theme.header("BOOK III · CH. 4", "Macro Dashboard",
              "All Tier 1, primary-source data via FRED. Read top to bottom: "
              "Growth → Inflation → Policy → Liquidity. Gray bands = NBER "

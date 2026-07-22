@@ -11,7 +11,7 @@ import streamlit as st
 
 from desk import alerts, theme
 
-st.set_page_config(page_title="Help — Desk", page_icon="❓", layout="wide")
+st.set_page_config(page_title="Help — Desk", page_icon="▪", layout="wide")
 theme.header(
     "BOOK III · OPERATING MANUAL",
     "Help & Functions",

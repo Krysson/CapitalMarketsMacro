@@ -6,7 +6,7 @@ from plotly.subplots import make_subplots
 
 from desk import history, theme
 
-st.set_page_config(page_title="History — Desk", page_icon="📼", layout="wide")
+st.set_page_config(page_title="History — Desk", page_icon="▪", layout="wide")
 theme.header(
     "BOOK III · TRACK RECORD", "Regime History",
     "The four dials, recorded nightly by a bot and committed to git — "

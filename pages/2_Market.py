@@ -4,7 +4,7 @@ import streamlit as st
 
 from desk import data, theme
 
-st.set_page_config(page_title="Market — Desk", page_icon="📈", layout="wide")
+st.set_page_config(page_title="Market — Desk", page_icon="▪", layout="wide")
 theme.header("BOOK III · CH. 5", "Market Dashboard",
              "Trend, participation, and cross-asset confirmation.")
 

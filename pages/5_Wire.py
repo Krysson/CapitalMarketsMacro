@@ -12,7 +12,7 @@ import streamlit as st
 
 from desk import theme, wire
 
-st.set_page_config(page_title="Wire — Desk", page_icon="🗞️", layout="wide")
+st.set_page_config(page_title="Wire — Desk", page_icon="▪", layout="wide")
 theme.header(
     "BOOK III · THE WIRE",
     "News Wire",
@@ -123,4 +123,4 @@ theme.note("Financial media plus Google News topic lanes (Fed, rates, "
 
 st.page_link("pages/4_Notebook.py",
              label="Something on the tape worth logging? → Notebook",
-             icon="📓")
+             )

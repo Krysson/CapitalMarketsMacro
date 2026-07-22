@@ -9,7 +9,7 @@ import streamlit as st
 
 from desk import data, events, theme
 
-st.set_page_config(page_title="Calendar — Desk", page_icon="🗓️",
+st.set_page_config(page_title="Calendar — Desk", page_icon="▪",
                    layout="wide")
 theme.header(
     "BOOK II · SCHEDULED RISK",

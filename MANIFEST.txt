@@ -1,19 +1,40 @@
-Capital Markets Desk — v3.15.0 — FINRA ATS dark-venue layer live
-Changed files (full replacements; paste at these paths):
+Capital Markets Desk — v3.16.0 — terminal dress code + bot status
+Changed files (full replacements). NOTE: .streamlit/config.toml is NEW —
+the folder starts with a dot, create it via Add file -> Create new file
+with the path .streamlit/config.toml.
 
-desk/instflow.py  ::  """Institutional flow — where big players can't hide.
-desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
-pages/17_Flow.py  ::  """Flow Desk — the Sector Flow Tracker's automatable half, live.
-pages/16_Help.py  ::  """Help — the desk's function reference and operating manual.
+app.py  ::  """Capital Markets Desk — entry point and navigation.
+.streamlit/config.toml  ::  # Terminal chrome — aligns Streamlit's own UI (sidebar, widgets, input
+desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDIT
 README.md  ::  # Capital Markets Desk (Streamlit)
+pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
+pages/0_Daily_Circuit.py  ::  """Daily Circuit — the book's 90-second read as a guided sequence.
+pages/0_Summary.py  ::  """Capital Markets Desk — Summary page (the desk's front door)."""
+pages/10_Fed.py  ::  """Fed Statement Diff — every changed word was argued about. DIFF <GO>
+pages/11_Time_Machine.py  ::  """Time Machine — the desk as of any past date. TM <GO>.
+pages/12_Desk_Analyst.py  ::  """Desk Analyst — chat with Claude about the live desk. ASK <GO>.
+pages/13_Calendar.py  ::  """Economic Calendar — ECO <GO>. The desk's schedule of scheduled risk
+pages/14_History.py  ::  """Regime History — the desk's live-accrued track record."""
+pages/15_Ideas.py  ::  """Idea Desk — Chapter 15's eight generators and five gates, live.
+pages/16_Help.py  ::  """Help — the desk's function reference and operating manual.
+pages/17_Flow.py  ::  """Flow Desk — the Sector Flow Tracker's automatable half, live.
+pages/1_Macro.py  ::  """Macro Dashboard — Book III, Ch. 4: Growth / Inflation / Policy / Li
+pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cross-ass
+pages/3_Volatility.py  ::  """Volatility Dashboard — Book III, Ch. 6: the observable vol complex.
+pages/4_Notebook.py  ::  """Analyst's Notebook — Evidence → Interpretation → Risks → Falsificat
+pages/5_Wire.py  ::  """News Wire — free RSS/Atom feeds rendered as a terminal tape.
+pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
+pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
+pages/8_Futures.py  ::  """Futures — the commodity board and the shape of the curve. CTM <GO>.
+pages/9_Global.py  ::  """Global — world equity indices and FX crosses. WEI <GO> / FXC <GO>.
 
-NEW: FINRA ATS weekly data on the Flow page — OAuth2 token exchange,
-weeklySummary dataset filtered to ATS_W_SMBL + the desk's ETF set,
-casing-tolerant parser (spec versions differ), per-symbol latest-week
-table (ATS shares, trades, SHARES/TRADE) and a concentration flag when
-a symbol's latest shares-per-trade runs >=1.25x its trailing average.
-Delayed 2 weeks by rule; the note explains why that costs little at
-the accumulation timescale. SETUP: add FINRA_API_CLIENT_ID and
-FINRA_API_SECRET to the Streamlit app secrets (README section updated;
-Help keys table updated). Without credentials the panel shows a setup
-note and nothing else changes. theme.VERSION 3.15.0.
+NO EMOJIS anywhere: sidebar nav icons removed, page tab glyphs
+neutralized to a plain square, chat avatars defaulted, buttons and
+download labels recut in terminal caps, ON THE RECORD tag now a plain
+bullet. Dingbats (check/cross/bullet/arrow) retained — typography, not
+pictures. NEW .streamlit/config.toml aligns Streamlit chrome to
+black/amber/mono; theme CSS dresses sidebar/buttons/tabs/expanders in
+IBM Plex Mono uppercase. BOT STATUS strip on the Summary footer: last
+recorded session, flow-session and footprint counts, links to Actions
+runs and the data branch, STALE-red past 4 days. theme.VERSION 3.16.0.
+(Every pages/*.py ships because every page's tab glyph changed.)

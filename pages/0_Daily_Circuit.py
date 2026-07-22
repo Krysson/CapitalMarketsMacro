@@ -9,7 +9,7 @@ import streamlit as st
 
 from desk import data, events, signals, theme
 
-st.set_page_config(page_title="Daily Circuit — Desk", page_icon="🔁",
+st.set_page_config(page_title="Daily Circuit — Desk", page_icon="▪",
                    layout="wide")
 theme.header(
     "BOOK III · THE DAILY CIRCUIT",
@@ -199,7 +199,7 @@ else:
                 "changed, done in 90 seconds.")
 st.page_link("pages/4_Notebook.py",
              label="Log a Notebook entry → Evidence first, opinion last",
-             icon="📓")
+             )
 theme.note("The circuit isn't finished when you've LOOKED — it's finished "
            "when you've written. Evidence → Interpretation → Risks → "
            "Falsification → Decision. Most days the honest entry is "

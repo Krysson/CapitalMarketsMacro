@@ -12,7 +12,7 @@ import streamlit as st
 
 from desk import data, instflow, theme
 
-st.set_page_config(page_title="Rates — Desk", page_icon="📉", layout="wide")
+st.set_page_config(page_title="Rates — Desk", page_icon="▪", layout="wide")
 theme.header(
     "BOOK III · RATES & CREDIT",
     "Rates & Credit",

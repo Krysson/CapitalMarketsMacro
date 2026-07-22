@@ -39,7 +39,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.15.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.16.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -55,6 +55,18 @@ throttled, instead of erroring.
    but the key is more reliable.)
 4. Deploy. First load takes ~1 min while data caches. If a dependency
    changed (e.g. feedparser), reboot the app from the Cloud dashboard.
+
+## Look & feel (v3.16)
+
+No emojis anywhere — a terminal has function codes, not pictures.
+Dingbat marks (✓ ✘ ● →) stay; they're typography. `.streamlit/
+config.toml` (new file — paste it too, folder starts with a dot)
+aligns Streamlit's own chrome to black/amber/mono, and the theme CSS
+dresses the sidebar nav, buttons, tabs, and expanders in IBM Plex
+Mono uppercase. The Summary footer now carries a BOT STATUS strip:
+last recorded session, counts for flows and footprints, links to the
+Actions runs and the data branch — red with STALE if the record is
+more than four days old.
 
 ## Navigation (v3.14)
 

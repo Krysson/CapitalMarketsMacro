@@ -13,7 +13,7 @@ import streamlit as st
 
 from desk import data, signals, theme
 
-st.set_page_config(page_title="Time Machine — Desk", page_icon="⏪",
+st.set_page_config(page_title="Time Machine — Desk", page_icon="▪",
                    layout="wide")
 theme.header(
     "BOOK III · TIME MACHINE",
@@ -128,7 +128,7 @@ theme.note("Now do the exercise properly: Analyst's Notebook template, "
            "envelope below. The value of the machine is that you can't "
            "un-know the future; the discipline is pretending you can.")
 
-with st.expander("📬 What happened next — open AFTER you've written "
+with st.expander("SEALED — What happened next — open AFTER you've written "
                  "your call"):
     full = data.px_history("^GSPC")
     fwd = data.fwd_from_series(full, asof_ts, (5, 21, 63, 126))

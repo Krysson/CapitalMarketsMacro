@@ -8,44 +8,40 @@ their paths, so every _ROUTES command and switch_page call still works.
 """
 import streamlit as st
 
-st.set_page_config(page_title="Capital Markets Desk", page_icon="📟",
+st.set_page_config(page_title="Capital Markets Desk", page_icon="▪",
                    layout="wide")
 
 pg = st.navigation({
     "The Desk": [
-        st.Page("pages/0_Summary.py", title="Summary", icon="📟",
+        st.Page("pages/0_Summary.py", title="Summary",
                 default=True),
-        st.Page("pages/00_Launchpad.py", title="Launchpad", icon="🟧"),
-        st.Page("pages/0_Daily_Circuit.py", title="Daily Circuit",
-                icon="🔁"),
+        st.Page("pages/00_Launchpad.py", title="Launchpad"),
+        st.Page("pages/0_Daily_Circuit.py", title="Daily Circuit"),
     ],
     "Markets": [
-        st.Page("pages/1_Macro.py", title="Macro", icon="🌡️"),
-        st.Page("pages/2_Market.py", title="Market", icon="📈"),
-        st.Page("pages/3_Volatility.py", title="Volatility", icon="🌀"),
-        st.Page("pages/7_Rates.py", title="Rates", icon="📉"),
-        st.Page("pages/8_Futures.py", title="Futures & COT", icon="🛢️"),
-        st.Page("pages/9_Global.py", title="Global & FX", icon="🌍"),
-        st.Page("pages/17_Flow.py", title="Flow", icon="🌊"),
+        st.Page("pages/1_Macro.py", title="Macro"),
+        st.Page("pages/2_Market.py", title="Market"),
+        st.Page("pages/3_Volatility.py", title="Volatility"),
+        st.Page("pages/7_Rates.py", title="Rates"),
+        st.Page("pages/8_Futures.py", title="Futures & COT"),
+        st.Page("pages/9_Global.py", title="Global & FX"),
+        st.Page("pages/17_Flow.py", title="Flow"),
     ],
     "Research": [
-        st.Page("pages/6_Quote.py", title="Quote", icon="🔎"),
-        st.Page("pages/5_Wire.py", title="Wire", icon="🗞️"),
-        st.Page("pages/13_Calendar.py", title="Calendar", icon="🗓️"),
-        st.Page("pages/10_Fed.py", title="Fed", icon="🏛️"),
+        st.Page("pages/6_Quote.py", title="Quote"),
+        st.Page("pages/5_Wire.py", title="Wire"),
+        st.Page("pages/13_Calendar.py", title="Calendar"),
+        st.Page("pages/10_Fed.py", title="Fed"),
     ],
     "The Analyst": [
-        st.Page("pages/4_Notebook.py", title="Notebook", icon="📓"),
-        st.Page("pages/15_Ideas.py", title="Idea Desk", icon="⚡"),
-        st.Page("pages/12_Desk_Analyst.py", title="Desk Analyst",
-                icon="🤖"),
-        st.Page("pages/14_History.py", title="Regime History",
-                icon="📼"),
+        st.Page("pages/4_Notebook.py", title="Notebook"),
+        st.Page("pages/15_Ideas.py", title="Idea Desk"),
+        st.Page("pages/12_Desk_Analyst.py", title="Desk Analyst"),
+        st.Page("pages/14_History.py", title="Regime History"),
     ],
     "Reference": [
-        st.Page("pages/11_Time_Machine.py", title="Time Machine",
-                icon="⏪"),
-        st.Page("pages/16_Help.py", title="Help", icon="❓"),
+        st.Page("pages/11_Time_Machine.py", title="Time Machine"),
+        st.Page("pages/16_Help.py", title="Help"),
     ],
 })
 pg.run()

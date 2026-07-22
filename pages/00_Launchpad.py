@@ -9,7 +9,7 @@ import streamlit as st
 
 from desk import data, events, signals, theme, wire
 
-st.set_page_config(page_title="Launchpad — Desk", page_icon="🟧",
+st.set_page_config(page_title="Launchpad — Desk", page_icon="▪",
                    layout="wide")
 theme.header("BOOK III · LAUNCHPAD", "Launchpad")
 
@@ -169,25 +169,25 @@ with c3:
 # ------------------------------------------------ row D: the map ------
 st.divider()
 nav = [
-    ("pages/0_Summary.py", "📟 Summary"),
-    ("pages/0_Daily_Circuit.py", "🔁 Circuit"),
-    ("pages/1_Macro.py", "🌡️ Macro"),
-    ("pages/2_Market.py", "📈 Market"),
-    ("pages/3_Volatility.py", "🌀 Vol"),
-    ("pages/7_Rates.py", "📉 Rates"),
-    ("pages/8_Futures.py", "🛢️ Futures"),
-    ("pages/9_Global.py", "🌍 Global"),
-    ("pages/17_Flow.py", "🌊 Flow"),
-    ("pages/6_Quote.py", "🔎 Quote"),
-    ("pages/5_Wire.py", "🗞️ Wire"),
-    ("pages/13_Calendar.py", "🗓️ Calendar"),
-    ("pages/10_Fed.py", "🏛️ Fed"),
-    ("pages/4_Notebook.py", "📓 Notebook"),
-    ("pages/15_Ideas.py", "⚡ Ideas"),
-    ("pages/12_Desk_Analyst.py", "🤖 Analyst"),
-    ("pages/14_History.py", "📼 History"),
-    ("pages/11_Time_Machine.py", "⏪ Time Machine"),
-    ("pages/16_Help.py", "❓ Help"),
+    ("pages/0_Summary.py", "Summary"),
+    ("pages/0_Daily_Circuit.py", "Circuit"),
+    ("pages/1_Macro.py", "Macro"),
+    ("pages/2_Market.py", "Market"),
+    ("pages/3_Volatility.py", "Vol"),
+    ("pages/7_Rates.py", "Rates"),
+    ("pages/8_Futures.py", "Futures"),
+    ("pages/9_Global.py", "Global"),
+    ("pages/17_Flow.py", "Flow"),
+    ("pages/6_Quote.py", "Quote"),
+    ("pages/5_Wire.py", "Wire"),
+    ("pages/13_Calendar.py", "Calendar"),
+    ("pages/10_Fed.py", "Fed"),
+    ("pages/4_Notebook.py", "Notebook"),
+    ("pages/15_Ideas.py", "Ideas"),
+    ("pages/12_Desk_Analyst.py", "Analyst"),
+    ("pages/14_History.py", "History"),
+    ("pages/11_Time_Machine.py", "Time Machine"),
+    ("pages/16_Help.py", "Help"),
 ]
 ncols = st.columns(7)
 for i, (path, label) in enumerate(nav):

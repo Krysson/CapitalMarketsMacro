@@ -25,7 +25,7 @@ import streamlit as st
 
 from desk import analyst, data, events, history, signals, theme
 
-st.set_page_config(page_title="Ideas — Desk", page_icon="⚡", layout="wide")
+st.set_page_config(page_title="Ideas — Desk", page_icon="▪", layout="wide")
 theme.header(
     "BOOK III · CH. 15 · FINDING THE TRADE",
     "Idea Desk",
@@ -380,7 +380,7 @@ with st.form("scanlog", clear_on_submit=False):
                     "survivable ✓ — WATCH-WITH-INTENT, needs one more "
                     "day of streak.  …or, proudly: NOTHING CLEARS THE "
                     "BAR TODAY.")
-    sent = st.form_submit_button("📓 Send scan log to the Notebook")
+    sent = st.form_submit_button("SEND SCAN LOG TO THE NOTEBOOK")
 if sent:
     stamp = dt.datetime.now().strftime("%a %d %b %Y %H:%M")
     lines = [f"SCAN LOG — {stamp} (Ch. 15 drill)"]
@@ -419,7 +419,7 @@ else:
     model = st.selectbox("Model", ["claude-sonnet-4-6",
                                    "claude-opus-4-8",
                                    "claude-haiku-4-5-20251001"])
-    if st.button("⚡ Run the funnel on today's scans",
+    if st.button("RUN THE FUNNEL ON TODAY'S SCANS",
                  use_container_width=True):
         with st.spinner("Reading the desk…"):
             snapshot = analyst.desk_snapshot()
@@ -454,7 +454,7 @@ else:
         try:
             from anthropic import Anthropic
             client = Anthropic(api_key=api_key)
-            with st.chat_message("assistant", avatar="⚡"):
+            with st.chat_message("assistant"):
                 with client.messages.stream(
                         model=model, max_tokens=1700,
                         system=system, messages=hist_msgs) as stream:

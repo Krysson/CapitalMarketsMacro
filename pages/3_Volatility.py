@@ -4,7 +4,7 @@ import streamlit as st
 
 from desk import data, theme
 
-st.set_page_config(page_title="Volatility — Desk", page_icon="🌪️", layout="wide")
+st.set_page_config(page_title="Volatility — Desk", page_icon="▪", layout="wide")
 theme.header("BOOK III · CH. 6", "Volatility Dashboard",
              "The observable, Tier 1 half of the options dashboard. Dealer "
              "positioning / GEX are inferred, paid data — deliberately absent.")
