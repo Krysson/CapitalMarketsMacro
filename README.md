@@ -39,7 +39,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.14.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.15.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -145,13 +145,20 @@ rule, three chokepoints are now on the desk, none needing a key:
    net positions ($mm), charted on the Rates page. The most
    institutional public dataset in existence.
 
-**Phase 2 (one free credential): FINRA ATS dark-venue data.** Register
-at developer.finra.org (free): create an account → API console →
-create an API credential (client ID + secret) → we'll add it to app
-secrets and wire per-security ATS weekly volumes (shares-per-trade
-rising = size concentrating). Delayed 2–4 weeks by rule — fine for
-the accumulation timescale. Do the registration whenever; the wiring
-is a future version.
+**FINRA ATS dark-venue data (live as of v3.15).** Weekly per-security
+ATS volumes on the Flow page, with shares-per-trade concentration
+flags. Setup: register free at developer.finra.org → API console →
+create an API credential, then add BOTH values to the **Streamlit app
+secrets**:
+
+    FINRA_API_CLIENT_ID = "..."
+    FINRA_API_SECRET = "..."
+
+The app exchanges them for a token automatically. Data is delayed 2
+weeks for Tier 1 NMS securities BY RULE — fine for the accumulation
+timescale the scan targets. Without credentials the panel shows a
+setup note and the rest of the Flow page is unaffected. Keys table on
+the Help page updated accordingly.
 
 ## Alerts (nightly tripwires → GitHub issues)
 

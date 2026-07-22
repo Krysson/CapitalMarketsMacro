@@ -27,6 +27,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
+from desk.flow import FLOW_ETFS
 from desk.history import OWNER, REPO
 
 OPTION_UNDERLYINGS = ("SPY", "QQQ")
@@ -156,6 +157,136 @@ def evaluate_oi_alerts(fp: pd.DataFrame,
             f"{r['prev_volume']:,}). Size arrived at that strike — "
             f"which side initiated is NOT observable.")
     return out
+
+
+# ------------------------------------------------ FINRA ATS weekly ----
+# The dark-venue layer — per-security weekly ATS volumes, delayed 2-4
+# weeks BY RULE (Tier 1 NMS: 2 weeks). The workbook's FINRA_ATS paste
+# tab, automated: rising shares-per-trade is the tell that size is
+# concentrating in a name. Needs the free FINRA API credential
+# (FINRA_API_CLIENT_ID / FINRA_API_SECRET in app secrets).
+
+_FINRA_TOKEN_URL = ("https://ews.fip.finra.org/fip/rest/ews/oauth2/"
+                    "access_token?grant_type=client_credentials")
+_FINRA_DATA_URL = ("https://api.finra.org/data/group/otcMarket/"
+                   "name/weeklySummary")
+
+
+def _finra_creds() -> tuple[str, str] | None:
+    try:
+        cid = st.secrets.get("FINRA_API_CLIENT_ID", "")
+        sec = st.secrets.get("FINRA_API_SECRET", "")
+        if cid and sec:
+            return str(cid).strip(), str(sec).strip()
+    except Exception:
+        pass
+    return None
+
+
+@st.cache_data(ttl=50 * 60, show_spinner=False)
+def _finra_token() -> str | None:
+    creds = _finra_creds()
+    if not creds:
+        return None
+    try:
+        r = requests.post(_FINRA_TOKEN_URL, auth=creds, timeout=20)
+        if r.ok:
+            return r.json().get("access_token")
+    except Exception:
+        pass
+    return None
+
+
+def parse_ats(rows: list[dict],
+              symbols: tuple[str, ...]) -> pd.DataFrame:
+    """FINRA weeklySummary rows -> tidy frame. Key casing varies across
+    spec versions — normalize case-insensitively. Pure."""
+    out = []
+    for o in rows:
+        low = {str(k).lower(): v for k, v in o.items()}
+        sym = low.get("issuesymbolidentifier")
+        if sym not in symbols:
+            continue
+        stc = str(low.get("summarytypecode")
+                  or low.get("summarytype") or "")
+        if stc and "ATS" not in stc.upper():
+            continue
+        week = (low.get("weekstartdate") or low.get("summarystartdate")
+                or low.get("tradereportstartdate"))
+        shares = low.get("totalweeklysharequantity")
+        trades = (low.get("totalweeklytradecount")
+                  or low.get("totaltradecountsum")
+                  or low.get("totalweeklytradecountsum"))
+        if week is None or shares is None:
+            continue
+        out.append({"symbol": sym,
+                    "week": pd.to_datetime(week, errors="coerce"),
+                    "shares": pd.to_numeric(shares, errors="coerce"),
+                    "trades": pd.to_numeric(trades, errors="coerce")})
+    df = pd.DataFrame(out)
+    if df.empty:
+        return df
+    df = (df.dropna(subset=["week", "shares"])
+            .groupby(["symbol", "week"], as_index=False)
+            .agg({"shares": "sum", "trades": "sum"}))
+    df["shares_per_trade"] = (df["shares"] / df["trades"]).where(
+        df["trades"] > 0)
+    return df.sort_values(["symbol", "week"])
+
+
+@st.cache_data(ttl=12 * 3600, show_spinner=False)
+def ats_weekly(symbols: tuple[str, ...] | None = None,
+               weeks: int = 8) -> pd.DataFrame:
+    """Latest ATS weekly rows for the desk's ETF set. Empty without
+    credentials or on any failure — the panel shows its setup note."""
+    symbols = symbols or tuple(FLOW_ETFS)
+    tok = _finra_token()
+    if not tok:
+        return pd.DataFrame()
+    payload = {
+        "limit": 5000,
+        "compareFilters": [
+            {"compareType": "EQUAL", "fieldName": "summaryTypeCode",
+             "fieldValue": "ATS_W_SMBL"}],
+        "domainFilters": [
+            {"fieldName": "issueSymbolIdentifier",
+             "values": list(symbols)}],
+    }
+    try:
+        r = requests.post(
+            _FINRA_DATA_URL, json=payload, timeout=30,
+            headers={"Authorization": f"Bearer {tok}",
+                     "Accept": "application/json"})
+        if not r.ok:
+            return pd.DataFrame()
+        df = parse_ats(r.json(), symbols)
+        if df.empty:
+            return df
+        keep = sorted(df["week"].unique())[-weeks:]
+        return df[df["week"].isin(keep)]
+    except Exception:
+        return pd.DataFrame()
+
+
+def ats_concentration(df: pd.DataFrame,
+                      ratio: float = 1.25) -> pd.DataFrame:
+    """Symbols whose LATEST week's shares-per-trade runs ≥ ratio× their
+    own trailing average — size concentrating in the dark. Pure."""
+    if df.empty or "shares_per_trade" not in df.columns:
+        return pd.DataFrame()
+    rows = []
+    for sym, g in df.dropna(subset=["shares_per_trade"]).groupby("symbol"):
+        g = g.sort_values("week")
+        if len(g) < 3:
+            continue
+        base = float(g["shares_per_trade"].iloc[:-1].mean())
+        last = float(g["shares_per_trade"].iloc[-1])
+        if base > 0 and last >= ratio * base:
+            rows.append({"symbol": sym, "week": g["week"].iloc[-1],
+                         "spt_last": last, "spt_base": base,
+                         "ratio": last / base})
+    return (pd.DataFrame(rows).sort_values("ratio", ascending=False)
+            if rows else pd.DataFrame())
 
 
 # ------------------------------------------------- auction results ----

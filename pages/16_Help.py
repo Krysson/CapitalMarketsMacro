@@ -121,6 +121,7 @@ st.markdown("""
 | `ANTHROPIC_API_KEY` | App secrets | Desk Analyst (`ASK`) and the Idea Desk generator (`GEN`) |
 | `DESK_CHAT_PASSCODE` | App secrets | Gates `ASK` and `GEN` so strangers can't spend your credits |
 | `GH_TOKEN` | App secrets | Publishing Notebook entries to the public record |
+| `FINRA_API_CLIENT_ID` + `FINRA_API_SECRET` | App secrets | ATS dark-venue weekly data on the Flow page |
 
 Setup steps for each are in the README. Everything else on the desk —
 every chart, dial, tape, and the whole quote panel minus EIA — runs

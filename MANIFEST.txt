@@ -1,31 +1,19 @@
-Capital Markets Desk — v3.14.0 — navigation reorg · Market glass unified · alerts config · readable notes
-Changed/new files (full replacements; paste at these paths).
-NOTE: pages/0_Summary.py is NEW (old app.py content); app.py is now a router.
+Capital Markets Desk — v3.15.0 — FINRA ATS dark-venue layer live
+Changed files (full replacements; paste at these paths):
 
-app.py  ::  """Capital Markets Desk — entry point and navigation.
-pages/0_Summary.py  ::  """Capital Markets Desk — Summary page (the desk's front door)."""
-pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
-pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
-pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
-pages/16_Help.py  ::  """Help — the desk's function reference and operating manual.
-desk/alerts.py  ::  """Desk alerts — Ch. 15's tripwires, evaluated by the nightly bot.
-desk/flow.py  ::  """Flow layer — the Sector Flow Tracker's automatable half, in-app.
 desk/instflow.py  ::  """Institutional flow — where big players can't hide.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
+pages/17_Flow.py  ::  """Flow Desk — the Sector Flow Tracker's automatable half, live.
+pages/16_Help.py  ::  """Help — the desk's function reference and operating manual.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-NAV: st.navigation with intent groups — The Desk / Markets / Research /
-The Analyst / Reference (Time Machine + Help at the bottom). Sidebar no
-longer says 'app'; entry defaults to Summary. All file paths unchanged,
-so every command route and page link still works.
-MARKET: heatmap + live SPX now ADJACENT tabs at the page's end — the
-cross-section and the time series of the same object, zero scroll.
-ALERTS: every threshold now lives in desk/alerts.THRESHOLDS (one dict);
-flow + OI rules read it too; the Help page renders the active rules
-table LIVE from the same dict, with tuning instructions.
-RATES: auction table gains the Direct % column; the bidder-class and
-dealer-position notes rewritten in plain teaching English (your edit,
-applied and extended).
-LAUNCHPAD: full one-click nav strip (all 19 pages) added as row D.
-theme.VERSION 3.14.0 — REMEMBER TO PASTE theme.py (the 3.13 version
-string was in the file you skipped last time).
+NEW: FINRA ATS weekly data on the Flow page — OAuth2 token exchange,
+weeklySummary dataset filtered to ATS_W_SMBL + the desk's ETF set,
+casing-tolerant parser (spec versions differ), per-symbol latest-week
+table (ATS shares, trades, SHARES/TRADE) and a concentration flag when
+a symbol's latest shares-per-trade runs >=1.25x its trailing average.
+Delayed 2 weeks by rule; the note explains why that costs little at
+the accumulation timescale. SETUP: add FINRA_API_CLIENT_ID and
+FINRA_API_SECRET to the Streamlit app secrets (README section updated;
+Help keys table updated). Without credentials the panel shows a setup
+note and nothing else changes. theme.VERSION 3.15.0.

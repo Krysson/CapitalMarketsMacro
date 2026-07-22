@@ -120,6 +120,68 @@ else:
 
 st.divider()
 
+# ------------------------------------------------ ATS dark venues ----
+theme.panel_bar("Dark-venue concentration — FINRA ATS weekly",
+                "Tier 1 · official · delayed 2 weeks by rule")
+ats = instflow.ats_weekly()
+if ats.empty:
+    if instflow._finra_creds() is None:
+        st.markdown(
+            '<div class="desk-note">ATS data needs the free FINRA API '
+            'credential — add FINRA_API_CLIENT_ID and FINRA_API_SECRET '
+            'to the app secrets (setup in the README). Until then this '
+            'stays the workbook\'s paste tab.</div>',
+            unsafe_allow_html=True)
+    else:
+        st.warning("FINRA API unreachable or returned nothing — "
+                   "credentials may need a re-check, or the API is "
+                   "busy; try again shortly.")
+else:
+    latest_wk = ats["week"].max()
+    last = (ats[ats["week"] == latest_wk]
+            .sort_values("shares", ascending=False).copy())
+    last["Name"] = last["symbol"].map(
+        lambda s: flow.FLOW_ETFS.get(s, (s,))[0])
+    st.dataframe(
+        last.set_index("symbol")[
+            ["Name", "shares", "trades", "shares_per_trade"]]
+        .rename(columns={"shares": "ATS shares",
+                         "trades": "ATS trades",
+                         "shares_per_trade": "Shares/trade"})
+        .style.format({"ATS shares": "{:,.0f}",
+                       "ATS trades": "{:,.0f}",
+                       "Shares/trade": "{:,.0f}"}, na_rep="—"),
+        use_container_width=True,
+        height=min(560, 60 + 35 * len(last)))
+    conc = instflow.ats_concentration(ats)
+    if not conc.empty:
+        lines = "; ".join(
+            f"{r['symbol']} {r['spt_last']:,.0f}/trade vs "
+            f"{r['spt_base']:,.0f} average ({r['ratio']:.2f}×)"
+            for _, r in conc.iterrows())
+        theme.readout(
+            theme.AMBER,
+            f"CONCENTRATION — week of {latest_wk:%d-%b}: {lines}. "
+            f"Bigger average prints in the dark = bigger players "
+            f"working the name.")
+    else:
+        theme.readout(theme.GREEN,
+                      f"Week of {latest_wk:%d-%b}: no shares-per-trade "
+                      f"outliers vs trailing averages — dark-venue "
+                      f"activity looks routine.")
+    theme.note("What this is: every Alternative Trading System — the "
+               "dark pools — must report weekly share and trade counts "
+               "per security to FINRA, published on a two-week delay "
+               "by rule. The single most useful column is "
+               "SHARES/TRADE: dark venues exist to hide size, so when "
+               "the average print in a name gets bigger, someone "
+               "large is working it — quiet accumulation or "
+               "distribution runs for weeks, which is why the delay "
+               "costs less than it sounds. This automates the "
+               "workbook's FINRA_ATS paste tab. [T1]")
+
+st.divider()
+
 # --------------------------------------------- the accrued flow record --
 theme.panel_bar("ETF flow record — Δshares × price, accrued nightly",
                 "Tier 2 · the desk's own data")
