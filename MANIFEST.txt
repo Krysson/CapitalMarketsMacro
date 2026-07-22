@@ -1,21 +1,16 @@
-Capital Markets Desk — v3.9.0 — tape fix (st.iframe) + Notebook blotter
+Capital Markets Desk — v3.9.1 — promote-prefill fix + scrollbar fix + publish guard
 Changed files (full replacements; paste into GitHub at these paths):
 
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
 pages/4_Notebook.py  ::  """Analyst's Notebook — Evidence → Interpretation → Risks → Falsification."""
-pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
-pages/9_Global.py  ::  """Global — world equity indices and FX crosses. WEI <GO> / FXC <GO>.
-pages/13_Calendar.py  ::  """Economic Calendar — ECO <GO>. The desk's schedule of scheduled risk.
-app.py  ::  """Capital Markets Desk — Summary page."""
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-FIX: streamlit.components.v1.html was removed after 2026-06-01 —
-every TradingView embed (tape, Calendar events, Market heatmap/SPX,
-Global FX board, Summary widget) went blank. All embeds now route
-through theme.embed(): st.iframe first, components fallback,
-fail-soft. Never call components.html directly again (README gotcha).
-NEW: Blotter on the Notebook page — quick timestamped jots, private
-always, per-jot promote-to-entry (prefills Evidence) and delete;
-included in the markdown download; JSON backup now carries
-{entries, jots} and restore accepts the old bare-list format too.
-theme.VERSION 3.9.0.
+FIX 1: promoted jots published blank — prefill via value= broke on the
+submit rerun (widget auto-ID change). Evidence now uses a stable key
+seeded before the form; repeat promotes APPEND. FIX 2: st.iframe grew
+scrollbars on every TradingView widget — embed() now injects a
+margin/overflow reset into the iframe document. NEW: blank entries
+(no Evidence and no Decision) can no longer be published — saved to
+the scratchpad with an error instead. Instrument input normalized
+(dji -> ^DJI, spx -> ^GSPC, etc.) so post-mortem grading can fetch it.
+theme.VERSION 3.9.1. Both gotchas added to the README.

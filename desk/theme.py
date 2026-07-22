@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.9.0"
+VERSION = "3.9.1"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -234,7 +234,15 @@ def embed(html: str, height: int) -> None:
     """
     try:
         if hasattr(st, "iframe"):
-            st.iframe(html, height=height)
+            # components.html clipped overflow by default; st.iframe does
+            # not, and its document keeps default body margins — every
+            # widget grew a scrollbar. Reset both inside the iframe's own
+            # document (we author this HTML, so this is in-bounds).
+            reset = ("<style>html,body{margin:0!important;"
+                     "padding:0!important;overflow:hidden!important}"
+                     "::-webkit-scrollbar{display:none}"
+                     "html{scrollbar-width:none}</style>")
+            st.iframe(reset + html, height=height)
             return
         import streamlit.components.v1 as components
         components.html(html, height=height)

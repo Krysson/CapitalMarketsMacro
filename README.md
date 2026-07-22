@@ -36,7 +36,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.9.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.9.1** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -192,7 +192,14 @@ dry). Roughly once a year:
   TradingView widget went blank when Cloud rolled past it. All
   script-bearing embeds now go through `theme.embed()` (st.iframe
   with a components fallback, fail-soft). Never call components.html
-  directly again.
+  directly again. st.iframe also shows scrollbars where
+  components.html clipped — embed() injects a margin/overflow reset
+  into the iframe document; don't remove it.
+- Inside a `clear_on_submit` form, never prefill a widget via a
+  transient `value=` — the reverted value changes the widget's
+  auto-ID on the submit rerun and the form returns a blank. Seed a
+  stable `key` in session_state before the form renders (see the
+  Notebook's promote flow).
 
 ## Known limitations
 

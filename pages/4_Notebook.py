@@ -98,12 +98,23 @@ if jots:
             save_jots(jots)
             st.rerun()
 
+# Promote-prefill: seed the Evidence widget's state BEFORE the form
+# renders. GOTCHA (learned the hard way): passing the jot as value= and
+# popping it broke on the submit rerun — the reverted value changed the
+# widget's auto-generated identity, so Streamlit returned a fresh empty
+# widget and entries published blank. A stable key + pre-seeded state is
+# the correct pattern; repeated promotes append instead of overwriting.
+if "prefill_evidence" in st.session_state:
+    _seed = st.session_state.pop("prefill_evidence")
+    _cur = st.session_state.get("evidence_field", "")
+    st.session_state["evidence_field"] = \
+        f"{_cur}\n{_seed}".strip() if _cur else _seed
+
 with st.form("entry", clear_on_submit=True):
     st.subheader("New entry")
     date = st.date_input("Date", dt.date.today())
     evidence = st.text_area(
-        "Evidence", height=140,
-        value=st.session_state.pop("prefill_evidence", ""),
+        "Evidence", height=140, key="evidence_field",
         placeholder="[F] SPX −0.8%, ADD +564, RSP/SPY +1.4% …")
     interpretation = st.text_area("Interpretation", height=110)
     risks = st.text_area("Risks to this read", height=80)
@@ -130,12 +141,26 @@ with st.form("entry", clear_on_submit=True):
                     'The scratchpad works either way.</div>',
                     unsafe_allow_html=True)
     if st.form_submit_button("Save entry"):
+        # Normalize the instrument so post-mortem grading can actually
+        # fetch it: Yahoo index symbols need the caret (^DJI not dji).
+        _ALIAS = {"DJI": "^DJI", "SPX": "^GSPC", "GSPC": "^GSPC",
+                  "NDX": "^NDX", "VIX": "^VIX", "RUT": "^RUT"}
+        inst = instrument.strip().upper() or "^GSPC"
+        inst = _ALIAS.get(inst, inst)
         entry = {
             "date": str(date), "evidence": evidence,
             "interpretation": interpretation, "risks": risks,
             "falsification": falsification, "decision": decision,
-            "call": call, "instrument": instrument.strip() or "^GSPC",
+            "call": call, "instrument": inst,
         }
+        if do_publish and pub_on and not (evidence.strip()
+                                          or decision.strip()):
+            # A real desk doesn't publish an empty pitch — and the
+            # record permanently displays whatever reaches it.
+            do_publish = False
+            st.error("Not published: an entry needs at least Evidence "
+                     "or a Decision before it goes on the record. "
+                     "Saved to the scratchpad instead.")
         if do_publish and pub_on:
             ok, path, detail = publish.publish_entry(entry)
             if ok:
