@@ -23,6 +23,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: snapshot
@@ -53,12 +54,16 @@ jobs:
           git fetch origin +refs/heads/data:refs/remotes/origin/data || true
           if git rev-parse --verify --quiet origin/data >/dev/null; then
             git checkout origin/data -- history/signals.csv || true
-            git reset -q -- history/signals.csv || true
+            git checkout origin/data -- history/flows.csv || true
+            git checkout origin/data -- history/oi_latest.csv || true
+            git checkout origin/data -- history/oi_footprints.csv || true
+            git reset -q -- history/ || true
           fi
 
       - name: Compute today's row
         env:
           FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/snapshot.py
 
       - name: Commit to the data branch (never main)
@@ -68,7 +73,10 @@ jobs:
             exit 0
           fi
           cp history/signals.csv /tmp/signals.csv
-          rm -f history/signals.csv
+          [ -f history/flows.csv ] && cp history/flows.csv /tmp/flows.csv
+          [ -f history/oi_latest.csv ] && cp history/oi_latest.csv /tmp/oi_latest.csv
+          [ -f history/oi_footprints.csv ] && cp history/oi_footprints.csv /tmp/oi_footprints.csv
+          rm -f history/*.csv
           git config user.name "desk-snapshot-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git fetch origin +refs/heads/data:refs/remotes/origin/data || true
@@ -81,7 +89,10 @@ jobs:
           fi
           mkdir -p history
           cp /tmp/signals.csv history/signals.csv
-          git add history/signals.csv
+          [ -f /tmp/flows.csv ] && cp /tmp/flows.csv history/flows.csv
+          [ -f /tmp/oi_latest.csv ] && cp /tmp/oi_latest.csv history/oi_latest.csv
+          [ -f /tmp/oi_footprints.csv ] && cp /tmp/oi_footprints.csv history/oi_footprints.csv
+          git add history/
           if git commit -m "snapshot $(date -u +%F)"; then
             git push origin data
           else
