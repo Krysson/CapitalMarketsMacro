@@ -1,0 +1,9 @@
+# Terminal chrome — aligns Streamlit's own UI (sidebar, widgets, inputs)
+# to the desk's black/amber identity. The in-page CSS handles the rest.
+[theme]
+base = "dark"
+primaryColor = "#FF9F1C"
+backgroundColor = "#000000"
+secondaryBackgroundColor = "#0D0D0D"
+textColor = "#E8E6E1"
+font = "monospace"
