@@ -121,7 +121,7 @@ st.divider()
 # cross-section, the live chart is the time series of the same object.
 theme.panel_bar("The glass — TradingView (display only)",
                 "heatmap + live SPX, adjacent by design")
-tab_hm, tab_spx = st.tabs(["S&P 500 heatmap", "Live SPX"])
+tab_spx, tab_hm = st.tabs(["Live SPX", "S&P 500 heatmap"])
 with tab_hm:
     theme.embed(
         """
