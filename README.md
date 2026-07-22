@@ -16,7 +16,7 @@ display glass only. Colors mean **direction, not advice**.
 | Macro | `MAC` | 15 FRED series + Net Liquidity (WALCL − TGA − RRP), NBER recession bands |
 | Market | `MKT` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
-| Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision, JSON export/restore |
+| Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision; private scratchpad by default, per-entry **publish to the record** (a dated git commit on the `data` branch), post-mortems mirrored to the published file |
 | Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
 | Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS |
 | Futures | `CTM` | Commodity board by complex (energy/metals/grains/softs/livestock) + real term-structure curves |
@@ -36,7 +36,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.7.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.8.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -89,6 +89,43 @@ Headless note: the desk modules import Streamlit, so the script's log
 shows "No runtime found" cache warnings. Harmless — the fetchers run
 uncached and the row computes identically.
 
+## Publishing Notebook entries (the public record)
+
+The Notebook mirrors a real desk: the scratchpad is private, and
+publishing is a deliberate, per-entry act. A published entry is
+committed at save time to the `data` branch as
+`notebook/YYYY-MM-DD_slug.md` — a dated git commit, made before the
+outcome. Post-mortem grades are mirrored to the same file; once a call
+is on the tape, its reckoning belongs there too. **Privacy:** on a
+public repo, published entries are public the moment they land — the
+scratchpad default exists so only what you'd stake your name on goes
+out.
+
+One-time setup (needs the snapshot's `data` branch to exist first):
+
+1. GitHub → your avatar → **Settings** → **Developer settings** (bottom
+   of the left sidebar) → **Personal access tokens** → **Fine-grained
+   tokens** → **Generate new token**.
+2. Name it (e.g. `desk-notebook-publish`), pick an expiration (max one
+   year — calendar a renewal), Resource owner: your account.
+3. **Repository access** → *Only select repositories* →
+   `CapitalMarketsMacro`. This is the part that matters: the token can
+   touch nothing else.
+4. **Permissions** → Repository permissions → **Contents** → *Read and
+   write*. Leave everything else on No access. Generate, and copy the
+   token — it's shown once.
+5. Streamlit Cloud → your app → **Settings** → **Secrets** → add a line:
+
+       GH_TOKEN = "github_pat_…"
+
+   (App secrets, NOT GitHub Actions secrets — this one belongs to the
+   running app.) Save; the app restarts and the publish checkbox goes
+   live.
+
+When the token expires, publishing silently disables (the checkbox
+grays out) and the scratchpad keeps working — generate a fresh token
+and update the secret.
+
 ## Maintenance calendar
 
 `desk/events.py` hardcodes published release schedules on purpose — no
@@ -134,7 +171,9 @@ dry). Roughly once a year:
 - The track record is **live-accrued and tamper-evident**: every
   nightly row is a timestamped git commit on the `data` branch, nothing
   is backfilled. A reconstructed record is a claim; this one is
-  evidence anyone can audit.
+  evidence anyone can audit. Published Notebook entries hold to the
+  same standard — calls committed before outcomes, post-mortems
+  appended in view of the same history.
 
 ## Gotchas (learned the hard way — don't regress)
 

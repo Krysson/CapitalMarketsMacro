@@ -7,12 +7,15 @@ import streamlit as st
 
 import pandas as pd
 
-from desk import data, theme
+from desk import data, publish, theme
 
 st.set_page_config(page_title="Notebook — Desk", page_icon="📓", layout="wide")
 theme.header("BOOK I · CH. 15", "Analyst's Notebook",
              "Evidence → Interpretation → Risks → Falsification → Decision. "
-             "Tag evidence [F] fact, [E] estimate, [I] inference.")
+             "Tag evidence [F] fact, [E] estimate, [I] inference. The "
+             "scratchpad is private; publishing an entry to the record is "
+             "a deliberate act — like a real desk, the pitch goes on the "
+             "tape, the working notes don't.")
 
 STORE = Path("notebook_entries.json")
 
@@ -33,9 +36,10 @@ def save(entries: list[dict]) -> None:
 entries = load()
 
 st.warning(
-    "Storage note: on Streamlit Community Cloud this file resets whenever the "
-    "app redeploys or restarts. **Download your notebook regularly** and "
-    "re-upload to restore.", icon="💾")
+    "Storage note: on Streamlit Community Cloud this scratchpad file resets "
+    "whenever the app redeploys or restarts. **Download your notebook "
+    "regularly** and re-upload to restore. Entries published to the record "
+    "are immune — they live as git commits on the `data` branch.", icon="💾")
 
 with st.form("entry", clear_on_submit=True):
     st.subheader("New entry")
@@ -53,15 +57,39 @@ with st.form("entry", clear_on_submit=True):
                          "scorecard)", ["No call", "Risk-on", "Risk-off"])
     instrument = cc2.text_input("Instrument (optional — default ^GSPC)",
                                 placeholder="^GSPC")
+    pub_on = publish.enabled()
+    do_publish = st.checkbox(
+        "Publish to the public record — commits this entry to the repo's "
+        "`data` branch as a dated git commit, visible to anyone who can "
+        "see the repo. Leave unchecked to keep it in the private "
+        "scratchpad (the default, like a real desk).",
+        value=False, disabled=not pub_on)
+    if not pub_on:
+        st.markdown('<div class="desk-note">Publishing is off — add a '
+                    'GH_TOKEN to the app secrets and set OWNER in '
+                    'desk/history.py to enable it (steps in the README). '
+                    'The scratchpad works either way.</div>',
+                    unsafe_allow_html=True)
     if st.form_submit_button("Save entry"):
-        entries.insert(0, {
+        entry = {
             "date": str(date), "evidence": evidence,
             "interpretation": interpretation, "risks": risks,
             "falsification": falsification, "decision": decision,
             "call": call, "instrument": instrument.strip() or "^GSPC",
-        })
+        }
+        if do_publish and pub_on:
+            ok, path, detail = publish.publish_entry(entry)
+            if ok:
+                entry["published_path"] = path
+                st.success(f"Saved and PUBLISHED — on the record at "
+                           f"`{path}`. The commit timestamp is the "
+                           f"receipt.")
+            else:
+                st.error(f"Saved locally, but publishing failed: {detail}")
+        else:
+            st.success("Saved to the scratchpad.")
+        entries.insert(0, entry)
         save(entries)
-        st.success("Saved.")
 
 st.divider()
 
@@ -153,7 +181,18 @@ if graded_pool:
             if g != e.get("grade", "ungraded"):
                 e["grade"] = g
                 save(entries)
-                st.success("Grade saved.")
+                if e.get("published_path") and publish.enabled():
+                    ok, detail = publish.republish_entry(e)
+                    if ok:
+                        st.success("Grade saved — post-mortem mirrored to "
+                                   "the public record. Once a call is on "
+                                   "the tape, its reckoning belongs there "
+                                   "too.")
+                    else:
+                        st.warning(f"Grade saved locally; record update "
+                                   f"failed: {detail}")
+                else:
+                    st.success("Grade saved.")
     theme.note("The machine grades DIRECTION; only you can grade "
                "REASONING — and 'right for the wrong reason' is the "
                "grade that matters most, because it's the one that "
@@ -164,11 +203,36 @@ if graded_pool:
 if entries:
     st.subheader(f"Entries ({len(entries)})")
     for e in entries:
-        with st.expander(f"📅 {e['date']} — {e['decision'][:60] or 'entry'}"):
+        tag = " · 📡 ON THE RECORD" if e.get("published_path") else ""
+        with st.expander(f"📅 {e['date']} — "
+                         f"{e['decision'][:60] or 'entry'}{tag}"):
             for field in ("evidence", "interpretation", "risks",
                           "falsification", "decision"):
                 if e.get(field):
                     st.markdown(f"**{field.title()}**")
                     st.markdown(e[field])
+            if e.get("published_path"):
+                st.markdown(f'<div class="desk-note">Published: '
+                            f'{e["published_path"]} on the data branch — '
+                            f'the git log is the audit trail.</div>',
+                            unsafe_allow_html=True)
 else:
     st.info("No entries yet. The first divergence you spot goes here.")
+
+# ------------------------------------------------- the public record ----
+record = publish.published_files()
+if record:
+    st.divider()
+    theme.panel_bar("The public record",
+                    f"{len(record)} published — data branch, append-only")
+    for f in record[:25]:
+        link = (f'<a href="{f["url"]}" target="_blank" '
+                f'style="color:{theme.AMBER}">{f["name"]}</a>'
+                if f.get("url") else f["name"])
+        st.markdown(f'<div class="desk-note">📡 {link}</div>',
+                    unsafe_allow_html=True)
+    theme.note("Every file above is a dated commit made at save time — "
+               "calls timestamped before outcomes, post-mortems appended "
+               "in view of the same history. This is the Notebook held "
+               "to the same standard as the signal record: receipts, "
+               "not recollections.")
