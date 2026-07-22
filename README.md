@@ -25,7 +25,9 @@ display glass only. Colors mean **direction, not advice**.
 | Time Machine | `TM` | The desk as of any past date: ALFRED macro vintages + price history cut at the date + "what happened next" |
 | Desk Analyst | `ASK` | Claude wired to the live desk: morning reads, positioning views in desk grammar, Notebook drafts, teaching (needs ANTHROPIC_API_KEY; set DESK_CHAT_PASSCODE on public deployments) |
 | Calendar | `ECO` | Verified CPI/NFP/FOMC anchors + live full economic calendar (TradingView events widget) |
-| Idea Desk | `GEN` | Ch. 15 gates (deterministic screens on live data, free) + a passcode-gated Claude generator drafting candidate ideas in positioning grammar |
+| Idea Desk | `GEN` | Chapter 15 live: the eight generators (divergence, crowding via COT percentiles, catalyst, constraint map, regime tripwires, flow, relative value, narrative gap; automated where computable, honestly MANUAL where not), the five-gate funnel, a one-click scan log to the Notebook, and a passcode-gated Claude generator that runs the funnel |
+| Flow Desk | `FLOW` | The Sector Flow Tracker's automatable half: live rotation monitor (23-ETF set), FINRA daily short-volume ratios (keyless, Tier 1, off-exchange), and the desk's own ETF flow record — Δshares × price accrued nightly to the data branch, with streak detection and the rotation-signature read; BlockLog and ATS paste stay in the workbook by honest necessity |
+| Help | `HELP` | The operating manual: full function table, command-bar priority rules, desk conventions, the daily rhythm, keys table |
 | Regime History | `HIST` | The four dials recorded nightly by a bot — colored strips over SPX, current streaks, and (once >30 rows) what SPX did after each red flip |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30`, `CUSHING`, `EIA <ID>` |
 
@@ -34,10 +36,10 @@ It is security-aware, like the machine: any ticker (`GOOG`, `^VIX`,
 `GC=F`, `BTC-USD`) opens the Quote page; `GOOG FA` / `GOOG DES` open
 financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `10Y`, `CURVE`) chart the FRED series; `FRED <ID>` charts anything.
-`HELP <GO>` lists all functions with their real Bloomberg equivalents.
+`HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.10.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.12.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -65,7 +67,10 @@ throttled, instead of erroring.
 A GitHub Action (`.github/workflows/snapshot.yml`) runs
 `scripts/snapshot.py` weekdays at 22:30 UTC — after the US close — and
 appends one row (dial scores + SPX, VIX, VIX/VIX3M, RSP/SPY, HYG/LQD,
-2s10s, HY OAS, net liquidity, DXY) to `history/signals.csv`. The row is
+2s10s, HY OAS, net liquidity, DXY) to `history/signals.csv`, and logs
+shares outstanding × close for the 23-ETF flow set to
+`history/flows.csv` (flow = Δshares × price computes in-app; the Flow
+page reads it). The row is
 committed to the **`data` branch, never main** — Streamlit Cloud
 redeploys on every push to main, and a redeploy wipes the Notebook's
 JSON storage. The `data` branch holds only the CSV, append-only; the
@@ -115,7 +120,7 @@ After writing its row, the snapshot bot evaluates crossing rules in
 `desk/alerts.py` against the history CSV: VIX/VIX3M crossing 1.0
 (either direction), any dial color flip, 2s10s sign change, HY OAS
 jumping ≥0.30 in a session or through 5.00, a ≥$100bn one-session net
-liquidity drop, RSP/SPY −3% over a recorded month. Trips open a GitHub
+liquidity drop, RSP/SPY −3% over a recorded month; plus flow rules — a ≥$1bn one-sided ETF flow streak of ≥4 sessions, and the equity-out/fixed-income-in rotation signature. Trips open a GitHub
 ISSUE labeled `desk-alert` — GitHub emails you (watch your own repo /
 default notification settings), the alert is itself a timestamped
 artifact, and closing the issue = acknowledged. No new keys: the
@@ -183,6 +188,8 @@ dry). Roughly once a year:
   ticker (keyless; also the CPI/NFP fast path where BLS is blocked)
 - **CFTC** — Commitments of Traders positioning (official weekly
   filings, public API); **TreasuryDirect** — auction calendar
+- **FINRA Reg SHO daily files** — per-symbol off-exchange short
+  volume, keyless CDN, same-day (the Flow page's Tier 1 layer)
 - **RSS** — Fed / BLS / BEA press feeds (primary tape), CNBC /
   MarketWatch (narrative tape); fetched concurrently with short
   timeouts so one dead feed can never hang a page. Known limitation:

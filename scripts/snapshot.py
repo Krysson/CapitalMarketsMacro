@@ -142,6 +142,37 @@ def main() -> int:
     print(f"recorded {today}: {dials} | SPX {row['spx'] or 'n/a'} "
           f"VIX {row['vix'] or 'n/a'} NetLiq {row['net_liq_tn'] or 'n/a'}tn")
 
+    # ---- flow accrual: shares × close for the ETF set -> flows.csv.
+    # Fail-soft: a flow hiccup must never fail the signals snapshot.
+    flow_frame = None
+    try:
+        from desk import flow as _flow
+        fpath = ROOT / "history" / "flows.csv"
+        f_existing = (pd.read_csv(fpath, dtype={"date": str})
+                      if fpath.exists() else None)
+        if f_existing is not None and today in set(f_existing["date"]):
+            print("flow rows for today already recorded")
+            flow_frame = f_existing
+        else:
+            frows = _flow.snapshot_rows(today)
+            if frows:
+                add = pd.DataFrame(frows,
+                                   columns=["date", "ticker",
+                                            "shares", "close"])
+                flow_frame = (pd.concat([f_existing, add],
+                                        ignore_index=True)
+                              if f_existing is not None else add)
+                flow_frame.to_csv(fpath, index=False)
+                print(f"flow accrual: logged {len(frows)}/"
+                      f"{len(_flow.FLOW_ETFS)} ETFs")
+            else:
+                print("flow accrual: no rows resolved (Yahoo down?) — "
+                      "skipped, gap is honest")
+                flow_frame = f_existing
+    except Exception as ex:
+        print(f"flow accrual skipped ({type(ex).__name__}) — "
+              f"snapshot unaffected")
+
     # ---- alerts: crossings vs the prior recorded session -> GitHub issue.
     # Fail-soft by design: an alert hiccup must never fail the snapshot.
     try:
@@ -151,6 +182,18 @@ def main() -> int:
             if not c.endswith("_label") and c != "date":
                 num[c] = pd.to_numeric(num[c], errors="coerce")
         tripped = alerts.evaluate(num)
+        try:
+            if flow_frame is not None:
+                from desk import flow as _flow
+                fnum = flow_frame.copy()
+                fnum["date"] = pd.to_datetime(fnum["date"],
+                                              errors="coerce")
+                for c in ("shares", "close"):
+                    fnum[c] = pd.to_numeric(fnum[c], errors="coerce")
+                tripped += _flow.evaluate_flow_alerts(
+                    _flow.compute_flows(fnum.dropna()))
+        except Exception:
+            pass
         if tripped:
             print(f"ALERTS TRIPPED ({len(tripped)}):")
             for a in tripped:

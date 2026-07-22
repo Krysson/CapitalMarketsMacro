@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.10.0"
+VERSION = "3.12.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -118,6 +118,7 @@ _ROUTES = {
     "HISTORY": "pages/14_History.py",
     "GEN": "pages/15_Ideas.py", "IDEA": "pages/15_Ideas.py",
     "IDEAS": "pages/15_Ideas.py",
+    "FLOW": "pages/17_Flow.py", "FLOWS": "pages/17_Flow.py",
 }
 
 _FUNC_TOKENS = {"GP", "DES", "FA"}
@@ -134,7 +135,7 @@ def _parse_command(c: str) -> tuple:
     if not toks:
         return ("none",)
     if toks[0] in ("HELP", "?"):
-        return ("help",)
+        return ("page", "pages/16_Help.py")
     if len(toks) == 1 and toks[0] in _ROUTES:
         return ("page", _ROUTES[toks[0]])
     if toks[0] == "FRED" and len(toks) >= 2:
@@ -152,7 +153,7 @@ def _parse_command(c: str) -> tuple:
         return ("quote", "yf", toks[0], func)
     return ("unknown", toks[0])
 
-_HELP = """
+FUNCTIONS_TABLE = """
 | FUNCTION | PAGE | ON THE REAL MACHINE |
 |---|---|---|
 | `HOME` | Summary | HOME — your start page |
@@ -170,7 +171,9 @@ _HELP = """
 | `DIFF` / `FED` | Fed Statement Diff | redline vs the prior statement |
 | `TM` / `TIME` | Time Machine | the desk as of any past date (ALFRED vintages) |
 | `HIST` / `TRACK` | Regime History | the dials' live-accrued track record, one git commit per night |
-| `GEN` / `IDEA` | Idea Desk | Ch. 15 gates & generators — passcode-gated |
+| `GEN` / `IDEA` | Idea Desk | Ch. 15's eight generators + five gates — passcode-gated |
+| `FLOW` | Flow Desk | rotation monitor, FINRA short-volume ratios, live-accrued ETF flows + streaks |
+| `HELP` / `?` | Help | this table + the operating manual |
 | `ASK` / `IB` | Desk Analyst | chat with the desk's AI analyst (IB — chat, on the machine) |
 | `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
@@ -179,8 +182,6 @@ _HELP = """
 | `EIA <SERIES_ID>` | Quote | any EIA v1 series ID, e.g. EIA PET.WCESTUS1.W |
 | `SEARCH <words>` | Quote | search FRED's catalog, e.g. SEARCH housing starts |
 
-Type the function, hit **GO** (or Enter). Same habit as the terminal:
-navigate by mnemonic, not by mouse.
 """
 
 
@@ -196,9 +197,7 @@ def command_line() -> None:
         return
     c = cmd.upper().replace("<GO>", "").strip()
     action = _parse_command(c)
-    if action[0] == "help":
-        st.markdown(_HELP)
-    elif action[0] == "page":
+    if action[0] == "page":
         st.switch_page(action[1])
     elif action[0] == "quote":
         st.session_state["quote_query"] = action[1:]
