@@ -229,15 +229,20 @@ else:
     show["Auction"] = show["date"].dt.strftime("%d-%b")
     show["Security"] = show["term"] + " " + show["type"]
     st.dataframe(
-        show[["Auction", "Security", "btc", "high_yield",
-              "indirect_pct", "dealer_pct"]]
+        show.assign(direct_pct=lambda d: (d["direct"] /
+                    (d[["indirect", "direct", "dealer"]].sum(axis=1))
+                    * 100))[
+            ["Auction", "Security", "btc", "high_yield",
+             "indirect_pct", "direct_pct", "dealer_pct"]]
         .rename(columns={"btc": "Bid-to-cover",
                          "high_yield": "High yield %",
                          "indirect_pct": "Indirect %",
+                         "direct_pct": "Direct %",
                          "dealer_pct": "Dealer %"})
         .style.format({"Bid-to-cover": "{:.2f}",
                        "High yield %": "{:.3f}",
                        "Indirect %": "{:.1f}",
+                       "Direct %": "{:.1f}",
                        "Dealer %": "{:.1f}"}, na_rep="—"),
         hide_index=True, use_container_width=True,
         height=min(500, 40 + 36 * len(show)))
@@ -249,16 +254,19 @@ else:
             theme.GREEN if last >= avg else theme.YELLOW,
             f"LATEST INDIRECT SHARE {last:.1f}% vs {avg:.1f}% recent "
             f"average — {'institutional demand holding' if last >= avg else 'softer real-money bid; dealers absorbing more'}.")
-    theme.note("Bidder classes are the institutional read: INDIRECTS "
-               "proxy foreign official and real-money accounts, "
-               "DIRECTS are domestic institutions bidding for "
-               "themselves, and the PRIMARY DEALERS are the forced "
-               "bid — they must backstop every auction, so a HIGH "
-               "dealer share means real demand showed up thin and the "
-               "street is warehousing the bonds. Falling indirect "
-               "share across consecutive coupon auctions is quiet "
-               "institutional exit from duration, visible nowhere in "
-               "price until it is. [T1]")
+    theme.note("How to read the three buyer columns. INDIRECT % is "
+               "bids placed through a middleman — mostly foreign "
+               "central banks and big real-money accounts like "
+               "pensions and insurers. DIRECT % is domestic "
+               "institutions bidding for their own account. DEALER % "
+               "is the primary dealers — the one buyer that is FORCED "
+               "to bid: they must backstop every auction by rule. So "
+               "the tell is simple: a HIGH Dealer % means there was "
+               "not enough real demand for the bonds, and the street "
+               "got stuck warehousing them. And Indirect % falling "
+               "across several auctions in a row = big institutional "
+               "money quietly stepping away from Treasuries — "
+               "visible here before it shows in price. [T1]")
 
 pos = instflow.dealer_positions()
 if pos:
@@ -270,12 +278,14 @@ if pos:
     theme.plot(theme.style_fig(
         fig_pd, "PRIMARY DEALER NET POSITIONS — WEEKLY ($bn)",
         height=320), use_container_width=True)
-    theme.note("The NY Fed publishes the primary dealers' actual net "
-               "positions weekly — the most institutional public "
-               "dataset that exists, and almost nobody retail reads "
-               "it. Rising UST inventory alongside weak auction "
-               "indirects = the street warehousing supply the real "
-               "money didn't want; that combination preceded the "
-               "worst duration selloffs. Dealer BALANCE SHEET is the "
-               "market's shock absorber — watch its capacity, not "
-               "just its direction. [T1]")
+    theme.note("What this chart is: the actual bond inventory sitting "
+               "on Wall Street dealers' books, reported to the NY Fed "
+               "every week. Almost nobody retail reads it. How to use "
+               "it with the table above: if dealer inventory is "
+               "RISING at the same time Indirect % is FALLING, the "
+               "street is being forced to hold bonds the real money "
+               "refused to buy — that combination has come before the "
+               "worst Treasury selloffs. Think of dealer balance "
+               "sheets as the market's shock absorber: when they're "
+               "already full, there's less cushion for the next "
+               "shock. [T1]")

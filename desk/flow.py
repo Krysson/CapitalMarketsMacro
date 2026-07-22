@@ -229,7 +229,9 @@ def evaluate_flow_alerts(flows: pd.DataFrame) -> list[str]:
     """Alert lines for the nightly issue: big one-sided streaks and the
     equity-out/fixed-income-in rotation signature. Pure; [] when quiet."""
     out = []
-    stk = streaks(flows, min_days=4, min_total_mm=1000.0)
+    from desk.alerts import THRESHOLDS as _T
+    stk = streaks(flows, min_days=int(_T["flow_streak_days"]),
+                  min_total_mm=float(_T["flow_streak_mm"]))
     for _, r in stk.iterrows():
         side = "IN" if r["total_mm"] > 0 else "OUT"
         out.append(
@@ -242,7 +244,7 @@ def evaluate_flow_alerts(flows: pd.DataFrame) -> list[str]:
         eq = float(gd.reindex(["Sector", "Broad"])["net_mm"].sum())
         fi = float(gd.loc["Fixed Income", "net_mm"]) \
             if "Fixed Income" in gd.index else 0.0
-        if eq <= -1500 and fi >= 500:
+        if eq <= _T["rotation_equity_mm"] and fi >= _T["rotation_fi_mm"]:
             out.append(
                 f"ROTATION SIGNATURE: equity complex "
                 f"${eq:,.0f}mm out while fixed income "

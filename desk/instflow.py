@@ -139,10 +139,13 @@ def load_footprints() -> pd.DataFrame:
 
 
 def evaluate_oi_alerts(fp: pd.DataFrame,
-                       min_alert: int = 20000) -> list[str]:
+                       min_alert: int | None = None) -> list[str]:
     """Alert lines for today's very large footprints. Pure."""
     if fp is None or fp.empty:
         return []
+    if min_alert is None:
+        from desk.alerts import THRESHOLDS as _T
+        min_alert = int(_T["oi_footprint_alert"])
     out = []
     for _, r in fp[fp["d_oi"] >= min_alert].iterrows():
         kind = "calls" if r["type"] == "C" else "puts"

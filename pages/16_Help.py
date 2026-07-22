@@ -6,9 +6,10 @@ real-machine equivalent, how the command bar thinks, the desk's
 conventions (colors, tiers, notes vs readouts), the daily rhythm, and
 the keys that unlock the gated pages.
 """
+import pandas as pd
 import streamlit as st
 
-from desk import theme
+from desk import alerts, theme
 
 st.set_page_config(page_title="Help — Desk", page_icon="❓", layout="wide")
 theme.header(
@@ -91,6 +92,24 @@ clears the bar today" is a professional answer — *especially* then.
 crossings open a `desk-alert` issue and GitHub emails you. Evening is
 for post-mortems, graded against the record, mirrored to published
 entries.
+""")
+
+theme.panel_bar("Alerts — the active tripwires",
+                "evaluated nightly by the bot · delivered as GitHub issues")
+st.dataframe(pd.DataFrame(alerts.rules_table()), hide_index=True,
+             use_container_width=True)
+st.markdown("""
+Alerts fire on **crossings and changes, never levels** — a level you
+already know about is a condition; a crossing is news. When any rule
+trips, the nightly run opens a GitHub issue labeled `desk-alert` and
+GitHub emails you; closing the issue is your "acknowledged."
+
+**To tune a threshold:** every number above lives in ONE dictionary —
+`THRESHOLDS` at the top of `desk/alerts.py`. Edit the value, commit to
+main, and the next nightly run uses it (this table updates itself,
+because it renders from the same dictionary). Resist loosening rules
+until they cry weekly — an alert channel you've muted is worse than
+none.
 """)
 
 theme.panel_bar("Keys & gated pages", "what unlocks what")

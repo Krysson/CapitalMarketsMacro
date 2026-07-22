@@ -164,3 +164,36 @@ with c3:
     else:
         st.markdown('<div class="desk-note">wire unreachable</div>',
                     unsafe_allow_html=True)
+
+
+# ------------------------------------------------ row D: the map ------
+st.divider()
+nav = [
+    ("pages/0_Summary.py", "📟 Summary"),
+    ("pages/0_Daily_Circuit.py", "🔁 Circuit"),
+    ("pages/1_Macro.py", "🌡️ Macro"),
+    ("pages/2_Market.py", "📈 Market"),
+    ("pages/3_Volatility.py", "🌀 Vol"),
+    ("pages/7_Rates.py", "📉 Rates"),
+    ("pages/8_Futures.py", "🛢️ Futures"),
+    ("pages/9_Global.py", "🌍 Global"),
+    ("pages/17_Flow.py", "🌊 Flow"),
+    ("pages/6_Quote.py", "🔎 Quote"),
+    ("pages/5_Wire.py", "🗞️ Wire"),
+    ("pages/13_Calendar.py", "🗓️ Calendar"),
+    ("pages/10_Fed.py", "🏛️ Fed"),
+    ("pages/4_Notebook.py", "📓 Notebook"),
+    ("pages/15_Ideas.py", "⚡ Ideas"),
+    ("pages/12_Desk_Analyst.py", "🤖 Analyst"),
+    ("pages/14_History.py", "📼 History"),
+    ("pages/11_Time_Machine.py", "⏪ Time Machine"),
+    ("pages/16_Help.py", "❓ Help"),
+]
+ncols = st.columns(7)
+for i, (path, label) in enumerate(nav):
+    with ncols[i % 7]:
+        st.page_link(path, label=label)
+st.markdown('<div class="desk-note">Everything on one screen above; '
+            'everything one click away below. Alert tripwires run '
+            'nightly on their own — the active rules and how to tune '
+            'them are on the Help page.</div>', unsafe_allow_html=True)

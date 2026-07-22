@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.13.0"
+VERSION = "3.14.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -91,7 +91,7 @@ div[data-baseweb="input"]:has(> input[placeholder^="COMMAND"]) {
 # Command-line routes. Mnemonics chosen to match the real Bloomberg
 # function where one exists — the point is transferable muscle memory.
 _ROUTES = {
-    "HOME": "app.py", "SUM": "app.py",
+    "HOME": "pages/0_Summary.py", "SUM": "pages/0_Summary.py",
     "CIR": "pages/0_Daily_Circuit.py", "CIRCUIT": "pages/0_Daily_Circuit.py",
     "MAC": "pages/1_Macro.py", "MACRO": "pages/1_Macro.py",
     "ECO": "pages/13_Calendar.py", "CAL": "pages/13_Calendar.py",

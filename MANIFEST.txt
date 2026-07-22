@@ -1,30 +1,31 @@
-Capital Markets Desk — v3.13.0 — institutional flow: OI footprints, auction results, dealer positions
-Changed/new files (full replacements; paste into GitHub at these paths):
+Capital Markets Desk — v3.14.0 — navigation reorg · Market glass unified · alerts config · readable notes
+Changed/new files (full replacements; paste at these paths).
+NOTE: pages/0_Summary.py is NEW (old app.py content); app.py is now a router.
 
+app.py  ::  """Capital Markets Desk — entry point and navigation.
+pages/0_Summary.py  ::  """Capital Markets Desk — Summary page (the desk's front door)."""
+pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
+pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
+pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
+pages/16_Help.py  ::  """Help — the desk's function reference and operating manual.
+desk/alerts.py  ::  """Desk alerts — Ch. 15's tripwires, evaluated by the nightly bot.
+desk/flow.py  ::  """Flow layer — the Sector Flow Tracker's automatable half, in-app.
 desk/instflow.py  ::  """Institutional flow — where big players can't hide.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
-pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
-pages/17_Flow.py  ::  """Flow Desk — the Sector Flow Tracker's automatable half, live.
-scripts/snapshot.py  ::  """Nightly signal snapshot — one row of the desk's live track record.
-.github/workflows/snapshot.yml  ::  # Nightly signal snapshot — the desk's live-accrued track record.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-NO NEW KEYS — every source in this build is keyless.
-NEW desk/instflow.py: (1) options OI accrual — the bot stores
-SPY/QQQ chains nightly (<=45d expiries, +/-10% of spot, OI or vol
->=500) as history/oi_latest.csv (working snapshot, restored from the
-data branch each run) and appends qualifying overnight OI jumps
-(>=5,000 contracts AND fresh-strike-or->=50%-of-prior) to
-history/oi_footprints.csv (append-only). Footprints carry the PRIOR
-day's volume — the session the trades happened. Side of initiation
-is not observable and every surface says so. (2) Treasury auction
-RESULTS (TreasuryDirect, tolerant field parsing, coupon-only):
-bid-to-cover + indirect/direct/dealer shares -> Rates page panel
-with indirect-vs-average readout. (3) NY Fed primary dealer weekly
-NET positions (two endpoint variants tried, '*' rows dropped) ->
-Rates page chart. ALERTS: >=20k-contract OI jumps join the nightly
-issue. Workflow restores/commits the two OI files. Flow page gains
-the footprints panel with honest empty state until run two.
-PHASE 2 READY: FINRA ATS registration steps in the README
-(developer.finra.org, free) — wiring is a future version.
-theme.VERSION 3.13.0.
+NAV: st.navigation with intent groups — The Desk / Markets / Research /
+The Analyst / Reference (Time Machine + Help at the bottom). Sidebar no
+longer says 'app'; entry defaults to Summary. All file paths unchanged,
+so every command route and page link still works.
+MARKET: heatmap + live SPX now ADJACENT tabs at the page's end — the
+cross-section and the time series of the same object, zero scroll.
+ALERTS: every threshold now lives in desk/alerts.THRESHOLDS (one dict);
+flow + OI rules read it too; the Help page renders the active rules
+table LIVE from the same dict, with tuning instructions.
+RATES: auction table gains the Direct % column; the bidder-class and
+dealer-position notes rewritten in plain teaching English (your edit,
+applied and extended).
+LAUNCHPAD: full one-click nav strip (all 19 pages) added as row D.
+theme.VERSION 3.14.0 — REMEMBER TO PASTE theme.py (the 3.13 version
+string was in the file you skipped last time).

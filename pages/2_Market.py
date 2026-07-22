@@ -90,7 +90,39 @@ with c2:
                 "credit CONFIRMING risk appetite.",
                 "credit DISSENTING — junk lagging quality.")
 
-with st.expander("S&P 500 heatmap — TradingView (display glass)"):
+st.divider()
+st.subheader("Cross-asset (normalized)")
+sel = st.multiselect(
+    "Compare", options=list(data.MARKET_TICKERS.keys()),
+    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "IWM"],
+    format_func=lambda t: data.MARKET_TICKERS[t])
+if sel:
+    fig = go.Figure()
+    palette = [theme.TEXT, theme.AMBER, theme.BLUE, theme.GREEN,
+               theme.PURPLE, theme.RED, theme.MUTED]
+    for i, t in enumerate(sel):
+        s = hist[t].dropna()
+        if len(s) > 1:
+            fig.add_scatter(x=s.index, y=(s / s.iloc[0] - 1) * 100,
+                            mode="lines", name=data.MARKET_TICKERS[t],
+                            line=dict(width=1.6,
+                                      color=palette[i % len(palette)]))
+    fig.update_layout(yaxis_title="% change over lookback")
+    theme.plot(theme.style_fig(fig, height=380),
+                    use_container_width=True)
+    theme.note("Confirmation check: does the rest of the world agree with "
+               "equities? Stocks rising alone — while copper, credit, and "
+               "crypto sag — is a divergence worth a Notebook entry. Broad "
+               "agreement = regime confirmation.")
+
+
+st.divider()
+# The two pieces of glass belong side by side — the heatmap is the
+# cross-section, the live chart is the time series of the same object.
+theme.panel_bar("The glass — TradingView (display only)",
+                "heatmap + live SPX, adjacent by design")
+tab_hm, tab_spx = st.tabs(["S&P 500 heatmap", "Live SPX"])
+with tab_hm:
     theme.embed(
         """
         <div class="tradingview-widget-container">
@@ -123,35 +155,7 @@ with st.expander("S&P 500 heatmap — TradingView (display glass)"):
                "lifting — IS narrow leadership. Block size = market cap, "
                "so your eye weighs stocks exactly the way SPY does; RSP "
                "weighs every block equally.")
-
-st.divider()
-st.subheader("Cross-asset (normalized)")
-sel = st.multiselect(
-    "Compare", options=list(data.MARKET_TICKERS.keys()),
-    default=["^GSPC", "GC=F", "CL=F", "DX-Y.NYB", "IWM"],
-    format_func=lambda t: data.MARKET_TICKERS[t])
-if sel:
-    fig = go.Figure()
-    palette = [theme.TEXT, theme.AMBER, theme.BLUE, theme.GREEN,
-               theme.PURPLE, theme.RED, theme.MUTED]
-    for i, t in enumerate(sel):
-        s = hist[t].dropna()
-        if len(s) > 1:
-            fig.add_scatter(x=s.index, y=(s / s.iloc[0] - 1) * 100,
-                            mode="lines", name=data.MARKET_TICKERS[t],
-                            line=dict(width=1.6,
-                                      color=palette[i % len(palette)]))
-    fig.update_layout(yaxis_title="% change over lookback")
-    theme.plot(theme.style_fig(fig, height=380),
-                    use_container_width=True)
-    theme.note("Confirmation check: does the rest of the world agree with "
-               "equities? Stocks rising alone — while copper, credit, and "
-               "crypto sag — is a divergence worth a Notebook entry. Broad "
-               "agreement = regime confirmation.")
-
-
-st.divider()
-with st.expander("Live SPX — TradingView (display glass)"):
+with tab_spx:
     theme.embed(
         """
         <div class="tradingview-widget-container">

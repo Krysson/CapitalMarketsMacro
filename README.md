@@ -39,7 +39,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.13.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.14.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -55,6 +55,17 @@ throttled, instead of erroring.
    but the key is more reliable.)
 4. Deploy. First load takes ~1 min while data caches. If a dependency
    changed (e.g. feedparser), reboot the app from the Cloud dashboard.
+
+## Navigation (v3.14)
+
+The sidebar is organized by intent, not filename: **The Desk**
+(Summary, Launchpad, Daily Circuit) → **Markets** (Macro, Market,
+Volatility, Rates, Futures & COT, Global & FX, Flow) → **Research**
+(Quote, Wire, Calendar, Fed) → **The Analyst** (Notebook, Idea Desk,
+Desk Analyst, Regime History) → **Reference** (Time Machine, Help) at
+the bottom. `app.py` is now a pure `st.navigation` router; the old
+Summary content lives at `pages/0_Summary.py`, and every command-bar
+route and page link still points at unchanged file paths.
 
 ## Run locally
 

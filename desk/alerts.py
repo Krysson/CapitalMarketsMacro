@@ -16,6 +16,56 @@ from __future__ import annotations
 
 import pandas as pd
 
+# Every tunable in one place. Change a number here, commit to main, and
+# the next nightly run uses it — the Help page renders this table live
+# so the desk always shows the tripwires it is actually running.
+THRESHOLDS = {
+    "vol_regime_line": 1.0,        # VIX/VIX3M crossing level
+    "hy_oas_jump": 0.30,           # HY OAS widening per session (pp)
+    "hy_oas_stress": 5.0,          # HY OAS absolute stress line (%)
+    "net_liq_drop_tn": 0.10,       # one-session net-liq fall ($tn)
+    "breadth_1m_pct": -3.0,        # RSP/SPY change over ~21 sessions (%)
+    "flow_streak_days": 4,         # ETF flow: one-sided sessions
+    "flow_streak_mm": 1000.0,      # ETF flow: cumulative $mm
+    "rotation_equity_mm": -1500.0, # rotation signature: equity net out
+    "rotation_fi_mm": 500.0,       # rotation signature: FI net in
+    "oi_footprint_alert": 20000,   # option OI jump (contracts)
+}
+
+
+def rules_table() -> list[dict]:
+    """The active tripwires, for display (Help page). Keep in sync by
+    construction: values come from THRESHOLDS."""
+    T = THRESHOLDS
+    return [
+        {"Rule": "Vol regime", "Fires when":
+            f"VIX/VIX3M crosses {T['vol_regime_line']:.1f} "
+            f"(either direction)"},
+        {"Rule": "Dial flip", "Fires when":
+            "any dial changes color vs the prior recorded session"},
+        {"Rule": "Curve", "Fires when": "2s10s changes sign"},
+        {"Rule": "Credit velocity", "Fires when":
+            f"HY OAS widens ≥ {T['hy_oas_jump']:.2f}pp in a session"},
+        {"Rule": "Credit stress line", "Fires when":
+            f"HY OAS crosses {T['hy_oas_stress']:.2f}%"},
+        {"Rule": "Liquidity drop", "Fires when":
+            f"net liquidity falls ≥ ${T['net_liq_drop_tn']*1000:.0f}bn "
+            f"in a session"},
+        {"Rule": "Breadth", "Fires when":
+            f"RSP/SPY {T['breadth_1m_pct']:.0f}% or worse over ~1 "
+            f"recorded month"},
+        {"Rule": "ETF flow streak", "Fires when":
+            f"≥ ${T['flow_streak_mm']:,.0f}mm one-sided over "
+            f"≥ {T['flow_streak_days']} sessions"},
+        {"Rule": "Rotation signature", "Fires when":
+            f"equity ≤ ${T['rotation_equity_mm']:,.0f}mm out AND "
+            f"fixed income ≥ ${T['rotation_fi_mm']:,.0f}mm in, same "
+            f"session"},
+        {"Rule": "OI footprint", "Fires when":
+            f"a SPY/QQQ strike's open interest jumps ≥ "
+            f"{T['oi_footprint_alert']:,} contracts overnight"},
+    ]
+
 
 def _cat(score) -> int | None:
     if pd.isna(score):
@@ -41,14 +91,16 @@ def evaluate(df: pd.DataFrame) -> list[str]:
     # 1) Vol regime: the book's tripwire — VIX/VIX3M crossing 1.0.
     r_now, r_prev = _num(today, "vix_vix3m"), _num(prior, "vix_vix3m")
     if r_now is not None and r_prev is not None:
-        if r_now >= 1.0 and r_prev < 1.0:
+        line = THRESHOLDS["vol_regime_line"]
+    if r_now is not None and r_prev is not None:
+        if r_now >= line and r_prev < line:
             alerts.append(
-                f"VOL REGIME: VIX/VIX3M crossed ABOVE 1.0 "
+                f"VOL REGIME: VIX/VIX3M crossed ABOVE {line:.1f} "
                 f"({r_prev:.3f} → {r_now:.3f}) — backwardation, "
                 f"front-end vol bid. The desk's primary stress tripwire.")
-        elif r_now < 1.0 and r_prev >= 1.0:
+        elif r_now < line and r_prev >= line:
             alerts.append(
-                f"VOL REGIME: VIX/VIX3M back BELOW 1.0 "
+                f"VOL REGIME: VIX/VIX3M back BELOW {line:.1f} "
                 f"({r_prev:.3f} → {r_now:.3f}) — stress regime ending "
                 f"is also a regime change.")
 
@@ -76,21 +128,21 @@ def evaluate(df: pd.DataFrame) -> list[str]:
     # 4) Credit: HY OAS jump (w/w vs last recorded session) or stress level.
     h_now, h_prev = _num(today, "hy_oas"), _num(prior, "hy_oas")
     if h_now is not None and h_prev is not None:
-        if h_now - h_prev >= 0.30:
+        if h_now - h_prev >= THRESHOLDS["hy_oas_jump"]:
             alerts.append(
                 f"CREDIT: HY OAS widened {h_now - h_prev:+.2f} in a "
                 f"session ({h_prev:.2f} → {h_now:.2f}) — spread "
                 f"velocity, not level, is the tell.")
-        elif h_now >= 5.0 > h_prev:
+        elif h_now >= THRESHOLDS["hy_oas_stress"] > h_prev:
             alerts.append(
-                f"CREDIT: HY OAS through 5.00 ({h_now:.2f}) — the "
+                f"CREDIT: HY OAS through {THRESHOLDS['hy_oas_stress']:.2f} ({h_now:.2f}) — the "
                 f"desk's stress line; credit demanding real "
                 f"compensation.")
 
     # 5) Liquidity: a one-session net-liquidity drop >= $100bn.
     n_now, n_prev = _num(today, "net_liq_tn"), _num(prior, "net_liq_tn")
     if n_now is not None and n_prev is not None and \
-            (n_prev - n_now) >= 0.10:
+            (n_prev - n_now) >= THRESHOLDS["net_liq_drop_tn"]:
         alerts.append(
             f"LIQUIDITY: net liquidity fell "
             f"${(n_prev - n_now) * 1000:,.0f}bn in a session "
@@ -103,7 +155,7 @@ def evaluate(df: pd.DataFrame) -> list[str]:
         b_m1 = _num(df.iloc[-22], "rsp_spy")
         if b_now is not None and b_m1 is not None and b_m1:
             chg = (b_now / b_m1 - 1) * 100
-            if chg <= -3.0:
+            if chg <= THRESHOLDS["breadth_1m_pct"]:
                 alerts.append(
                     f"BREADTH: RSP/SPY {chg:+.1f}% over ~1 month — "
                     f"narrowing leadership; the first warning sign in "
