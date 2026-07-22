@@ -14,7 +14,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from desk import data, flow, theme
+from desk import data, flow, instflow, theme
 
 st.set_page_config(page_title="Flow — Desk", page_icon="🌊", layout="wide")
 theme.header(
@@ -203,6 +203,60 @@ theme.note("Flow = Δ(shares outstanding) × price — creations and "
            "the git log. Big one-sided streaks and the "
            "equity-out/bonds-in signature also fire nightly "
            "desk-alert issues automatically.")
+
+st.divider()
+
+# ----------------------------------------- options OI footprints ----
+theme.panel_bar("Options footprints — overnight OI jumps",
+                "SPY & QQQ · Tier 1 observable, side unknown")
+fp = instflow.load_footprints()
+if fp.empty:
+    theme.readout(
+        theme.YELLOW,
+        "NO FOOTPRINT RECORD YET — the bot stores tonight's chain and "
+        "starts diffing tomorrow; footprints appear from run two.")
+    st.markdown(
+        "Open interest is the one options number institutions cannot "
+        "hide: cleared positions, per strike, published daily. A strike "
+        "whose OI jumps thousands of contracts overnight means real "
+        "size was established there — observable by anyone who "
+        "compared yesterday's chain to today's, which is exactly what "
+        "the bot now does (near expiries, strikes within ±10% of "
+        "spot). What the paid flow products add is *side inference* — "
+        "sweep detection, aggressor tagging. This desk records the "
+        "footprint and says honestly: size arrived; direction is your "
+        "hypothesis to falsify.")
+else:
+    recent = fp.sort_values(["date", "d_oi"],
+                            ascending=[False, False]).head(15).copy()
+    recent["Date"] = recent["date"].dt.strftime("%d-%b")
+    recent["Contract"] = (recent["und"] + " " + recent["expiry"].astype(str)
+                          + " " + recent["strike"].map("{:g}".format)
+                          + recent["type"])
+    st.dataframe(
+        recent[["Date", "Contract", "oi_prev", "oi_now", "d_oi",
+                "prev_volume"]]
+        .rename(columns={"oi_prev": "OI before", "oi_now": "OI after",
+                         "d_oi": "Δ OI", "prev_volume": "Day's volume"})
+        .style.format({"OI before": "{:,}", "OI after": "{:,}",
+                       "Δ OI": "{:+,}", "Day's volume": "{:,}"}),
+        hide_index=True, use_container_width=True,
+        height=min(500, 40 + 36 * len(recent)))
+    big = recent.iloc[0]
+    theme.readout(
+        theme.AMBER,
+        f"LARGEST RECENT: {big['Contract']} {big['d_oi']:+,} contracts "
+        f"overnight. Volume ≈ ΔOI = mostly fresh positioning; volume ≫ "
+        f"ΔOI = churn with some closing. Side of initiation is NOT in "
+        f"this data — say so in the Notebook entry.")
+    theme.note("Footprints are Ch. 15's G6 in the options market: money "
+               "moving in ways price doesn't yet show. Read them "
+               "against skew (VOL page) and the strike's distance from "
+               "spot — size at far-out-of-the-money puts near an event "
+               "is a different sentence than size at-the-money. Every "
+               "row is on the data branch, timestamped before whatever "
+               "happens next. ≥20k-contract jumps also fire a nightly "
+               "desk-alert issue.")
 
 st.page_link("pages/15_Ideas.py",
              label="Streak forming? Run it through the eight "

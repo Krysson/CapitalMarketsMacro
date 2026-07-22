@@ -10,7 +10,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from desk import data, theme
+from desk import data, instflow, theme
 
 st.set_page_config(page_title="Rates — Desk", page_icon="📉", layout="wide")
 theme.header(
@@ -214,3 +214,68 @@ else:
                "afternoon. Heavy coupon supply landing while the TGA "
                "rebuilds (Macro page) is a double liquidity drain — the "
                "two pages are one story.")
+
+st.divider()
+
+# --------------------------------------- institutional demand (T1) ----
+theme.panel_bar("Institutional demand — auction results",
+                "TreasuryDirect · official · coupon auctions")
+res = instflow.auction_results()
+if res.empty:
+    st.warning("Auction results unavailable — TreasuryDirect API busy; "
+               "try again shortly.")
+else:
+    show = res.head(12).copy()
+    show["Auction"] = show["date"].dt.strftime("%d-%b")
+    show["Security"] = show["term"] + " " + show["type"]
+    st.dataframe(
+        show[["Auction", "Security", "btc", "high_yield",
+              "indirect_pct", "dealer_pct"]]
+        .rename(columns={"btc": "Bid-to-cover",
+                         "high_yield": "High yield %",
+                         "indirect_pct": "Indirect %",
+                         "dealer_pct": "Dealer %"})
+        .style.format({"Bid-to-cover": "{:.2f}",
+                       "High yield %": "{:.3f}",
+                       "Indirect %": "{:.1f}",
+                       "Dealer %": "{:.1f}"}, na_rep="—"),
+        hide_index=True, use_container_width=True,
+        height=min(500, 40 + 36 * len(show)))
+    graded = res.dropna(subset=["indirect_pct"])
+    if len(graded) >= 4:
+        last, avg = (float(graded["indirect_pct"].iloc[0]),
+                     float(graded["indirect_pct"].head(12).mean()))
+        theme.readout(
+            theme.GREEN if last >= avg else theme.YELLOW,
+            f"LATEST INDIRECT SHARE {last:.1f}% vs {avg:.1f}% recent "
+            f"average — {'institutional demand holding' if last >= avg else 'softer real-money bid; dealers absorbing more'}.")
+    theme.note("Bidder classes are the institutional read: INDIRECTS "
+               "proxy foreign official and real-money accounts, "
+               "DIRECTS are domestic institutions bidding for "
+               "themselves, and the PRIMARY DEALERS are the forced "
+               "bid — they must backstop every auction, so a HIGH "
+               "dealer share means real demand showed up thin and the "
+               "street is warehousing the bonds. Falling indirect "
+               "share across consecutive coupon auctions is quiet "
+               "institutional exit from duration, visible nowhere in "
+               "price until it is. [T1]")
+
+pos = instflow.dealer_positions()
+if pos:
+    fig_pd = go.Figure()
+    for (name, s), colr in zip(pos.items(), (theme.AMBER, theme.BLUE)):
+        s5 = data.tail_years(s, 5)
+        fig_pd.add_scatter(x=s5.index, y=s5.values / 1000, mode="lines",
+                           name=name, line=dict(width=1.6, color=colr))
+    theme.plot(theme.style_fig(
+        fig_pd, "PRIMARY DEALER NET POSITIONS — WEEKLY ($bn)",
+        height=320), use_container_width=True)
+    theme.note("The NY Fed publishes the primary dealers' actual net "
+               "positions weekly — the most institutional public "
+               "dataset that exists, and almost nobody retail reads "
+               "it. Rising UST inventory alongside weak auction "
+               "indirects = the street warehousing supply the real "
+               "money didn't want; that combination preceded the "
+               "worst duration selloffs. Dealer BALANCE SHEET is the "
+               "market's shock absorber — watch its capacity, not "
+               "just its direction. [T1]")

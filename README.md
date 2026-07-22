@@ -18,7 +18,7 @@ display glass only. Colors mean **direction, not advice**.
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
 | Notebook | `NOTE` | Blotter for quick timestamped jots (private, promotable to entries) + Evidence → Interpretation → Risks → Falsification → Decision; private scratchpad by default, per-entry **publish to the record** (a dated git commit on the `data` branch), post-mortems mirrored to the published file |
 | Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, Tier 5); broadsheet columns on wide screens, single column on mobile, today's stories flagged NEW with older rows dimmed |
-| Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS |
+| Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS; institutional demand: auction RESULTS (bid-to-cover, indirect/dealer shares) + NY Fed primary dealer net positions, all T1 keyless |
 | Futures | `CTM` | Commodity board by complex (energy/metals/grains/softs/livestock) + real term-structure curves |
 | Global | `WEI` | World index board (Americas/EMEA/APAC) + G8 FX cross matrix + DXY readout |
 | Fed Diff | `DIFF` | The FOMC statement redlined against the prior one — added/removed words, churn readout |
@@ -26,7 +26,7 @@ display glass only. Colors mean **direction, not advice**.
 | Desk Analyst | `ASK` | Claude wired to the live desk: morning reads, positioning views in desk grammar, Notebook drafts, teaching (needs ANTHROPIC_API_KEY; set DESK_CHAT_PASSCODE on public deployments) |
 | Calendar | `ECO` | Verified CPI/NFP/FOMC anchors + live full economic calendar (TradingView events widget) |
 | Idea Desk | `GEN` | Chapter 15 live: the eight generators (divergence, crowding via COT percentiles, catalyst, constraint map, regime tripwires, flow, relative value, narrative gap; automated where computable, honestly MANUAL where not), the five-gate funnel, a one-click scan log to the Notebook, and a passcode-gated Claude generator that runs the funnel |
-| Flow Desk | `FLOW` | The Sector Flow Tracker's automatable half: live rotation monitor (23-ETF set), FINRA daily short-volume ratios (keyless, Tier 1, off-exchange), and the desk's own ETF flow record — Δshares × price accrued nightly to the data branch, with streak detection and the rotation-signature read; BlockLog and ATS paste stay in the workbook by honest necessity |
+| Flow Desk | `FLOW` | The Sector Flow Tracker's automatable half: live rotation monitor (23-ETF set), FINRA daily short-volume ratios (keyless, Tier 1, off-exchange), and the desk's own ETF flow record — Δshares × price accrued nightly to the data branch, with streak detection and the rotation-signature read; BlockLog and ATS paste stay in the workbook by honest necessity; plus overnight options OI footprints (SPY/QQQ) — strikes where open interest jumped, accrued nightly, side-of-trade honestly unknowable |
 | Help | `HELP` | The operating manual: full function table, command-bar priority rules, desk conventions, the daily rhythm, keys table |
 | Regime History | `HIST` | The four dials recorded nightly by a bot — colored strips over SPX, current streaks, and (once >30 rows) what SPX did after each red flip |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30`, `CUSHING`, `EIA <ID>` |
@@ -39,7 +39,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.12.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.13.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -114,13 +114,41 @@ front-runs; the desk charts the number of record. If it's official,
 this desk can verify it free; if it's private, it's a headline — that
 boundary is the lesson.
 
+## Institutional flow (all keyless — no new API keys)
+
+Where big players can't hide, per Ch. 15's observable-over-inferred
+rule, three chokepoints are now on the desk, none needing a key:
+
+1. **Options OI footprints** — the bot stores SPY/QQQ chains nightly
+   (near expiries, ±10% of spot) as `history/oi_latest.csv` (working
+   snapshot, overwritten) and appends qualifying overnight OI jumps
+   (≥5,000 contracts and ≥50% of prior OI, or fresh strikes) to
+   `history/oi_footprints.csv` (append-only record). OI says size
+   ARRIVED at a strike; which side initiated is not observable — the
+   Flow page repeats this every time. Footprints start on run two.
+2. **Treasury auction results** — TreasuryDirect's public API; the
+   Rates page shows bid-to-cover and bidder-class shares. Indirects ≈
+   foreign/real money; a HIGH primary-dealer share means the forced
+   bid absorbed what real demand didn't want.
+3. **Primary dealer positions** — the NY Fed Markets Data API, weekly
+   net positions ($mm), charted on the Rates page. The most
+   institutional public dataset in existence.
+
+**Phase 2 (one free credential): FINRA ATS dark-venue data.** Register
+at developer.finra.org (free): create an account → API console →
+create an API credential (client ID + secret) → we'll add it to app
+secrets and wire per-security ATS weekly volumes (shares-per-trade
+rising = size concentrating). Delayed 2–4 weeks by rule — fine for
+the accumulation timescale. Do the registration whenever; the wiring
+is a future version.
+
 ## Alerts (nightly tripwires → GitHub issues)
 
 After writing its row, the snapshot bot evaluates crossing rules in
 `desk/alerts.py` against the history CSV: VIX/VIX3M crossing 1.0
 (either direction), any dial color flip, 2s10s sign change, HY OAS
 jumping ≥0.30 in a session or through 5.00, a ≥$100bn one-session net
-liquidity drop, RSP/SPY −3% over a recorded month; plus flow rules — a ≥$1bn one-sided ETF flow streak of ≥4 sessions, and the equity-out/fixed-income-in rotation signature. Trips open a GitHub
+liquidity drop, RSP/SPY −3% over a recorded month; plus flow rules — a ≥$1bn one-sided ETF flow streak of ≥4 sessions, and the equity-out/fixed-income-in rotation signature; and ≥20k-contract overnight OI jumps in SPY/QQQ options. Trips open a GitHub
 ISSUE labeled `desk-alert` — GitHub emails you (watch your own repo /
 default notification settings), the alert is itself a timestamped
 artifact, and closing the issue = acknowledged. No new keys: the

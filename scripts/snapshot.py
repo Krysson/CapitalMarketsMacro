@@ -173,6 +173,46 @@ def main() -> int:
         print(f"flow accrual skipped ({type(ex).__name__}) — "
               f"snapshot unaffected")
 
+    # ---- options OI accrual: store today's chain, append footprints.
+    # oi_latest.csv is a WORKING snapshot (overwritten nightly, restored
+    # from the data branch so the fresh runner has yesterday's chain);
+    # oi_footprints.csv is the append-only record. Fail-soft throughout.
+    oi_footprints_today = None
+    try:
+        from desk import instflow as _inst
+        latest_p = ROOT / "history" / "oi_latest.csv"
+        fp_p = ROOT / "history" / "oi_footprints.csv"
+        prev_oi = (pd.read_csv(latest_p, dtype={"date": str})
+                   if latest_p.exists() else None)
+        if prev_oi is not None and not prev_oi.empty \
+                and prev_oi["date"].iloc[0] == today:
+            print("OI snapshot for today already stored")
+        else:
+            curr_oi = _inst.oi_snapshot(today)
+            if curr_oi.empty:
+                print("OI accrual: no chain data (Yahoo options down?) "
+                      "— skipped, gap is honest")
+            else:
+                if prev_oi is not None and not prev_oi.empty:
+                    fps = _inst.footprints(prev_oi, curr_oi)
+                    if not fps.empty:
+                        old = pd.read_csv(fp_p) if fp_p.exists() else None
+                        allfp = (pd.concat([old, fps], ignore_index=True)
+                                 if old is not None else fps)
+                        allfp.to_csv(fp_p, index=False)
+                        oi_footprints_today = fps
+                        print(f"OI footprints: {len(fps)} detected")
+                    else:
+                        print("OI footprints: none (quiet chain)")
+                else:
+                    print("OI accrual: first snapshot stored — "
+                          "footprints start tomorrow")
+                curr_oi.to_csv(latest_p, index=False)
+                print(f"OI snapshot: {len(curr_oi)} strikes stored")
+    except Exception as ex:
+        print(f"OI accrual skipped ({type(ex).__name__}) — "
+              f"snapshot unaffected")
+
     # ---- alerts: crossings vs the prior recorded session -> GitHub issue.
     # Fail-soft by design: an alert hiccup must never fail the snapshot.
     try:
@@ -192,6 +232,12 @@ def main() -> int:
                     fnum[c] = pd.to_numeric(fnum[c], errors="coerce")
                 tripped += _flow.evaluate_flow_alerts(
                     _flow.compute_flows(fnum.dropna()))
+        except Exception:
+            pass
+        try:
+            if oi_footprints_today is not None:
+                from desk import instflow as _inst2
+                tripped += _inst2.evaluate_oi_alerts(oi_footprints_today)
         except Exception:
             pass
         if tripped:

@@ -1,26 +1,30 @@
-Capital Markets Desk — v3.12.0 — the Flow Desk (Sector Flow Tracker, automated half)
+Capital Markets Desk — v3.13.0 — institutional flow: OI footprints, auction results, dealer positions
 Changed/new files (full replacements; paste into GitHub at these paths):
 
-desk/flow.py  ::  """Flow layer — the Sector Flow Tracker's automatable half, in-app.
+desk/instflow.py  ::  """Institutional flow — where big players can't hide.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
+pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
 pages/17_Flow.py  ::  """Flow Desk — the Sector Flow Tracker's automatable half, live.
-pages/15_Ideas.py  ::  """Idea Desk — Chapter 15's eight generators and five gates, live.
 scripts/snapshot.py  ::  """Nightly signal snapshot — one row of the desk's live track record.
 .github/workflows/snapshot.yml  ::  # Nightly signal snapshot — the desk's live-accrued track record.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-NEW desk/flow.py + pages/17_Flow.py (route FLOW): (1) live rotation
-monitor over the 23-ETF set (11 SPDRs + SOXX + SPY/VOO/QQQ/IWM/RSP +
-TLT/HYG/LQD + GLD/SLV/USO) — 1w/1m, vs-SPY RS, volume vs 20d;
-(2) FINRA Reg SHO daily short-volume ratios — keyless CDN, Tier 1,
-off-exchange, walks back to the latest available file; (3) the
-accrued ETF flow record — the nightly bot now logs shares × close to
-history/flows.csv on the data branch; flow = Dshares x price, with
-streak detection (>=3d & >=$250mm), latest-day group signature
-chart, cumulative-by-group lines, honest empty state before accrual.
-ALERTS: flow rules added — >=$1bn/4-session one-sided streak and the
-equity-out/fixed-income-in rotation signature (July 15 pattern).
-G6 on the Idea Desk upgrades from MANUAL to automated-with-manual-
-remainder once the record exists. Workflow restores/commits both
-CSVs. NO NEW KEYS. theme.VERSION 3.12.0. BlockLog + FINRA ATS paste
-stay in the workbook by honest necessity (documented on the page).
+NO NEW KEYS — every source in this build is keyless.
+NEW desk/instflow.py: (1) options OI accrual — the bot stores
+SPY/QQQ chains nightly (<=45d expiries, +/-10% of spot, OI or vol
+>=500) as history/oi_latest.csv (working snapshot, restored from the
+data branch each run) and appends qualifying overnight OI jumps
+(>=5,000 contracts AND fresh-strike-or->=50%-of-prior) to
+history/oi_footprints.csv (append-only). Footprints carry the PRIOR
+day's volume — the session the trades happened. Side of initiation
+is not observable and every surface says so. (2) Treasury auction
+RESULTS (TreasuryDirect, tolerant field parsing, coupon-only):
+bid-to-cover + indirect/direct/dealer shares -> Rates page panel
+with indirect-vs-average readout. (3) NY Fed primary dealer weekly
+NET positions (two endpoint variants tried, '*' rows dropped) ->
+Rates page chart. ALERTS: >=20k-contract OI jumps join the nightly
+issue. Workflow restores/commits the two OI files. Flow page gains
+the footprints panel with honest empty state until run two.
+PHASE 2 READY: FINRA ATS registration steps in the README
+(developer.finra.org, free) — wiring is a future version.
+theme.VERSION 3.13.0.
