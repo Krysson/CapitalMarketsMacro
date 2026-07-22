@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.8.0"
+VERSION = "3.9.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -221,10 +221,29 @@ TAPE_SYMBOLS = [
 ]
 
 
+def embed(html: str, height: int) -> None:
+    """House renderer for script-bearing HTML (the TradingView glass).
+
+    GOTCHA (July 2026): streamlit.components.v1.html was deprecated and
+    then REMOVED after 2026-06-01 — when Streamlit Cloud rolled past
+    the removal, every widget rendered blank. st.iframe is the official
+    replacement and accepts raw HTML directly. The fallback keeps older
+    local installs working; the try/except keeps display glass from
+    ever taking down a page of computed signals — the glass is
+    decoration, the signals are the desk.
+    """
+    try:
+        if hasattr(st, "iframe"):
+            st.iframe(html, height=height)
+            return
+        import streamlit.components.v1 as components
+        components.html(html, height=height)
+    except Exception:
+        pass
+
+
 def tape() -> None:
     """The terminal's ticker tape — rendered by header() on every page."""
-    import streamlit.components.v1 as components
-
     html = f"""
 <div class="tradingview-widget-container">
   <div class="tradingview-widget-container__widget"></div>
@@ -242,7 +261,7 @@ def tape() -> None:
   </script>
 </div>
 """
-    components.html(html, height=48)
+    embed(html, height=48)
 
 
 def news_marquee() -> None:

@@ -18,6 +18,7 @@ theme.header("BOOK I · CH. 15", "Analyst's Notebook",
              "tape, the working notes don't.")
 
 STORE = Path("notebook_entries.json")
+JOTS = Path("notebook_jots.json")
 
 
 def load() -> list[dict]:
@@ -33,7 +34,21 @@ def save(entries: list[dict]) -> None:
     STORE.write_text(json.dumps(entries, indent=2))
 
 
+def load_jots() -> list[dict]:
+    if JOTS.exists():
+        try:
+            return json.loads(JOTS.read_text())
+        except Exception:
+            return []
+    return []
+
+
+def save_jots(jots: list[dict]) -> None:
+    JOTS.write_text(json.dumps(jots, indent=2))
+
+
 entries = load()
+jots = load_jots()
 
 st.warning(
     "Storage note: on Streamlit Community Cloud this scratchpad file resets "
@@ -41,11 +56,55 @@ st.warning(
     "regularly** and re-upload to restore. Entries published to the record "
     "are immune — they live as git commits on the `data` branch.", icon="💾")
 
+# --------------------------------------------------------- the blotter ----
+theme.panel_bar("Blotter — quick notes",
+                f"{len(jots)} jot{'s' if len(jots) != 1 else ''} · "
+                "private, always")
+with st.form("jot", clear_on_submit=True, border=False):
+    jc1, jc2 = st.columns([8, 1])
+    jot_text = jc1.text_input(
+        "jot", label_visibility="collapsed",
+        placeholder="10:14 — RSP/SPY green while SPX flat; watching…")
+    if jc2.form_submit_button("JOT", use_container_width=True) \
+            and jot_text.strip():
+        jots.insert(0, {"ts": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "text": jot_text.strip()})
+        save_jots(jots)
+        st.rerun()
+theme.note("The blotter is the desk's running tape of half-thoughts — "
+           "timestamped, unstructured, never published. Promote a jot "
+           "when it earns the full Evidence → Decision treatment; the "
+           "structured entry is the pitch, this is the margin it came "
+           "from.")
+
+if jots:
+    with st.expander(f"Open blotter ({len(jots)})",
+                     expanded=len(jots) <= 5):
+        kill = None
+        for i, j in enumerate(jots):
+            b1, b2, b3 = st.columns([8, 1.4, 0.6])
+            b1.markdown(f'<div class="desk-note" style="font-size:0.85rem">'
+                        f'<span style="color:{theme.AMBER}">{j["ts"]}</span> '
+                        f'&nbsp;{j["text"]}</div>', unsafe_allow_html=True)
+            if b2.button("→ entry", key=f"promote_{i}",
+                         help="Prefill a structured entry's Evidence "
+                              "with this jot"):
+                st.session_state["prefill_evidence"] = \
+                    f"[{j['ts']}] {j['text']}"
+            if b3.button("✕", key=f"deljot_{i}"):
+                kill = i
+        if kill is not None:
+            jots.pop(kill)
+            save_jots(jots)
+            st.rerun()
+
 with st.form("entry", clear_on_submit=True):
     st.subheader("New entry")
     date = st.date_input("Date", dt.date.today())
-    evidence = st.text_area("Evidence", height=140,
-                            placeholder="[F] SPX −0.8%, ADD +564, RSP/SPY +1.4% …")
+    evidence = st.text_area(
+        "Evidence", height=140,
+        value=st.session_state.pop("prefill_evidence", ""),
+        placeholder="[F] SPX −0.8%, ADD +564, RSP/SPY +1.4% …")
     interpretation = st.text_area("Interpretation", height=110)
     risks = st.text_area("Risks to this read", height=80)
     falsification = st.text_area(
@@ -93,7 +152,7 @@ with st.form("entry", clear_on_submit=True):
 
 st.divider()
 
-if entries:
+if entries or jots:
     md_lines = []
     for e in entries:
         md_lines += [f"## {e['date']}", "",
@@ -102,20 +161,30 @@ if entries:
                      f"**Risks**\n\n{e['risks']}", "",
                      f"**Falsification**\n\n{e['falsification']}", "",
                      f"**Decision** — {e['decision']}", "", "---", ""]
+    if jots:
+        md_lines += ["## Blotter", ""]
+        md_lines += [f"- `{j['ts']}` {j['text']}" for j in jots] + [""]
     c1, c2 = st.columns(2)
     c1.download_button("⬇️ Download notebook (markdown)",
                        "\n".join(md_lines),
                        file_name="analysts_notebook.md")
     c2.download_button("⬇️ Download backup (JSON)",
-                       json.dumps(entries, indent=2),
+                       json.dumps({"entries": entries, "jots": jots},
+                                  indent=2),
                        file_name="notebook_backup.json")
 
 uploaded = st.file_uploader("Restore from a previous JSON backup", type="json")
 if uploaded is not None:
     try:
         restored = json.loads(uploaded.read())
-        save(restored)
-        st.success(f"Restored {len(restored)} entries — refresh the page.")
+        if isinstance(restored, dict):          # current schema
+            save(restored.get("entries", []))
+            save_jots(restored.get("jots", []))
+            n = len(restored.get("entries", [])) + len(restored.get("jots", []))
+        else:                                    # legacy: bare entry list
+            save(restored)
+            n = len(restored)
+        st.success(f"Restored {n} items — refresh the page.")
     except Exception:
         st.error("Could not parse that file.")
 

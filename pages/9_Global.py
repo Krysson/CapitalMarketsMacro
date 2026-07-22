@@ -87,7 +87,6 @@ st.divider()
 
 # ------------------------------------------------- FX majors monitor ----
 theme.panel_bar("FX majors", "live · market convention quotes")
-import streamlit.components.v1 as components
 
 _FX_MAJORS = """
 <div class="tradingview-widget-container">
@@ -116,7 +115,7 @@ _FX_MAJORS = """
   }
   </script>
 </div>"""
-components.html(_FX_MAJORS, height=440)
+theme.embed(_FX_MAJORS, height=440)
 theme.note("Live quotes (spot FX carries no exchange licensing, so "
            "free real-time is genuinely real-time). Convention matters "
            "and is itself worth learning: EUR, GBP, AUD, NZD quote as "

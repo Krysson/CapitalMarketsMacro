@@ -6,7 +6,6 @@ calendar below for everything else. When they disagree, trust the
 anchors and tell us.
 """
 import streamlit as st
-import streamlit.components.v1 as components
 
 from desk import data, events, theme
 
@@ -70,7 +69,7 @@ _CAL = """
   }
   </script>
 </div>"""
-components.html(_CAL, height=710)
+theme.embed(_CAL, height=710)
 theme.note("Filtered to medium/high importance across the majors' "
            "economies — the releases that move the pairs on the Global "
            "page. Reading discipline: the FORECAST column is the "

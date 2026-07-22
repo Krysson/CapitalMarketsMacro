@@ -1,7 +1,6 @@
 """Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
 import plotly.graph_objects as go
 import streamlit as st
-import streamlit.components.v1 as components
 
 from desk import data, theme
 
@@ -92,7 +91,7 @@ with c2:
                 "credit DISSENTING — junk lagging quality.")
 
 with st.expander("S&P 500 heatmap — TradingView (display glass)"):
-    components.html(
+    theme.embed(
         """
         <div class="tradingview-widget-container">
           <div class="tradingview-widget-container__widget"></div>
@@ -153,7 +152,7 @@ if sel:
 
 st.divider()
 with st.expander("Live SPX — TradingView (display glass)"):
-    components.html(
+    theme.embed(
         """
         <div class="tradingview-widget-container">
           <div id="tv_spx"></div>

@@ -3,7 +3,6 @@ import json
 
 import pandas as pd
 import streamlit as st
-import streamlit.components.v1 as components
 
 from desk import data, events, signals, theme
 
@@ -63,7 +62,7 @@ for col, ev, blurb in (
         )
 
 with st.expander("Full economic calendar — TradingView (display glass)"):
-    components.html(
+    theme.embed(
         """
         <div class="tradingview-widget-container">
           <div class="tradingview-widget-container__widget"></div>

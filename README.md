@@ -16,7 +16,7 @@ display glass only. Colors mean **direction, not advice**.
 | Macro | `MAC` | 15 FRED series + Net Liquidity (WALCL − TGA − RRP), NBER recession bands |
 | Market | `MKT` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
-| Notebook | `NOTE` | Evidence → Interpretation → Risks → Falsification → Decision; private scratchpad by default, per-entry **publish to the record** (a dated git commit on the `data` branch), post-mortems mirrored to the published file |
+| Notebook | `NOTE` | Blotter for quick timestamped jots (private, promotable to entries) + Evidence → Interpretation → Risks → Falsification → Decision; private scratchpad by default, per-entry **publish to the record** (a dated git commit on the `data` branch), post-mortems mirrored to the published file |
 | Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
 | Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS |
 | Futures | `CTM` | Commodity board by complex (energy/metals/grains/softs/livestock) + real term-structure curves |
@@ -36,7 +36,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.8.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.9.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -188,6 +188,11 @@ dry). Roughly once a year:
   Swap the data source — CAPITALCOM CFDs or `FRED:` symbols — not the
   widget. Fallbacks are commented in `app.py`'s `TAPE_SYMBOLS`.
 - Format dataframes with `.style.format` or floats print six decimals.
+- `streamlit.components.v1.html` was REMOVED after 2026-06-01 — every
+  TradingView widget went blank when Cloud rolled past it. All
+  script-bearing embeds now go through `theme.embed()` (st.iframe
+  with a components fallback, fail-soft). Never call components.html
+  directly again.
 
 ## Known limitations
 
