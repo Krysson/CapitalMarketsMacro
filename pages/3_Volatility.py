@@ -14,11 +14,14 @@ if hist.empty:
     st.error("Market data unavailable — try again shortly.")
     st.stop()
 
+skew_cb = data.cboe_series("SKEW")     # Yahoo dropped ^SKEW; Cboe didn't
 cols = st.columns(5)
 for col, (tkr, name) in zip(cols, [("^VIX", "VIX"), ("^VIX3M", "VIX 3M"),
                                    ("^VVIX", "VVIX"), ("^MOVE", "MOVE"),
                                    ("^SKEW", "SKEW")]):
     s = hist.get(tkr)
+    if tkr == "^SKEW" and (s is None or s.dropna().empty):
+        s = skew_cb
     if s is not None and not s.dropna().empty:
         s = s.dropna()
         chg = data.pct_chg(s)
@@ -62,6 +65,48 @@ if "^VIX" in hist and "^VIX3M" in hist:
                "of stress arriving, and where the standing alert lives.")
 
 st.divider()
+
+# ---- the SKEW index — finally on the desk (Cboe CDN) ----
+if not skew_cb.empty:
+    sk2 = data.tail_years(skew_cb, 2)
+    yr = data.tail_years(skew_cb, 1)
+    pct = float((yr <= yr.iloc[-1]).mean() * 100)
+    fig_sk = go.Figure(go.Scatter(x=sk2.index, y=sk2.values,
+                                  mode="lines",
+                                  line=dict(width=1.6,
+                                            color=theme.PURPLE)))
+    theme.plot(theme.style_fig(
+        fig_sk, "CBOE SKEW INDEX — TAIL-RISK PREMIUM", height=300,
+        right_text=f"{float(skew_cb.iloc[-1]):.1f} · {pct:.0f}th pct 1y",
+        right_color=(theme.RED if pct >= 85 else
+                     theme.YELLOW if pct >= 60 else theme.GREEN)),
+        use_container_width=True)
+    theme.readout(
+        theme.RED if pct >= 85 else theme.YELLOW if pct >= 60
+        else theme.GREEN,
+        f"SKEW {float(skew_cb.iloc[-1]):.1f} — {pct:.0f}th percentile "
+        f"of its past year. "
+        + ("ELEVATED: someone is paying up for crash insurance. Read "
+           "it against the put/call ratio — SKEW high while PCC is "
+           "LOW is the desk's tracked pattern: tail hedgers haven't "
+           "signed off, even as day-to-day positioning looks relaxed."
+           if pct >= 85 else
+           "Middling — crash insurance neither bid nor abandoned."
+           if pct >= 60 else
+           "Cheap tails: the market isn't paying for crash "
+           "protection. Complacency reads calm right up until it "
+           "doesn't."))
+    theme.note("What SKEW is: the price of deep out-of-the-money S&P "
+               "puts relative to at-the-money — the premium for CRASH "
+               "insurance specifically, versus ordinary volatility. "
+               "100 = no skew; higher = fatter priced left tail. "
+               "Sourced from Cboe's own CDN [T1] because Yahoo "
+               "dropped the symbol. Caveat: Cboe has announced a "
+               "SKEW methodology revision (2025 consultation) — when "
+               "it lands, new prints won't compare to this history. "
+               "The live SPY skew CURVE below is this same idea, "
+               "drawn strike by strike from today's chain.")
+    st.divider()
 
 st.subheader("SPY implied-volatility skew (live from the options chain)")
 st.markdown('<div class="desk-caption">IV by strike, expiration nearest 45 '

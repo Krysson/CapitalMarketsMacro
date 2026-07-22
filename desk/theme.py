@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.16.0"
+VERSION = "3.17.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -175,6 +175,8 @@ def _parse_command(c: str) -> tuple:
         return ("quote", "fred", _data.FRED_ALIASES[toks[0]], "")
     if len(toks) == 1 and toks[0] in _data.EIA_ALIASES:
         return ("quote", "eia", _data.EIA_ALIASES[toks[0]][0], "")
+    if len(toks) == 1 and toks[0] in _data.CBOE_ALIASES:
+        return ("quote", "cboe", _data.CBOE_ALIASES[toks[0]], "")
     if re.fullmatch(r"[A-Z0-9.\-^=]{1,12}", toks[0]):
         func = toks[1] if len(toks) > 1 and toks[1] in _FUNC_TOKENS else ""
         return ("quote", "yf", toks[0], func)
@@ -206,6 +208,7 @@ FUNCTIONS_TABLE = """
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
 | `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
 | `CUSHING` `CRUDE` `GASOLINE` `NATGAS` `WTISPOT`… | Quote | EIA weekly petroleum/gas series (needs EIA_API_KEY) |
+| `SKEW` / `VVIX` | Quote | Cboe index history from Cboe's own CDN |
 | `EIA <SERIES_ID>` | Quote | any EIA v1 series ID, e.g. EIA PET.WCESTUS1.W |
 | `SEARCH <words>` | Quote | search FRED's catalog, e.g. SEARCH housing starts |
 
@@ -433,6 +436,16 @@ def candles(df, name: str = "") -> go.Candlestick:
         decreasing_line_color=RED, decreasing_fillcolor=RED,
         line=dict(width=1), whiskerwidth=0.6,
     )
+
+
+def neg_red(styler, subset=None):
+    """House rule (v3.17): negative numbers read RED in every table —
+    the eye finds the drawdown before the label. Chain after
+    .style.format(); leaves non-numerics and NaN alone."""
+    return styler.map(
+        lambda v: f"color: {RED}"
+        if isinstance(v, (int, float)) and pd.notna(v) and v < 0 else "",
+        subset=subset)
 
 
 def note(text: str) -> None:

@@ -354,6 +354,60 @@ FRED_ALIASES = {
 }
 
 
+# --------------------------------------------------------------- Cboe ----
+# The index owner's own daily-history CSVs — keyless, updated daily.
+# Exists because Yahoo quietly dropped most Cboe proprietary indices
+# (licensing), which is why ^SKEW never rendered. [T1]
+CBOE_ALIASES = {"SKEW": "SKEW", "VVIX": "VVIX"}
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def cboe_series(symbol: str) -> pd.Series:
+    """Daily close for a Cboe index from cdn.cboe.com. Empty on any
+    failure. NOTE: Cboe announced (2025 consultation) a coming SKEW
+    methodology revision — when it lands, old and new levels won't be
+    comparable; the chart note says so."""
+    try:
+        r = requests.get(
+            "https://cdn.cboe.com/api/global/us_indices/daily_prices/"
+            f"{symbol}_History.csv", timeout=20)
+        r.raise_for_status()
+        import io as _io
+        df = pd.read_csv(_io.StringIO(r.text))
+        cols = {c.strip().upper(): c for c in df.columns}
+        dcol, ccol = cols.get("DATE"), cols.get("CLOSE")
+        if not dcol or not ccol:
+            return pd.Series(dtype=float, name=symbol)
+        s = pd.Series(pd.to_numeric(df[ccol], errors="coerce").values,
+                      index=pd.to_datetime(df[dcol], errors="coerce"),
+                      name=symbol)
+        return s[s.index.notna()].dropna().sort_index()
+    except Exception:
+        return pd.Series(dtype=float, name=symbol)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def stooq_series(symbol: str) -> pd.Series:
+    """Quiet computable fallback (stooq.com free CSV) for plain US
+    tickers Yahoo fumbles. [T2] Empty on failure."""
+    try:
+        sym = symbol.lower()
+        if sym.isalpha():
+            sym += ".us"
+        r = requests.get(f"https://stooq.com/q/d/l/?s={sym}&i=d",
+                         timeout=15)
+        if not r.ok or "Close" not in r.text[:100]:
+            return pd.Series(dtype=float, name=symbol)
+        import io as _io
+        df = pd.read_csv(_io.StringIO(r.text))
+        s = pd.Series(pd.to_numeric(df["Close"], errors="coerce").values,
+                      index=pd.to_datetime(df["Date"], errors="coerce"),
+                      name=symbol)
+        return s[s.index.notna()].dropna().sort_index()
+    except Exception:
+        return pd.Series(dtype=float, name=symbol)
+
+
 # ---------------------------------------------------------------- EIA ----
 # The official energy layer. What this is NOT: the API (American
 # Petroleum Institute) Tuesday-evening inventory number — that is a

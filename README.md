@@ -39,7 +39,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.16.0** (shown in the sidebar). Flaky endpoints
+Current version: **v3.17.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -55,6 +55,18 @@ throttled, instead of erroring.
    but the key is more reliable.)
 4. Deploy. First load takes ~1 min while data caches. If a dependency
    changed (e.g. feedparser), reboot the app from the Cloud dashboard.
+
+## v3.17 — SKEW lives, fallback ladder, red negatives
+
+The SKEW index finally renders: Yahoo dropped Cboe's proprietary
+indices, so the desk now reads them from **Cboe's own CDN** (keyless,
+[T1]) — SKEW spark restored, a full SKEW panel on the Volatility page
+with a 1-year percentile readout framed against the put/call pattern,
+and `SKEW` / `VVIX` as quote commands. The Quote page's dead end
+became a ladder: Yahoo → Stooq (computable fallback, [T2]) → the
+TradingView symbol widget (display glass, anything TV knows). And a
+house rule: **negative numbers read red in every table**
+(`theme.neg_red`, chain it onto any new styled table).
 
 ## Look & feel (v3.16)
 

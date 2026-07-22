@@ -66,9 +66,11 @@ else:
               .sort_values("vs SPY 1M", ascending=False)
               .set_index("Ticker"))
         st.dataframe(
-            df.style.format({"1W %": "{:+.1f}", "1M %": "{:+.1f}",
-                             "vs SPY 1M": "{:+.1f}",
-                             "Vol vs 20d": "{:.2f}×"}, na_rep="—"),
+            theme.neg_red(
+                df.style.format({"1W %": "{:+.1f}", "1M %": "{:+.1f}",
+                                 "vs SPY 1M": "{:+.1f}",
+                                 "Vol vs 20d": "{:.2f}×"}, na_rep="—"),
+                subset=["1W %", "1M %", "vs SPY 1M"]),
             use_container_width=True, height=min(560, 60 + 35 * len(df)))
         lead, lag = df.index[0], df.index[-1]
         theme.readout(
@@ -232,8 +234,8 @@ else:
     stk = flow.streaks(flows)
     if not stk.empty:
         st.dataframe(
-            stk.set_index("ticker").style.format(
-                {"total_mm": "{:+,.0f}", "days": "{:d}"}),
+            theme.neg_red(stk.set_index("ticker").style.format(
+                {"total_mm": "{:+,.0f}", "days": "{:d}"})),
             use_container_width=True)
         theme.readout(
             theme.AMBER,

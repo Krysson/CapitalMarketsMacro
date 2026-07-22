@@ -81,6 +81,33 @@ if not q:
 
 kind, sym, func = q
 
+# ---------------------------------------------------------- Cboe mode --
+if kind == "cboe":
+    s = data.cboe_series(sym)
+    if s.empty:
+        st.error(f"{sym} — Cboe CDN unreachable; try again shortly.")
+        st.stop()
+    years = st.selectbox("Lookback (years)", [1, 2, 5, 10, 15], index=1)
+    tail = data.tail_years(s, years)
+    wow = float(s.iloc[-1]) - float(s.iloc[-2]) if len(s) > 1 else None
+    theme.panel_bar(f"Cboe · {sym}",
+                    f"{float(s.iloc[-1]):,.2f}  ({s.index[-1]:%d-%b-%Y})")
+    fig = go.Figure(go.Scatter(x=tail.index, y=tail.values, mode="lines",
+                               line=dict(width=1.8, color=theme.AMBER)))
+    theme.plot(theme.style_fig(
+        fig, None, height=380,
+        right_text=(f"d/d {wow:+.2f}" if wow is not None else None),
+        right_color=(theme.RED if wow is not None and wow > 0
+                     else theme.GREEN)),
+        use_container_width=True)
+    theme.note("Straight from Cboe's own daily-history CDN — the index "
+               "owner's file, which is why this works where Yahoo's "
+               "^-symbols went dark. [T1] For SKEW: Cboe has announced "
+               "a coming methodology revision (2025 consultation) — "
+               "when it takes effect, new prints won't be comparable "
+               "to this history; the desk will say so.")
+    st.stop()
+
 # ----------------------------------------------------------- EIA mode --
 if kind == "eia":
     # Resolve a friendly name if the ID matches a known alias.
@@ -196,9 +223,45 @@ if kind == "fred":
 snap = data.ticker_snapshot(sym)
 ohlc = data.ohlc(sym, period="1y")
 if not snap and ohlc.empty:
-    st.error(f"{sym} — unknown security (nothing on Yahoo Finance). "
-             f"Indexes need a caret (^VIX, ^GSPC); futures a suffix "
-             f"(GC=F, CL=F); crypto a pair (BTC-USD).")
+    st.error(f"{sym} — nothing on Yahoo Finance. Indexes need a caret "
+             f"(^VIX, ^GSPC); futures a suffix (GC=F, CL=F); crypto a "
+             f"pair (BTC-USD).")
+    # Fallback ladder: Stooq (computable, [T2]) then the TradingView
+    # widget (display glass — anything TV knows, shown, never computed).
+    alt = data.stooq_series(sym)
+    if not alt.empty:
+        theme.panel_bar(f"Stooq fallback · {sym}",
+                        f"{float(alt.iloc[-1]):,.2f}  "
+                        f"({alt.index[-1]:%d-%b-%Y})")
+        tail = data.tail_years(alt, 2)
+        fig = go.Figure(go.Scatter(x=tail.index, y=tail.values,
+                                   mode="lines",
+                                   line=dict(width=1.8,
+                                             color=theme.AMBER)))
+        theme.plot(theme.style_fig(fig, None, height=340),
+                   use_container_width=True)
+        theme.note("Yahoo doesn't carry this one; Stooq (free CSV) "
+                   "does. [T2] Daily closes only — good enough to "
+                   "read, not wired into any computed signal.")
+    else:
+        st.markdown('<div class="desk-note">Trying the TradingView '
+                    'glass — display only, never feeds signals. If it '
+                    'renders, the symbol exists there under this or a '
+                    'prefixed name (e.g. CBOE:SKEW).</div>',
+                    unsafe_allow_html=True)
+        theme.embed(f"""
+        <div class="tradingview-widget-container">
+          <div id="tv_fallback"></div>
+          <script src="https://s3.tradingview.com/tv.js"></script>
+          <script>
+          new TradingView.widget({{
+            "container_id": "tv_fallback", "symbol": "{sym}",
+            "interval": "D", "timezone": "America/New_York",
+            "theme": "dark", "style": "1", "locale": "en",
+            "allow_symbol_change": true, "width": "100%",
+            "height": 460 }});
+          </script>
+        </div>""", height=470)
     st.stop()
 
 name = snap.get("name", sym)
@@ -284,7 +347,7 @@ with st.expander("FA — financials (annual, $bn)", expanded=(func == "FA")):
                     'endpoint. Try again in a minute.</div>',
                     unsafe_allow_html=True)
     else:
-        st.dataframe((fin / 1e9).style.format("{:,.2f}"),
+        st.dataframe(theme.neg_red((fin / 1e9).style.format("{:,.2f}")),
                      use_container_width=True)
 
 theme.note("Yahoo Finance, delayed — Tier 2 market data, Tier 3 once "

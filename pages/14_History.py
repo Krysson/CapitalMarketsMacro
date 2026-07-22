@@ -137,8 +137,9 @@ else:
         })
     rec = pd.DataFrame(rows).set_index("Dial")
     st.dataframe(
-        rec.style.format({"Avg fwd 1m %": "{:+.2f}",
-                          "% positive": "{:.0f}"}, na_rep="—"),
+        theme.neg_red(
+            rec.style.format({"Avg fwd 1m %": "{:+.2f}",
+                              "% positive": "{:.0f}"}, na_rep="—")),
         use_container_width=True)
     theme.note(
         "A 'flip into red' is a session where a dial's color turned red "

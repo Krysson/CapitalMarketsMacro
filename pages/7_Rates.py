@@ -243,7 +243,8 @@ else:
                        "High yield %": "{:.3f}",
                        "Indirect %": "{:.1f}",
                        "Direct %": "{:.1f}",
-                       "Dealer %": "{:.1f}"}, na_rep="—"),
+                       "Dealer %": "{:.1f}"}, na_rep="—")
+        .pipe(theme.neg_red),
         hide_index=True, use_container_width=True,
         height=min(500, 40 + 36 * len(show)))
     graded = res.dropna(subset=["indirect_pct"])
