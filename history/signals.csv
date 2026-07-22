@@ -1,2 +1,3 @@
 date,growth_score,growth_label,inflation_score,inflation_label,policy_score,policy_label,liquidity_score,liquidity_label,spx,vix,vix_vix3m,rsp_spy,hyg_lqd,t10y2y,hy_oas,net_liq_tn,dxy
-2026-07-21,4,Rising,2,Mixed,3,Loose / Easing,3,Ample / Loosening,7510.55,17.00,0.8696,0.2842,0.7450,0.39,2.69,5.987,101.17
+2026-07-21,4,Rising,2,Mixed,3,Loose / Easing,3,Ample / Loosening,7510.55,17.0,0.8696,0.2842,0.745,0.39,2.69,5.987,101.17
+2026-07-22,4,Rising,2,Mixed,3,Loose / Easing,3,Ample / Loosening,7498.96,16.64,0.8516,0.2846,0.7455,0.36,2.69,5.987,101.14
