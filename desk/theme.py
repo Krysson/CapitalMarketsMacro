@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.9.1"
+VERSION = "3.10.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -116,6 +116,8 @@ _ROUTES = {
     "RATES": "pages/7_Rates.py", "CRV": "pages/7_Rates.py",
     "HIST": "pages/14_History.py", "TRACK": "pages/14_History.py",
     "HISTORY": "pages/14_History.py",
+    "GEN": "pages/15_Ideas.py", "IDEA": "pages/15_Ideas.py",
+    "IDEAS": "pages/15_Ideas.py",
 }
 
 _FUNC_TOKENS = {"GP", "DES", "FA"}
@@ -137,10 +139,14 @@ def _parse_command(c: str) -> tuple:
         return ("page", _ROUTES[toks[0]])
     if toks[0] == "FRED" and len(toks) >= 2:
         return ("quote", "fred", toks[1], "")
+    if toks[0] == "EIA" and len(toks) >= 2:
+        return ("quote", "eia", toks[1], "")
     if toks[0] in ("SEARCH", "FIND") and len(toks) >= 2:
         return ("search", " ".join(toks[1:]))
     if len(toks) == 1 and toks[0] in _data.FRED_ALIASES:
         return ("quote", "fred", _data.FRED_ALIASES[toks[0]], "")
+    if len(toks) == 1 and toks[0] in _data.EIA_ALIASES:
+        return ("quote", "eia", _data.EIA_ALIASES[toks[0]][0], "")
     if re.fullmatch(r"[A-Z0-9.\-^=]{1,12}", toks[0]):
         func = toks[1] if len(toks) > 1 and toks[1] in _FUNC_TOKENS else ""
         return ("quote", "yf", toks[0], func)
@@ -164,10 +170,13 @@ _HELP = """
 | `DIFF` / `FED` | Fed Statement Diff | redline vs the prior statement |
 | `TM` / `TIME` | Time Machine | the desk as of any past date (ALFRED vintages) |
 | `HIST` / `TRACK` | Regime History | the dials' live-accrued track record, one git commit per night |
+| `GEN` / `IDEA` | Idea Desk | Ch. 15 gates & generators — passcode-gated |
 | `ASK` / `IB` | Desk Analyst | chat with the desk's AI analyst (IB — chat, on the machine) |
 | `GOOG` · `GOOG FA` · `GOOG DES` | Quote | GOOG US Equity GP / FA / DES |
 | `CPI` `NFP` `EFFR` `SOFR` `10Y` `CURVE`… | Quote | ECO series graph |
 | `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
+| `CUSHING` `CRUDE` `GASOLINE` `NATGAS` `WTISPOT`… | Quote | EIA weekly petroleum/gas series (needs EIA_API_KEY) |
+| `EIA <SERIES_ID>` | Quote | any EIA v1 series ID, e.g. EIA PET.WCESTUS1.W |
 | `SEARCH <words>` | Quote | search FRED's catalog, e.g. SEARCH housing starts |
 
 Type the function, hit **GO** (or Enter). Same habit as the terminal:

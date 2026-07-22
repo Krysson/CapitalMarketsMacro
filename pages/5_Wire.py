@@ -5,6 +5,9 @@ PRIMARY   — the agencies themselves (Fed, BLS, BEA).
 NARRATIVE — financial media; never evidence on its own.
 Fetching lives in desk/wire.py (concurrent, short timeouts, fail-soft).
 """
+import datetime as dt
+from zoneinfo import ZoneInfo
+
 import streamlit as st
 
 from desk import theme, wire
@@ -35,23 +38,48 @@ def tape(label: str, tier: str, feeds: list[tuple[str, str]],
     if not items:
         st.warning("No items — all feeds unreachable. Try again shortly.")
         return
-    lines = []
+    today = dt.datetime.now(ZoneInfo("America/New_York")).date()
+    lines, fresh = [], 0
     for it in items:
+        is_today = bool(it["when"]) and it["when"].date() == today
+        fresh += int(is_today)
         stamp = (it["when"].strftime("%d-%b %H:%M") if it["when"]
                  else "        --:--")
         title = it["title"].replace("<", "&lt;").replace(">", "&gt;")
+        # Today's stories carry the flag at full brightness; older ones
+        # dim — the eye should find NEW before it reads anything.
+        chip = (f'<span style="color:{theme.INK};background:{src_color};'
+                f'font-size:0.62rem;padding:0 5px;border-radius:2px;'
+                f'font-weight:600;letter-spacing:0.08em;'
+                f'margin-right:8px">NEW</span>' if is_today else "")
+        row_style = (
+            f'background:rgba(255,159,28,0.06);'
+            f'border-left:2px solid {src_color};padding-left:8px;'
+            if is_today else 'opacity:0.62;padding-left:10px;')
         lines.append(
-            f'<div style="padding:3px 0;border-bottom:1px solid '
-            f'rgba(232,230,225,0.06)">'
+            f'<div style="padding:4px 0;{row_style}'
+            f'border-bottom:1px solid rgba(232,230,225,0.06);'
+            f'break-inside:avoid">'
             f'<span style="color:{theme.MUTED}">{stamp} ET</span>'
             f'<span style="color:{src_color};margin:0 10px">'
-            f'{it["src"]:>4}</span>'
+            f'{it["src"]:>4}</span>{chip}'
             f'<a href="{it["link"]}" target="_blank" style="color:'
             f'{theme.TEXT};text-decoration:none">{title}</a></div>')
+    if fresh:
+        st.markdown(f'<div class="desk-note" style="color:{src_color}">'
+                    f'{fresh} STOR{"Y" if fresh == 1 else "IES"} TODAY '
+                    f'· dimmed rows are yesterday\'s news</div>',
+                    unsafe_allow_html=True)
+    # CSS multi-column: up to 3 columns of >=340px, so wide screens read
+    # like a broadsheet while phones collapse to one column on their own
+    # — no separate mobile layout to maintain. break-inside:avoid keeps
+    # a headline from splitting across columns.
     st.markdown(
         f'<div style="font-family:\'IBM Plex Mono\',monospace;'
         f'font-size:0.82rem;background:{theme.PANEL};padding:10px 14px;'
-        f'border-left:3px solid {src_color};border-radius:2px">'
+        f'border-left:3px solid {src_color};border-radius:2px;'
+        f'columns:340px 3;column-gap:28px;'
+        f'column-rule:1px solid rgba(232,230,225,0.08)">'
         + "".join(lines) + "</div>",
         unsafe_allow_html=True)
 

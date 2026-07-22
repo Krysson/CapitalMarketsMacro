@@ -354,6 +354,80 @@ FRED_ALIASES = {
 }
 
 
+# ---------------------------------------------------------------- EIA ----
+# The official energy layer. What this is NOT: the API (American
+# Petroleum Institute) Tuesday-evening inventory number — that is a
+# PAID private survey with no free feed; it reaches this desk only as a
+# Tier 5 headline on the Wire. What the EIA publishes Wednesday 10:30
+# ET is the number of record the API print front-runs — and it's free.
+EIA_API = "https://api.eia.gov/v2/seriesid/"
+
+# alias -> (APIv1 series id — the v2 /seriesid route translates these,
+#           display name). Weekly WPSR series unless noted.
+EIA_ALIASES = {
+    "CUSHING": ("PET.W_EPC0_SAX_YCUOK_MBBL.W",
+                "Cushing, OK Crude Stocks ex-SPR (kbbl)"),
+    "CRUDE": ("PET.WCESTUS1.W",
+              "US Commercial Crude Stocks ex-SPR (kbbl)"),
+    "GASOLINE": ("PET.WGTSTUS1.W", "US Total Gasoline Stocks (kbbl)"),
+    "DISTILLATE": ("PET.WDISTUS1.W", "US Distillate Stocks (kbbl)"),
+    "REFINERY": ("PET.WPULEUS3.W", "US Refinery Utilization (%)"),
+    "UTIL": ("PET.WPULEUS3.W", "US Refinery Utilization (%)"),
+    "CRUDEPROD": ("PET.WCRFPUS2.W", "US Crude Production (kb/d)"),
+    "WTISPOT": ("PET.RWTC.D", "WTI Spot, Cushing FOB ($/bbl, daily)"),
+    "NATGAS": ("NG.NW2_EPG0_SWO_R48_BCF.W",
+               "Lower-48 Working Nat Gas Storage (Bcf)"),
+    "GASSTORAGE": ("NG.NW2_EPG0_SWO_R48_BCF.W",
+                   "Lower-48 Working Nat Gas Storage (Bcf)"),
+}
+
+
+def _eia_key() -> str | None:
+    try:
+        if "EIA_API_KEY" in st.secrets:
+            return st.secrets["EIA_API_KEY"]
+    except Exception:
+        pass
+    return os.environ.get("EIA_API_KEY")
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def eia_series(series_id: str) -> pd.Series:
+    """One EIA series via the v2 /seriesid translation route. Empty on
+    failure or without an EIA_API_KEY (the EIA API has no keyless
+    fallback, unlike FRED). GOTCHA (documented API change v2.1.6): data
+    values return as JSON *strings* — always coerce numeric. We request
+    newest-first with the 5,000-row cap (long dailies exceed it) and
+    re-sort ascending."""
+    key = _eia_key()
+    if not key:
+        return pd.Series(dtype=float, name=series_id)
+    try:
+        r = requests.get(
+            EIA_API + series_id,
+            params={"api_key": key, "length": 5000,
+                    "sort[0][column]": "period",
+                    "sort[0][direction]": "desc"},
+            timeout=30)
+        r.raise_for_status()
+        rows = r.json().get("response", {}).get("data", [])
+        if not rows:
+            return pd.Series(dtype=float, name=series_id)
+        idx, vals = [], []
+        for o in rows:
+            p = str(o.get("period", ""))
+            if len(p) == 7:            # monthly "YYYY-MM"
+                p += "-01"
+            idx.append(p)
+            vals.append(o.get("value"))
+        s = pd.Series(pd.to_numeric(pd.Series(vals), errors="coerce").values,
+                      index=pd.to_datetime(idx, errors="coerce"),
+                      name=series_id)
+        return s[s.index.notna()].dropna().sort_index()
+    except Exception:
+        return pd.Series(dtype=float, name=series_id)
+
+
 @st.cache_data(ttl=900, show_spinner=False)
 def ticker_snapshot(t: str) -> dict:
     """Quote-page basics for one ticker. {} on failure; the profile

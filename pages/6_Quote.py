@@ -71,12 +71,77 @@ if not q:
         "| `CPI` / `NFP` / `EFFR` / `SOFR` / `10Y` / `CURVE` | the FRED "
         "series, charted |\n"
         "| `FRED DGS30` | any FRED series by ID |\n"
+        "| `CUSHING` / `CRUDE` / `GASOLINE` / `NATGAS` / `WTISPOT` | "
+        "EIA weekly energy series, charted |\n"
+        "| `EIA PET.WCESTUS1.W` | any EIA series by ID |\n"
         "| `SEARCH housing starts` | search FRED's catalog |")
     st.divider()
     fred_search_ui()
     st.stop()
 
 kind, sym, func = q
+
+# ----------------------------------------------------------- EIA mode --
+if kind == "eia":
+    # Resolve a friendly name if the ID matches a known alias.
+    nice = next((n for _, (sid, n) in data.EIA_ALIASES.items()
+                 if sid == sym), None)
+    s = data.eia_series(sym)
+    if s.empty:
+        if not data._eia_key():
+            st.error("EIA series need an EIA_API_KEY in app secrets — "
+                     "free from eia.gov/opendata (setup steps in the "
+                     "README). Unlike FRED, the EIA API has no keyless "
+                     "fallback.")
+        else:
+            st.error(f"{sym} — no data from the EIA API. Check the "
+                     f"series ID at eia.gov/opendata (v1-style IDs, "
+                     f"e.g. PET.WCESTUS1.W).")
+        st.stop()
+    years = st.selectbox("Lookback (years)", [1, 2, 5, 10, 20], index=2)
+    tail = data.tail_years(s, years)
+    theme.panel_bar(nice or f"EIA · {sym}",
+                    f"{float(s.iloc[-1]):,.1f}  ({s.index[-1]:%d-%b-%Y})")
+    st.markdown(
+        f'<div class="desk-note">EIA:{sym} · Weekly Petroleum Status '
+        f'Report family (Wed 10:30 ET) · '
+        f'<a href="https://www.eia.gov/opendata/" target="_blank" '
+        f'style="color:{theme.AMBER}">eia.gov/opendata</a></div>',
+        unsafe_allow_html=True)
+    wow = (float(s.iloc[-1]) - float(s.iloc[-2])) if len(s) > 1 else None
+    fig = go.Figure(go.Scatter(x=tail.index, y=tail.values, mode="lines",
+                               line=dict(width=1.8, color=theme.AMBER)))
+    theme.recession_bands(fig, data.usrec(), start=tail.index.min(),
+                          end=tail.index.max())
+    theme.plot(theme.style_fig(
+        fig, None, height=380,
+        right_text=(f"w/w {wow:+,.0f}" if wow is not None else None),
+        right_color=(theme.GREEN if wow is not None and wow >= 0
+                     else theme.RED)),
+        use_container_width=True)
+    pts = data.series_hist_points(s)
+    if pts:
+        cols = st.columns(len(pts))
+        for c, (label, txt) in zip(cols, pts):
+            with c:
+                st.markdown(
+                    f'<div style="background:{theme.PANEL};'
+                    f'padding:6px 10px;border-radius:2px;'
+                    f'font-family:\'IBM Plex Mono\',monospace">'
+                    f'<span class="desk-eyebrow" '
+                    f'style="color:{theme.MUTED}">{label}</span><br>'
+                    f'<span style="color:{theme.TEXT};'
+                    f'font-size:0.9rem">{txt}</span></div>',
+                    unsafe_allow_html=True)
+    theme.note("Tier 1 — the government's official count, published "
+               "Wednesdays 10:30 ET. The API (American Petroleum "
+               "Institute) number that hits the Wire Tuesday evening is "
+               "a PAID private survey with no free feed — it moves "
+               "crude precisely because it previews THIS print. When "
+               "they diverge, Wednesday resolves it. The desk charts "
+               "the number of record and lets the Wire carry the "
+               "preview, tiered honestly.")
+    st.stop()
 
 # ---------------------------------------------------------- FRED mode --
 if kind == "fred":

@@ -17,7 +17,7 @@ display glass only. Colors mean **direction, not advice**.
 | Market | `MKT` | SPX candles + MA ribbon, RSP/SPY and HYG/LQD ratios, normalized cross-asset |
 | Volatility | `VIX` | VIX/VIX3M tripwire (1.0 line), VVIX / MOVE / SKEW, live SPY IV skew curve |
 | Notebook | `NOTE` | Blotter for quick timestamped jots (private, promotable to entries) + Evidence → Interpretation → Risks → Falsification → Decision; private scratchpad by default, per-entry **publish to the record** (a dated git commit on the `data` branch), post-mortems mirrored to the published file |
-| Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, labeled Tier 5) |
+| Wire | `TOP` | Dual RSS tape: primary (Fed/BLS/BEA) vs narrative (media, Tier 5); broadsheet columns on wide screens, single column on mobile, today's stories flagged NEW with older rows dimmed |
 | Rates & Credit | `GC` | Full Treasury curve (today/-1m/-1y), 2s10s & 3m10y, real/breakeven split, ICE BofA HY & IG OAS |
 | Futures | `CTM` | Commodity board by complex (energy/metals/grains/softs/livestock) + real term-structure curves |
 | Global | `WEI` | World index board (Americas/EMEA/APAC) + G8 FX cross matrix + DXY readout |
@@ -25,8 +25,9 @@ display glass only. Colors mean **direction, not advice**.
 | Time Machine | `TM` | The desk as of any past date: ALFRED macro vintages + price history cut at the date + "what happened next" |
 | Desk Analyst | `ASK` | Claude wired to the live desk: morning reads, positioning views in desk grammar, Notebook drafts, teaching (needs ANTHROPIC_API_KEY; set DESK_CHAT_PASSCODE on public deployments) |
 | Calendar | `ECO` | Verified CPI/NFP/FOMC anchors + live full economic calendar (TradingView events widget) |
+| Idea Desk | `GEN` | Ch. 15 gates (deterministic screens on live data, free) + a passcode-gated Claude generator drafting candidate ideas in positioning grammar |
 | Regime History | `HIST` | The four dials recorded nightly by a bot — colored strips over SPX, current streaks, and (once >30 rows) what SPX did after each red flip |
-| Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30` |
+| Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30`, `CUSHING`, `EIA <ID>` |
 
 Every page has a **command line** at the top — type a function, hit GO.
 It is security-aware, like the machine: any ticker (`GOOG`, `^VIX`,
@@ -36,7 +37,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` lists all functions with their real Bloomberg equivalents.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.9.1** (shown in the sidebar). Flaky endpoints
+Current version: **v3.10.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -88,6 +89,39 @@ One-time setup:
 Headless note: the desk modules import Streamlit, so the script's log
 shows "No runtime found" cache warnings. Harmless — the fetchers run
 uncached and the row computes identically.
+
+## EIA energy data (Cushing, crude, gasoline, nat gas)
+
+The quote panel charts the EIA's official weekly energy series: type
+`CUSHING`, `CRUDE`, `GASOLINE`, `DISTILLATE`, `REFINERY`, `CRUDEPROD`,
+`WTISPOT`, or `NATGAS` — or `EIA <SERIES_ID>` for anything (v1-style
+IDs, e.g. `EIA PET.WCESTUS1.W`; browse at eia.gov/opendata). Setup:
+register free at https://www.eia.gov/opendata/ (the key arrives by
+email), then add to the **Streamlit app secrets**:
+
+    EIA_API_KEY = "your_key"
+
+Honesty note baked into the page: the Tuesday-evening API (American
+Petroleum Institute) inventory number is a PAID private survey with no
+free feed — it reaches this desk only as a Tier 5 Wire headline. The
+EIA's Wednesday 10:30 ET print is the official number the API preview
+front-runs; the desk charts the number of record. If it's official,
+this desk can verify it free; if it's private, it's a headline — that
+boundary is the lesson.
+
+## Alerts (nightly tripwires → GitHub issues)
+
+After writing its row, the snapshot bot evaluates crossing rules in
+`desk/alerts.py` against the history CSV: VIX/VIX3M crossing 1.0
+(either direction), any dial color flip, 2s10s sign change, HY OAS
+jumping ≥0.30 in a session or through 5.00, a ≥$100bn one-session net
+liquidity drop, RSP/SPY −3% over a recorded month. Trips open a GitHub
+ISSUE labeled `desk-alert` — GitHub emails you (watch your own repo /
+default notification settings), the alert is itself a timestamped
+artifact, and closing the issue = acknowledged. No new keys: the
+workflow's own token creates issues. Alerts fire on CROSSINGS, not
+levels — an alert channel that cries weekly gets muted by Friday; tune
+thresholds in `desk/alerts.py`.
 
 ## Publishing Notebook entries (the public record)
 

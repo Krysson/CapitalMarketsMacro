@@ -141,6 +141,43 @@ def main() -> int:
                   "policy_score", "liquidity_score"))
     print(f"recorded {today}: {dials} | SPX {row['spx'] or 'n/a'} "
           f"VIX {row['vix'] or 'n/a'} NetLiq {row['net_liq_tn'] or 'n/a'}tn")
+
+    # ---- alerts: crossings vs the prior recorded session -> GitHub issue.
+    # Fail-soft by design: an alert hiccup must never fail the snapshot.
+    try:
+        from desk import alerts
+        num = frame.copy()
+        for c in num.columns:
+            if not c.endswith("_label") and c != "date":
+                num[c] = pd.to_numeric(num[c], errors="coerce")
+        tripped = alerts.evaluate(num)
+        if tripped:
+            print(f"ALERTS TRIPPED ({len(tripped)}):")
+            for a in tripped:
+                print(f"  - {a}")
+            token = os.environ.get("GITHUB_TOKEN")
+            repo = os.environ.get("GITHUB_REPOSITORY")
+            if token and repo:
+                import requests as _rq
+                title, body = alerts.issue_payload(tripped, today)
+                resp = _rq.post(
+                    f"https://api.github.com/repos/{repo}/issues",
+                    json={"title": title, "body": body,
+                          "labels": ["desk-alert"]},
+                    headers={"Authorization": f"Bearer {token}",
+                             "Accept": "application/vnd.github+json"},
+                    timeout=20)
+                print("alert issue:",
+                      resp.json().get("html_url", resp.status_code)
+                      if resp.ok else f"failed ({resp.status_code})")
+            else:
+                print("no GITHUB_TOKEN/GITHUB_REPOSITORY — alerts "
+                      "logged only")
+        else:
+            print("no alerts tripped")
+    except Exception as ex:
+        print(f"alert evaluation skipped ({type(ex).__name__}) — "
+              f"snapshot unaffected")
     return 0
 
 

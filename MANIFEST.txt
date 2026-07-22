@@ -1,16 +1,30 @@
-Capital Markets Desk — v3.9.1 — promote-prefill fix + scrollbar fix + publish guard
-Changed files (full replacements; paste into GitHub at these paths):
+Capital Markets Desk — v3.10.0 — EIA energy feeds · Wire redesign · Idea Desk · nightly alerts
+Changed/new files (full replacements; paste into GitHub at these paths):
 
+desk/data.py  ::  """Data layer for the Capital Markets Desk.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDITION.
-pages/4_Notebook.py  ::  """Analyst's Notebook — Evidence → Interpretation → Risks → Falsification."""
+desk/alerts.py  ::  """Desk alerts — Ch. 15's tripwires, evaluated by the nightly bot.
+pages/5_Wire.py  ::  """News Wire — free RSS/Atom feeds rendered as a terminal tape.
+pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
+pages/15_Ideas.py  ::  """Idea Desk — Ch. 15's gates & generators, wired to the live desk.
+scripts/snapshot.py  ::  """Nightly signal snapshot — one row of the desk's live track record.
+.github/workflows/snapshot.yml  ::  # Nightly signal snapshot — the desk's live-accrued track record.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-FIX 1: promoted jots published blank — prefill via value= broke on the
-submit rerun (widget auto-ID change). Evidence now uses a stable key
-seeded before the form; repeat promotes APPEND. FIX 2: st.iframe grew
-scrollbars on every TradingView widget — embed() now injects a
-margin/overflow reset into the iframe document. NEW: blank entries
-(no Evidence and no Decision) can no longer be published — saved to
-the scratchpad with an error instead. Instrument input normalized
-(dji -> ^DJI, spx -> ^GSPC, etc.) so post-mortem grading can fetch it.
-theme.VERSION 3.9.1. Both gotchas added to the README.
+NEW FEEDS: EIA weekly energy series in the quote panel — CUSHING,
+CRUDE, GASOLINE, DISTILLATE, REFINERY, CRUDEPROD, WTISPOT, NATGAS,
+or EIA <SERIES_ID>. Needs EIA_API_KEY in *Streamlit app secrets*
+(free: eia.gov/opendata). The API-vs-EIA two-print lesson is on the
+quote page itself.
+WIRE: broadsheet columns (auto single-column on mobile), today's
+stories flagged NEW at full brightness, older rows dimmed, per-tape
+today count.
+IDEA DESK (GEN/IDEA): Ch. 15 gates — deterministic screens on live
+data (vol tripwire, breadth, credit, curve, liquidity, dial board,
+fresh record flips), free — plus a DESK_CHAT_PASSCODE-gated Claude
+generator producing candidates in positioning grammar; send-to-
+Notebook prefill. Chapter's own machines slot in when pasted.
+ALERTS: desk/alerts.py crossing rules evaluated by the nightly bot;
+trips open a GitHub issue labeled desk-alert (GitHub emails you).
+No new keys — workflow token; permissions now include issues: write.
+KEYS: only EIA_API_KEY is new. theme.VERSION 3.10.0.
