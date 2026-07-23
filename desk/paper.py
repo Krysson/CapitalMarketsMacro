@@ -64,9 +64,25 @@ FUTURES = {
 SLIPPAGE_BPS = {"EQUITY": 5.0, "FX": 2.0, "CRYPTO": 10.0}  # futures: 1 tick
 
 
+_FUT_EXCH = (".NYM", ".CME", ".CBT", ".CMX", ".NYB")   # Yahoo month
+_MONTHS = "FGHJKMNQUVXZ"                               # contract codes
+
+
+def _fut_root(s: str) -> str | None:
+    """CLV26.NYM -> CL · ESZ26.CME -> ES. None if not month-format."""
+    for suf in _FUT_EXCH:
+        if s.endswith(suf):
+            body = s[: -len(suf)]
+            core = body.rstrip("0123456789")
+            if (len(core) >= 2 and core[-1] in _MONTHS
+                    and len(body) > len(core)):
+                return core[:-1]
+    return None
+
+
 def asset_class(symbol: str) -> str:
     s = symbol.upper().strip()
-    if s.endswith("=F"):
+    if s.endswith("=F") or _fut_root(s):
         return "FUTURE"
     if s.endswith("=X"):
         return "FX"
@@ -75,11 +91,22 @@ def asset_class(symbol: str) -> str:
     return "EQUITY"
 
 
-def spec(symbol: str) -> tuple[str, float, float]:
-    """(name, multiplier, tick). Non-futures: (sym, 1, 0)."""
+def spec(symbol: str) -> tuple[str, float, float] | None:
+    """(name, multiplier, tick). Non-futures: (sym, 1, 0).
+    Month contracts (CLV26.NYM) inherit their root's spec — a
+    specific delivery month is the same contract as the continuous.
+    Returns None for a futures symbol whose root we have no spec
+    for: the ticket REFUSES rather than silently filling at 1x
+    (that's how a $250 loss prints as -$0)."""
     s = symbol.upper().strip()
     if s in FUTURES:
         return FUTURES[s]
+    root = _fut_root(s)
+    if root:
+        cont = FUTURES.get(root + "=F")
+        if cont:
+            return (f"{cont[0]} ({s})", cont[1], cont[2])
+        return None
     return s, 1.0, 0.0
 
 
@@ -107,7 +134,8 @@ def fill_price(px: float, symbol: str, side: str) -> tuple[float, float]:
     pay class bps."""
     cls = asset_class(symbol)
     if cls == "FUTURE":
-        slip = spec(symbol)[2] or px * 0.0002
+        sp = spec(symbol)
+        slip = (sp[2] if sp else 0) or px * 0.0002
     else:
         slip = px * SLIPPAGE_BPS.get(cls, 5.0) / 10_000
     return (px + slip, slip) if side == "LONG" else (px - slip, slip)
@@ -163,8 +191,15 @@ def open_position(book: dict, *, symbol: str, side: str, qty: float,
     if px is None:
         return False, (f"{symbol}: no mark available (check the symbol "
                        f"on the Quote page first).")
+    sp = spec(symbol)
+    if sp is None:
+        return False, (f"{symbol}: recognized as a futures month but "
+                       f"no contract spec for its root — the desk "
+                       f"refuses to fill at a fake 1x multiplier. Use "
+                       f"the continuous (=F) or ask for the spec to "
+                       f"be added.")
     fill, slip = fill_price(px, symbol, side)
-    name, mult, _ = spec(symbol)
+    name, mult, _ = sp
     notional = fill * qty * mult
     if asset_class(symbol) != "FUTURE" and notional > book["cash"]:
         return False, (f"Notional ${notional:,.0f} exceeds cash "

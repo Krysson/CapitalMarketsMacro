@@ -1,20 +1,16 @@
-Capital Markets Desk — v4.1.1 — THE CONSTRAINT MAP (G4 as furniture)
-Changed/new files (full replacements; paste at these paths):
+Capital Markets Desk — v4.1.2 — month-contract futures fix (Paper Desk P&L)
+Changed files (full replacements; paste at these paths):
 
-desk/constraints.py  ::  """The Constraint Map — WHO is forced to do WHAT, at WHAT level?
+desk/paper.py  ::  """Paper engine — the desk's own simulator, every asset class it wat
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL ED
-pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
-pages/15_Ideas.py  ::  """Idea Desk — Chapter 15's eight generators and five gates, live.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-NEW desk/constraints.py: WHO is forced to do WHAT, at WHAT level —
-live on the Launchpad (below the four spark charts, compact) and the
-Idea Desk (full, above the scan log). Six rows: trend followers vs
-the live SPX 200-day and 50-day (computed, with distance %), vol-
-target funds vs VIX ~20 + the VIX/VIX3M 1.00 tripwire (computed vs
-estimated threshold), risk parity vs the 20d stock-bond correlation
-in drawdowns (computed), buyback blackout calendar (estimate), and
-the dealer-gamma row left MANUAL on purpose — G4 rewards actual
-reading. Color: green slack / yellow inside the zone / red binding.
-The note teaches the point: know WHOSE selling arrives at the level.
-theme.VERSION 4.1.1.
+FIX: Yahoo month contracts (CLV26.NYM, ESZ26.CME — exchange suffixes
+.NYM/.CME/.CBT/.CMX/.NYB with month-code+year) were classified as
+EQUITIES: multiplier 1, bps slippage, cash debited — a real -$252
+printed as -$0. Now parsed to their root and inheriting its spec
+(CLV26 -> CL: $1000/pt, 1-tick slip, no cash debit). Unknown roots
+REFUSE the order rather than fill at a fake 1x. USER ACTION: close
+and re-enter any month-contract positions opened before this fix —
+stored positions keep their opening terms (impact: pennies).
+theme.VERSION 4.1.2.

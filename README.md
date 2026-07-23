@@ -40,7 +40,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v4.1.1** (shown in the sidebar). Flaky endpoints
+Current version: **v4.1.2** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
