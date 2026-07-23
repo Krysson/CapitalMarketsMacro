@@ -1,23 +1,24 @@
-Capital Markets Desk — v3.17.0 — SKEW lives · quote fallback ladder · red negatives
-Changed files (full replacements; paste at these paths):
+Capital Markets Desk — v4.0.0 — THE PAPER DESK + LIVE intraday mode (3.18 folded in)
+Changed/new files (full replacements; paste at these paths):
 
+desk/paper.py  ::  """Paper engine — the desk's own simulator, every asset class it watch
 desk/data.py  ::  """Data layer for the Capital Markets Desk.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDIT
-pages/3_Volatility.py  ::  """Volatility Dashboard — Book III, Ch. 6: the observable vol complex.
-pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
-pages/17_Flow.py  ::  """Flow Desk — the Sector Flow Tracker's automatable half, live.
-pages/14_History.py  ::  """Regime History — the desk's live-accrued track record."""
-pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
+pages/18_Paper.py  ::  """Paper Desk — where ideas that cleared the gates get tested.
+app.py  ::  """Capital Markets Desk — entry point and navigation.
+pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-SKEW: Yahoo dropped Cboe's indices — data.cboe_series() reads the
-index owner's own CDN (keyless, T1). Vol-page spark restored; full
-SKEW panel with 2y chart, 1y-percentile readout (>=85th = 'tail
-hedgers haven't signed off' framing vs PCC), and the honest caveat
-that Cboe's announced methodology revision will break comparability
-when it lands. SKEW / VVIX are quote commands (Cboe mode).
-QUOTE FALLBACK LADDER: unknown ticker -> Stooq computable fallback
-[T2] -> TradingView symbol widget (display glass, symbol box open).
-RED NEGATIVES: theme.neg_red() house helper; applied to Flow rotation
-+ streaks, History track record, Rates auctions, Quote financials —
-chain onto any future styled table. theme.VERSION 3.17.0. No new keys.
+PAPER DESK (PAPER / PB): homegrown simulator covering every asset
+class the desk watches — equities/ETFs, futures at REAL contract
+multipliers (ES $50/pt, CL 1000bbl, GC 100oz, 14 specs), FX, crypto;
+options deferred to 4.1 and said so on-page. Fills = desk mark +
+slippage ALWAYS against you (1 tick futures, 2-10bps by class),
+slippage tracked cumulatively. THE TICKET ENFORCES THE FUNNEL:
+refuses orders without a named generator, all five gates, and a
+kill-switch sentence; survivable-size check vs cash. Open positions
+show the kill switch beside P&L; closes prompt the reckoning; closed
+ledger + P&L-by-generator table. Book = local JSON, export/restore,
+two-press reset. LIVE TOGGLE beside the command bar on every page:
+market_history/ohlc/ticker_snapshot on ~60s cache (headless bot
+always slow-path). theme.VERSION 4.0.0. No new keys, no new hosting.

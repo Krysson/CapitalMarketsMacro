@@ -36,6 +36,7 @@ pg = st.navigation({
     "The Analyst": [
         st.Page("pages/4_Notebook.py", title="Notebook"),
         st.Page("pages/15_Ideas.py", title="Idea Desk"),
+        st.Page("pages/18_Paper.py", title="Paper Desk"),
         st.Page("pages/12_Desk_Analyst.py", title="Desk Analyst"),
         st.Page("pages/14_History.py", title="Regime History"),
     ],

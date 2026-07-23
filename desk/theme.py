@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "3.17.0"
+VERSION = "4.0.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -145,6 +145,8 @@ _ROUTES = {
     "HISTORY": "pages/14_History.py",
     "GEN": "pages/15_Ideas.py", "IDEA": "pages/15_Ideas.py",
     "IDEAS": "pages/15_Ideas.py",
+    "PAPER": "pages/18_Paper.py", "PB": "pages/18_Paper.py",
+    "BOOK": "pages/18_Paper.py",
     "FLOW": "pages/17_Flow.py", "FLOWS": "pages/17_Flow.py",
 }
 
@@ -201,6 +203,7 @@ FUNCTIONS_TABLE = """
 | `TM` / `TIME` | Time Machine | the desk as of any past date (ALFRED vintages) |
 | `HIST` / `TRACK` | Regime History | the dials' live-accrued track record, one git commit per night |
 | `GEN` / `IDEA` | Idea Desk | Ch. 15's eight generators + five gates — passcode-gated |
+| `PAPER` / `PB` | Paper Desk | test what cleared the gates — the ticket refuses orders without a kill switch |
 | `FLOW` | Flow Desk | rotation monitor, FINRA short-volume ratios, live-accrued ETF flows + streaks |
 | `HELP` / `?` | Help | this table + the operating manual |
 | `ASK` / `IB` | Desk Analyst | chat with the desk's AI analyst (IB — chat, on the machine) |
@@ -216,13 +219,23 @@ FUNCTIONS_TABLE = """
 
 
 def command_line() -> None:
-    """Bloomberg-style command field. Renders on every page via header()."""
-    with st.form("deskcmd", clear_on_submit=True, border=False):
-        c1, c2 = st.columns([9, 1])
-        cmd = c1.text_input(
-            "command", label_visibility="collapsed",
-            placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
-        go = c2.form_submit_button("GO", use_container_width=True)
+    """Bloomberg-style command field. Renders on every page via header().
+    The LIVE toggle (right) flips the market fetchers onto a ~60s cache
+    so computed charts track the streaming tape during a session."""
+    left, right = st.columns([10, 1.6])
+    with left:
+        with st.form("deskcmd", clear_on_submit=True, border=False):
+            c1, c2 = st.columns([9, 1])
+            cmd = c1.text_input(
+                "command", label_visibility="collapsed",
+                placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
+            go = c2.form_submit_button("GO", use_container_width=True)
+    with right:
+        st.toggle("LIVE", key="intraday",
+                  help="~60s market-data polling while you watch a "
+                       "session (prices/quotes only — FRED, chains, "
+                       "and records keep their schedules). The tape "
+                       "streams; the charts poll.")
     if not (go and cmd.strip()):
         return
     c = cmd.upper().replace("<GO>", "").strip()

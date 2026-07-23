@@ -184,6 +184,7 @@ nav = [
     ("pages/10_Fed.py", "Fed"),
     ("pages/4_Notebook.py", "Notebook"),
     ("pages/15_Ideas.py", "Ideas"),
+    ("pages/18_Paper.py", "Paper"),
     ("pages/12_Desk_Analyst.py", "Analyst"),
     ("pages/14_History.py", "History"),
     ("pages/11_Time_Machine.py", "Time Machine"),

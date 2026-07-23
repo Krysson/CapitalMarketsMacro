@@ -148,8 +148,46 @@ MARKET_TICKERS = {
 }
 
 
-@st.cache_data(ttl=900, show_spinner=False)
+def intraday_on() -> bool:
+    """The INTRADAY toggle (v3.18, shipped in 4.0): when on, the three
+    market-price fetchers poll on a ~60s cache instead of 15 minutes,
+    so the computed charts track the streaming TradingView tape. The
+    tape still leads by seconds — the tape streams, the charts poll —
+    and nothing this desk teaches has edge inside a minute anyway.
+    Headless-safe: the nightly bot always takes the slow path."""
+    try:
+        return bool(st.session_state.get("intraday"))
+    except Exception:
+        return False
+
+
+def _market_history_impl(period: str = "2y") -> pd.DataFrame:
+    import yfinance as yf
+
+    try:
+        data = yf.download(
+            list(MARKET_TICKERS), period=period, interval="1d",
+            auto_adjust=True, progress=False, group_by="column",
+        )
+        closes = data["Close"] if "Close" in data else data
+        return closes.dropna(how="all")
+    except Exception:
+        return pd.DataFrame()
+
+
+_market_history_slow = st.cache_data(ttl=900, show_spinner=False)(
+    _market_history_impl)
+_market_history_fast = st.cache_data(ttl=60, show_spinner=False)(
+    _market_history_impl)
+
+
 def market_history(period: str = "2y") -> pd.DataFrame:
+    """Daily closes for the full ticker set. Columns = tickers."""
+    return (_market_history_fast if intraday_on()
+            else _market_history_slow)(period)
+
+
+def _RETIRED_market_history(period: str = "2y") -> pd.DataFrame:
     """Daily closes for the full ticker set. Columns = tickers."""
     import yfinance as yf
 
@@ -257,8 +295,7 @@ def pct_chg(s: pd.Series, days: int = 1) -> float | None:
     return (s.iloc[-1] / s.iloc[-1 - days] - 1) * 100
 
 
-@st.cache_data(ttl=900, show_spinner=False)
-def ohlc(ticker: str, period: str = "1y") -> pd.DataFrame:
+def _ohlc_impl(ticker: str, period: str = "1y") -> pd.DataFrame:
     """Daily OHLC for one ticker (for candlestick charts). Empty on failure."""
     import yfinance as yf
 
@@ -272,6 +309,14 @@ def ohlc(ticker: str, period: str = "1y") -> pd.DataFrame:
     except Exception:
         return pd.DataFrame()
 
+
+_ohlc_slow = st.cache_data(ttl=900, show_spinner=False)(_ohlc_impl)
+_ohlc_fast = st.cache_data(ttl=60, show_spinner=False)(_ohlc_impl)
+
+
+def ohlc(ticker: str, period: str = "1y") -> pd.DataFrame:
+    return (_ohlc_fast if intraday_on() else _ohlc_slow)(
+        ticker, period)
 
 @st.cache_data(ttl=86400, show_spinner=False)
 def usrec() -> pd.Series:
@@ -482,8 +527,7 @@ def eia_series(series_id: str) -> pd.Series:
         return pd.Series(dtype=float, name=series_id)
 
 
-@st.cache_data(ttl=900, show_spinner=False)
-def ticker_snapshot(t: str) -> dict:
+def _ticker_snapshot_impl(t: str) -> dict:
     """Quote-page basics for one ticker. {} on failure; the profile
     fields degrade independently (Yahoo's .info is flakier than prices)."""
     import yfinance as yf
@@ -1008,6 +1052,13 @@ def fred_series_asof(series_id: str, asof: str,
     except Exception:
         return pd.Series(dtype=float)
 
+
+_snap_slow = st.cache_data(ttl=900, show_spinner=False)(_ticker_snapshot_impl)
+_snap_fast = st.cache_data(ttl=60, show_spinner=False)(_ticker_snapshot_impl)
+
+
+def ticker_snapshot(t: str) -> dict:
+    return (_snap_fast if intraday_on() else _snap_slow)(t)
 
 @st.cache_data(ttl=86400 * 7, show_spinner=False)
 def vintage_bundle(asof: str) -> dict[str, pd.Series]:

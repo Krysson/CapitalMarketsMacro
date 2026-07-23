@@ -27,6 +27,7 @@ display glass only. Colors mean **direction, not advice**.
 | Calendar | `ECO` | Verified CPI/NFP/FOMC anchors + live full economic calendar (TradingView events widget) |
 | Idea Desk | `GEN` | Chapter 15 live: the eight generators (divergence, crowding via COT percentiles, catalyst, constraint map, regime tripwires, flow, relative value, narrative gap; automated where computable, honestly MANUAL where not), the five-gate funnel, a one-click scan log to the Notebook, and a passcode-gated Claude generator that runs the funnel |
 | Flow Desk | `FLOW` | The Sector Flow Tracker's automatable half: live rotation monitor (23-ETF set), FINRA daily short-volume ratios (keyless, Tier 1, off-exchange), and the desk's own ETF flow record — Δshares × price accrued nightly to the data branch, with streak detection and the rotation-signature read; BlockLog and ATS paste stay in the workbook by honest necessity; plus overnight options OI footprints (SPY/QQQ) — strikes where open interest jumped, accrued nightly, side-of-trade honestly unknowable |
+| Paper Desk | `PAPER` | Simulated capital across every asset class the desk watches (equities/ETFs, futures at real multipliers, FX, crypto — options in 4.1): fills at the desk's mark plus honest slippage, an order ticket that REFUSES orders without generator + five gates + a kill-switch sentence, P&L by generator, JSON export/restore |
 | Help | `HELP` | The operating manual: full function table, command-bar priority rules, desk conventions, the daily rhythm, keys table |
 | Regime History | `HIST` | The four dials recorded nightly by a bot — colored strips over SPX, current streaks, and (once >30 rows) what SPX did after each red flip |
 | Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30`, `CUSHING`, `EIA <ID>` |
@@ -39,7 +40,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v3.17.0** (shown in the sidebar). Flaky endpoints
+Current version: **v4.0.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -55,6 +56,27 @@ throttled, instead of erroring.
    but the key is more reliable.)
 4. Deploy. First load takes ~1 min while data caches. If a dependency
    changed (e.g. feedparser), reboot the app from the Cloud dashboard.
+
+## v4.0 — the Paper Desk + LIVE mode
+
+**Paper Desk (`PAPER`).** The curriculum's loop closes: learn → scan →
+gate → pitch → TEST → post-mortem. A homegrown simulator (no broker
+API covers the desk's whole watchlist free — Alpaca has no futures or
+FX; IBKR can't run here), which is what makes it teachable: the
+ticket enforces the funnel — no order without its generator, all five
+gates, and the canonical kill-switch sentence. Fills = desk mark +
+slippage always against you (a tick on futures, bps elsewhere);
+futures at real multipliers; survivable-size check against cash;
+closes prompt the kill-switch reckoning; a P&L-by-generator table
+teaches which scans YOU read well. Book = local JSON like the
+Notebook (export regularly; wiped on redeploy). Options are 4.1.
+
+**LIVE toggle (the v3.18 intraday mode, folded in).** Next to the
+command bar on every page: flips market_history / ohlc /
+ticker_snapshot onto a ~60s cache so computed charts track the
+streaming TradingView tape during a session. Prices only — FRED,
+chains, and records keep their schedules. The tape streams; the
+charts poll; nothing the desk teaches has edge inside a minute.
 
 ## v3.17 — SKEW lives, fallback ladder, red negatives
 
