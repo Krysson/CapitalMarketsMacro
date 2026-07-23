@@ -1,0 +1,71 @@
+{
+  "cash": 25793.161013137826,
+  "start_cash": 100000.0,
+  "created": "2026-07-23T11:43:34",
+  "positions": [
+    {
+      "id": "69abb60d",
+      "opened": "2026-07-23T17:14:09",
+      "symbol": "SPY",
+      "name": "SPY",
+      "class": "EQUITY",
+      "side": "LONG",
+      "qty": 100.0,
+      "mult": 1.0,
+      "entry": 738.47904,
+      "slippage": 36.91,
+      "generator": "G4 Constraint map",
+      "kill_switch": "tend continues for 1 week",
+      "thesis": "price moved below the 50 day moving average forcing some fast trend following funds to start liqidating positions. i want to be on the other side buying thier loss and gaining from the eventual turn",
+      "status": "open"
+    },
+    {
+      "id": "0e7bdb1a",
+      "opened": "2026-07-23T15:20:31",
+      "symbol": "CLV26.NYM",
+      "name": "CLV26.NYM",
+      "class": "EQUITY",
+      "side": "LONG",
+      "qty": 2.0,
+      "mult": 1.0,
+      "entry": 87.253604,
+      "slippage": 0.09,
+      "generator": "G1 Divergence",
+      "kill_switch": "wrong if crude trades through 95 or if FOMC is hawk is in 6 days",
+      "thesis": "RESTATE Front-month (Sept) WTI implied vol is elevated relative to back-month (Oct) due to geopolitical/war-premium flow into near-dated options; the trade bets that differential compresses \u2014 short front vol, long back vol \u2014 via a call calendar. Horizon: weeks, into Sept expiry.",
+      "status": "open"
+    },
+    {
+      "id": "d2ceed85",
+      "opened": "2026-07-23T15:20:11",
+      "symbol": "CLU26.NYM",
+      "name": "CLU26.NYM",
+      "class": "EQUITY",
+      "side": "SHORT",
+      "qty": 2.0,
+      "mult": 1.0,
+      "entry": 92.213872,
+      "slippage": 0.09,
+      "generator": "G1 Divergence",
+      "kill_switch": "wrong if crude trades through 95 or if FOMC is hawk is in 6 days",
+      "thesis": "RESTATE Front-month (Sept) WTI implied vol is elevated relative to back-month (Oct) due to geopolitical/war-premium flow into near-dated options; the trade bets that differential compresses \u2014 short front vol, long back vol \u2014 via a call calendar. Horizon: weeks, into Sept expiry.",
+      "status": "open"
+    },
+    {
+      "id": "da6b42c8",
+      "opened": "2026-07-23T11:43:34",
+      "symbol": "CL=F",
+      "name": "WTI Crude",
+      "class": "FUTURE",
+      "side": "LONG",
+      "qty": 1.0,
+      "mult": 1000.0,
+      "entry": 90.679998,
+      "slippage": 10.0,
+      "generator": "G1 Divergence",
+      "kill_switch": "wrong if price drops 2% within the next two days, observable within 2 days",
+      "thesis": "war premium with a lower cost per barrell for the crack spread - TESTING",
+      "status": "open"
+    }
+  ]
+}
