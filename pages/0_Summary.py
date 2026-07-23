@@ -163,15 +163,25 @@ with right:
                     rows.append({"Instrument": name,
                                  "Last": round(float(last.iloc[-1]), 2),
                                  "Chg %": round(chg, 2)})
+        syms = [t for t, n in data.MARKET_TICKERS.items()
+                if t in hist.columns
+                and data.pct_chg(hist[t]) is not None
+                and not hist[t].dropna().empty]
         df = pd.DataFrame(rows)
-        st.dataframe(
+        ev = st.dataframe(
             df.style.map(
                 lambda v: f"color: {theme.GREEN if v > 0 else theme.RED}"
                 if isinstance(v, float) else "",
                 subset=["Chg %"],
             ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
             hide_index=True, height=430, use_container_width=True,
-        )
+            on_select="rerun", selection_mode="single-row",
+            key="sm_xa")
+        picked = (ev.selection.rows if ev and hasattr(ev, "selection")
+                  else [])
+        if picked and picked[0] < len(syms):
+            st.session_state["quote_query"] = ("yf", syms[picked[0]], "")
+            st.switch_page("pages/6_Quote.py")
 
 # ------------------------------------------------ bot status strip ----
 # The one thing the app previously couldn't tell you: is the nightly
@@ -201,7 +211,30 @@ try:
             _line += (f" · STALE ({_age}d old) — check the Actions tab")
         _col = theme.RED if _stale else theme.GREEN
     from desk.history import OWNER as _o, REPO as _r
-    _links = (f' &nbsp;<a href="https://github.com/{_o}/{_r}/actions" '
+
+    @st.cache_data(ttl=1800, show_spinner=False)
+    def _open_alerts() -> int | None:
+        try:
+            import requests as _rq
+            r = _rq.get(
+                f"https://api.github.com/repos/{_o}/{_r}/issues",
+                params={"labels": "desk-alert", "state": "open",
+                        "per_page": 100}, timeout=10)
+            if r.ok:
+                return len(r.json())
+        except Exception:
+            pass
+        return None
+
+    _n = _open_alerts()
+    _line += (" · alerts open: " + (str(_n) if _n is not None
+                                    else "n/a"))
+    if _n:
+        _col = theme.YELLOW if _col == theme.GREEN else _col
+    _links = (f' &nbsp;<a href="https://github.com/{_o}/{_r}/issues'
+              f'?q=label%3Adesk-alert" target="_blank" '
+              f'style="color:{theme.AMBER}">alerts</a> · '
+              f'<a href="https://github.com/{_o}/{_r}/actions" '
               f'target="_blank" style="color:{theme.AMBER}">runs</a> · '
               f'<a href="https://github.com/{_o}/{_r}/tree/data" '
               f'target="_blank" style="color:{theme.AMBER}">record</a>')

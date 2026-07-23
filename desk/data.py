@@ -399,6 +399,77 @@ FRED_ALIASES = {
 }
 
 
+# ---------------------------------------------------- bars & exprs ----
+
+def resample_ohlc(df: pd.DataFrame, interval: str) -> pd.DataFrame:
+    """D/W/M bars from dailies. MAs computed AFTER this, on the bars
+    displayed — the MA is a property of the bars, not the calendar
+    (a 200-bar MA answers a different question on each interval, and
+    that's the point)."""
+    if interval == "D" or df.empty:
+        return df
+    rule = {"W": "W-FRI", "M": "ME"}.get(interval)
+    if not rule:
+        return df
+    agg = {"Open": "first", "High": "max", "Low": "min",
+           "Close": "last"}
+    if "Volume" in df.columns:
+        agg["Volume"] = "sum"
+    out = df.resample(rule).agg(agg).dropna(subset=["Close"])
+    return out
+
+
+_EXPR_TOKEN = None
+
+
+def expr_series(expr: str, period: str = "5y"
+                ) -> tuple[pd.Series, list[str], str]:
+    """Evaluate a securities expression (HYG/LQD, RB=F*42 - CL=F,
+    ^GSPC/GC=F) into a daily series. Returns (series, legs, error).
+    SAFETY: strict tokenizer, no eval — tickers become named columns
+    and pd.eval runs over ONLY those names and numeric literals."""
+    import re
+    tok = re.compile(r"\s*(?:(?P<num>\d+\.?\d*)"
+                     r"|(?P<op>[\+\-\*/\(\)])"
+                     r"|(?P<tkr>[A-Za-z\^][A-Za-z0-9\^=\.\-]*))")
+    pos, parts, legs = 0, [], []
+    e = expr.strip()
+    while pos < len(e):
+        m = tok.match(e, pos)
+        if not m or m.end() == pos:
+            return pd.Series(dtype=float), [], f"bad token near '{e[pos:pos+8]}'"
+        pos = m.end()
+        if m.group("num"):
+            parts.append(m.group("num"))
+        elif m.group("op"):
+            parts.append(m.group("op"))
+        else:
+            tk = m.group("tkr").upper()
+            if tk not in legs:
+                legs.append(tk)
+            parts.append(f"t{legs.index(tk)}")
+    if not legs:
+        return pd.Series(dtype=float), [], "no securities in expression"
+    if len(legs) > 6:
+        return pd.Series(dtype=float), legs, "too many legs (max 6)"
+    cols = {}
+    for i, tk in enumerate(legs):
+        o = ohlc(tk, period=period)
+        if o.empty:
+            return pd.Series(dtype=float), legs, f"{tk}: no data"
+        cols[f"t{i}"] = o["Close"]
+    df = pd.DataFrame(cols).dropna()
+    if df.empty:
+        return pd.Series(dtype=float), legs, "no overlapping history"
+    try:
+        out = pd.eval(" ".join(parts), engine="python",
+                      local_dict={c: df[c] for c in df.columns})
+        out = pd.Series(out, index=df.index).dropna()
+        return out, legs, ""
+    except Exception as ex:
+        return pd.Series(dtype=float), legs, f"could not evaluate ({ex})"
+
+
 # ------------------------------------------------------- computed ----
 # Derived series the desk builds from its own inputs. First resident:
 # the crack spread — pure arithmetic on three Yahoo futures, no new

@@ -81,7 +81,9 @@ if not s_2s10s.empty:
     tail = data.tail_years(s_2s10s, years)
     theme.recession_bands(fig, rec, start=tail.index.min(),
                           end=tail.index.max())
-theme.plot(theme.style_fig(fig, "CURVE SPREADS (pp)", height=300),
+theme.plot(theme.style_fig(fig, "CURVE SPREADS (pp)", height=300,
+                           right_text=theme.fmt_last(s_2s10s),
+                           right_color=theme.AMBER),
                 use_container_width=True)
 if not s_2s10s.empty:
     v = float(s_2s10s.iloc[-1])
@@ -157,7 +159,9 @@ else:
         theme.recession_bands(fig, rec, start=tail.index.min(),
                               end=tail.index.max())
     theme.plot(theme.style_fig(fig, "OAS OVER TREASURIES (%)",
-                                    height=320),
+                                    height=320,
+                                    right_text=theme.fmt_last(hy),
+                                    right_color=theme.RED),
                     use_container_width=True)
     if not hy.empty:
         v = float(hy.iloc[-1])
@@ -183,7 +187,9 @@ else:
                                    line=dict(width=1.6,
                                              color=theme.PURPLE)))
         theme.plot(theme.style_fig(fig, "HY MINUS IG — THE JUNK "
-                                             "PREMIUM (pp)", height=240),
+                                             "PREMIUM (pp)", height=240,
+                                     right_text=theme.fmt_last(diff),
+                                     right_color=theme.PURPLE),
                         use_container_width=True)
         theme.note("Compression = reach-for-yield, risk appetite high. "
                    "Rapid widening = flight to quality WITHIN credit — "

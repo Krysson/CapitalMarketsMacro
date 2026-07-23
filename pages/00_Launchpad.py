@@ -110,14 +110,25 @@ with c1:
                     rows.append({"Instrument": name,
                                  "Last": round(float(last.iloc[-1]), 2),
                                  "Chg %": round(chg, 2)})
+        syms = [t for t, n in data.MARKET_TICKERS.items()
+                if t in hist.columns
+                and data.pct_chg(hist[t]) is not None
+                and not hist[t].dropna().empty]
         df = pd.DataFrame(rows)
-        st.dataframe(
+        ev = st.dataframe(
             df.style.map(
                 lambda v: f"color: {theme.GREEN if v > 0 else theme.RED}"
                 if isinstance(v, float) else "",
                 subset=["Chg %"],
             ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
-            hide_index=True, height=390, use_container_width=True)
+            hide_index=True, height=390, use_container_width=True,
+            on_select="rerun", selection_mode="single-row",
+            key="lp_xa")
+        picked = (ev.selection.rows if ev and hasattr(ev, "selection")
+                  else [])
+        if picked and picked[0] < len(syms):
+            st.session_state["quote_query"] = ("yf", syms[picked[0]], "")
+            st.switch_page("pages/6_Quote.py")
 
 with c2:
     mini(data.tail_years(nl, 2) / 1_000_000, "Net liquidity $tn",

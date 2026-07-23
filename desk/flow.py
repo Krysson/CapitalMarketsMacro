@@ -68,18 +68,46 @@ def snapshot_rows(today: str) -> list[dict]:
 
     import yfinance as yf
 
-    rows = []
+    # GOTCHA (verified in the 22-Jul run log): Yahoo blocks GitHub
+    # runner IPs SELECTIVELY BY ENDPOINT — yf.download (chart endpoint)
+    # passes while fast_info (quote endpoint) and option chains get
+    # refused. Ladder per ticker: fast_info → shares via the
+    # fundamentals timeseries + price via the chart endpoint → skip.
+    # yfinance>=0.2.55 + curl_cffi adds browser impersonation, which
+    # usually clears the block on its own; the ladder is the backstop.
+    rows, n_fast, n_ladder = [], 0, 0
     for i, t in enumerate(FLOW_ETFS):
+        if i:
+            time.sleep(0.35)              # pace Yahoo
+        sh = px = None
         try:
-            if i:
-                time.sleep(0.25)          # pace Yahoo
             fi = yf.Ticker(t).fast_info
             sh, px = fi.get("shares"), fi.get("last_price")
-            if sh and px and sh > 0 and px > 0:
-                rows.append({"date": today, "ticker": t,
-                             "shares": int(sh), "close": round(float(px), 4)})
+            if sh and px:
+                n_fast += 1
         except Exception:
-            continue
+            pass
+        if not (sh and px):
+            try:
+                time.sleep(0.5)
+                tk = yf.Ticker(t)
+                shf = tk.get_shares_full(
+                    start=pd.Timestamp.now() - pd.Timedelta(days=30))
+                if shf is not None and len(shf):
+                    sh = float(shf.iloc[-1])
+                h = tk.history(period="5d", auto_adjust=True)
+                if not h.empty:
+                    px = float(h["Close"].dropna().iloc[-1])
+                if sh and px:
+                    n_ladder += 1
+            except Exception:
+                pass
+        if sh and px and sh > 0 and px > 0:
+            rows.append({"date": today, "ticker": t,
+                         "shares": int(sh), "close": round(float(px), 4)})
+    print(f"    flow endpoints: fast_info {n_fast}, "
+          f"ladder {n_ladder}, failed "
+          f"{len(FLOW_ETFS) - n_fast - n_ladder}")
     return rows
 
 

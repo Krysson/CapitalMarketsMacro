@@ -40,7 +40,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v4.0.2** (shown in the sidebar). Flaky endpoints
+Current version: **v4.1.0** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -56,6 +56,18 @@ throttled, instead of erroring.
    but the key is more reliable.)
 4. Deploy. First load takes ~1 min while data caches. If a dependency
    changed (e.g. feedparser), reboot the app from the Cloud dashboard.
+
+## v4.1 — navigation, expressions, click-through, hardening
+
+Charts are navigable (wheel/box zoom, pan, reset, trimmed toolbar;
+range buttons re-slice server-side so scales refit). Quote page: D/W/M
+bars with MAs computed on displayed bars, LOG toggle, and expression
+charts (`HYG/LQD`, `RB=F*42 - CL=F` — `/` `*` bind anywhere, spaced
+`+` `-`). Cross-asset tables on Launchpad/Summary are click-through
+to Quote. Charts carry their last print top-right (Macro, Rates, and
+growing). Wire: NEW means new-this-session; opened links dim via
+`:visited`. Bot status shows the open desk-alert count. Nightly
+runner hardened against Yahoo's per-endpoint blocking (see gotchas).
 
 ## v4.0 — the Paper Desk + LIVE mode
 
@@ -328,6 +340,11 @@ dry). Roughly once a year:
   directly again. st.iframe also shows scrollbars where
   components.html clipped — embed() injects a margin/overflow reset
   into the iframe document; don't remove it.
+- Yahoo blocks GitHub runner IPs selectively BY ENDPOINT: the chart
+  endpoint (yf.download / .history) passes while fast_info and option
+  chains get refused — hence the per-ticker ladders in flow.py, the
+  chain retries in instflow.py, and curl_cffi in requirements for
+  browser impersonation. Check the run log's endpoint counts.
 - EIA's `/v2/seriesid/` translation route misses some v1 IDs (refinery
   utilization was the one that bit) — eia_series() falls back to the v2
   native datasets (petroleum/sum/sndw et al.) with the short ID as a

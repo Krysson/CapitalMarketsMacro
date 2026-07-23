@@ -1,13 +1,41 @@
-Capital Markets Desk — v4.0.2 — EIA seriesid translation-gap fix (REFINERY et al.)
-Changed files (full replacements; paste at these paths):
+Capital Markets Desk — v4.1.0 — navigation · expressions · click-through · hardening
+Changed files (full replacements; paste at these paths).
+NOTE: requirements.txt changed (yfinance>=0.2.55 + curl_cffi) — Streamlit
+reinstalls deps on redeploy automatically.
 
+desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL ED
 desk/data.py  ::  """Data layer for the Capital Markets Desk.
-desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDIT
+desk/flow.py  ::  """Flow layer — the Sector Flow Tracker's automatable half, in-app.
+desk/instflow.py  ::  """Institutional flow — where big players can't hide.
+requirements.txt  ::  streamlit>=1.36
+pages/0_Summary.py  ::  """Capital Markets Desk — Summary page (the desk's front door)."""
+pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
+pages/1_Macro.py  ::  """Macro Dashboard — Book III, Ch. 4: Growth / Inflation / Policy / 
+pages/5_Wire.py  ::  """News Wire — free RSS/Atom feeds rendered as a terminal tape.
+pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
+pages/7_Rates.py  ::  """Rates & Credit — the free window into fixed income. GC <GO>.
+pages/16_Help.py  ::  """Help — the desk's function reference and operating manual.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-FIX: EIA v2 /seriesid/ translation misses some v1 IDs — WPULEUS3
-(REFINERY) confirmed. eia_series() now falls back to the v2 NATIVE
-datasets (petroleum/sum/sndw, pri/spt, natural-gas/stor/wkly, stoc/
-wstk, pnp/wiup) with the stripped short ID as a series facet.
-Translation route stays first (working aliases unchanged, verified).
-README gotcha added. theme.VERSION 4.0.2.
+1 CHART NAVIGATION: wheel-zoom, box-zoom (both axes), pan, double-click
+  reset, trimmed 4-button toolbar; range buttons (segmented) re-slice
+  server-side so the y-scale refits perfectly.
+2 QUOTE D/W/M BARS: MAs compute on displayed bars (TradingView
+  convention — 200MA differs per interval BY DESIGN); teaching note.
+3 LOG/LINEAR toggle on the Quote price chart.
+4 CLICKABLE TABLES: Launchpad + Summary cross-asset rows -> Quote page.
+5 EXPRESSION QUOTES: HYG/LQD, GC=F/SI=F, RB=F*42 - CL=F. Safe parser
+  (strict tokenizer, no eval, injection-tested). Rule: / and * bind
+  anywhere; + and - need spaces (BTC-USD stays a ticker).
+6 LAST PRINT top-right on charts: all Macro panels + net liquidity,
+  Rates curve/OAS/junk-premium, Quote (fmt: JUN 2026 · 6.72).
+7 WIRE: NEW = new-this-session (session-seen set); opened links dim
+  via CSS :visited (browser-truthful click tracking).
+8 BOT STATUS: open desk-alert issue count + alerts link (keyless
+  public API, cached 30m, fail-soft n/a).
+9 RUNNER HARDENING (22-Jul diagnosis: Yahoo blocks runner IPs per
+  ENDPOINT — download passes, fast_info/chains refused): yfinance
+  >=0.2.55 + curl_cffi impersonation; per-ticker ladder fast_info ->
+  get_shares_full + history; chain retries with backoff; endpoint
+  counts printed in the run log. Tomorrow night's log is the test.
+theme.VERSION 4.1.0. No intraday bars anywhere, by decision.

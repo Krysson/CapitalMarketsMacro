@@ -71,7 +71,9 @@ def line(sid, series, title, yoy=False, color=theme.BLUE):
     fig = go.Figure(go.Scatter(x=s.index, y=s.values, mode="lines",
                                line=dict(width=1.8, color=color)))
     theme.recession_bands(fig, rec, start=s.index.min(), end=s.index.max())
-    theme.plot(theme.style_fig(fig, title, height=260),
+    theme.plot(theme.style_fig(fig, title, height=260,
+                               right_text=theme.fmt_last(s),
+                               right_color=color),
                     use_container_width=True)
     if sid in NOTES:
         theme.note(NOTES[sid])
@@ -85,7 +87,9 @@ if not nl.empty:
     theme.recession_bands(fig, rec, start=s.index.min(), end=s.index.max())
     theme.plot(
         theme.style_fig(fig, "Net Liquidity = Fed Balance Sheet − TGA − "
-                             "ON RRP  ($tn)", height=320),
+                             "ON RRP  ($tn)", height=320,
+                        right_text=theme.fmt_last(s),
+                        right_color=theme.AMBER),
         use_container_width=True)
     prior = nl.asof(nl.index[-1] - pd.DateOffset(weeks=13))
     if pd.notna(prior):

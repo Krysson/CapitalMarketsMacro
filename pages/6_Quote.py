@@ -81,6 +81,32 @@ if not q:
 
 kind, sym, func = q
 
+# ---------------------------------------------------- expression mode --
+if kind == "expr":
+    ser, legs, err = data.expr_series(sym)
+    if err:
+        st.error(f"Expression error — {err}. Syntax: `/` and `*` bind "
+                 f"anywhere (HYG/LQD); `+` and `-` need spaces around "
+                 f"them so tickers like BTC-USD survive.")
+        st.stop()
+    yrs = theme.lookback("expr_lb", default="2Y")
+    tail = data.tail_years(ser, yrs)
+    theme.panel_bar(f"EXPRESSION · {sym}", theme.fmt_last(ser))
+    fig = go.Figure(go.Scatter(x=tail.index, y=tail.values,
+                               mode="lines",
+                               line=dict(width=1.8, color=theme.AMBER)))
+    theme.plot(theme.style_fig(fig, None, height=380,
+                               right_text=theme.fmt_last(tail),
+                               right_color=theme.AMBER),
+               use_container_width=True)
+    theme.note(f"Computed from daily closes of {', '.join(legs)} on "
+               f"overlapping dates — your own CIX, built from parts. "
+               f"[T2] Ratios read best as regime lines (HYG/LQD "
+               f"falling = credit stress building); spreads carry "
+               f"units. Constants work: RB=F*42 - CL=F is the "
+               f"gasoline crack typed by hand.")
+    st.stop()
+
 # ------------------------------------------------------ computed mode --
 if kind == "calc" and sym == "CRACK":
     cr = data.crack_spreads()
@@ -329,19 +355,62 @@ st.markdown(
     unsafe_allow_html=True)
 
 if not ohlc.empty:
-    close = ohlc["Close"]
+    b1, b2, b3 = st.columns([2.2, 1.4, 5])
+    with b1:
+        yrs = theme.lookback("qt_lb", default="1Y",
+                             options=("3M", "6M", "1Y", "2Y", "5Y",
+                                      "10Y", "MAX"))
+    with b2:
+        ivl = (getattr(st, "segmented_control", None) or st.radio)(
+            "bars", ("D", "W", "M"), key="qt_ivl",
+            label_visibility="collapsed",
+            **({"default": "D"} if hasattr(st, "segmented_control")
+               else {"horizontal": True}))
+    logscale = b3.toggle("LOG", key="qt_log",
+                         help="Log scale — equal moves = equal "
+                              "percents. The right lens past a few "
+                              "years.")
+    ivl = ivl or "D"
+    full = data.ohlc(sym, period="max") if yrs > 10 else \
+        data.ohlc(sym, period="10y") if yrs > 5 else ohlc \
+        if yrs <= 1 else data.ohlc(sym, period="5y")
+    bars = data.resample_ohlc(full, ivl)
+    close = bars["Close"]
     fig = go.Figure()
-    fig.add_trace(theme.candles(ohlc, sym))
+    fig.add_trace(theme.candles(bars, sym))
     for win, colr in ((50, theme.BLUE), (200, theme.RED)):
         ma = close.rolling(win).mean()
         fig.add_scatter(x=ma.index, y=ma.values, mode="lines",
                         name=f"SMA {win}",
                         line=dict(width=1.1, color=colr))
-    fig.update_layout(xaxis_rangeslider_visible=False)
+    cutoff = close.index.max() - pd.DateOffset(days=int(yrs * 365.25))
+    fig.update_layout(xaxis_rangeslider_visible=False,
+                      xaxis_range=[max(cutoff, close.index.min()),
+                                   close.index.max()])
+    if logscale:
+        fig.update_yaxes(type="log")
+    win_lo = close[close.index >= cutoff]
+    if not win_lo.empty and not logscale:
+        pad = (win_lo.max() - win_lo.min()) * 0.08 or 1
+        lo = min(win_lo.min(),
+                 bars["Low"][bars.index >= cutoff].min())
+        hi = max(win_lo.max(),
+                 bars["High"][bars.index >= cutoff].max())
+        fig.update_yaxes(range=[lo - pad, hi + pad])
+    ivl_name = {"D": "DAILY", "W": "WEEKLY", "M": "MONTHLY"}[ivl]
     theme.plot(
-        theme.style_fig(fig, f"{sym} — 1Y DAILY", height=400,
-                        unified_hover=False),
+        theme.style_fig(fig, f"{sym} — {ivl_name}", height=420,
+                        unified_hover=False,
+                        right_text=theme.fmt_last(close),
+                        right_color=theme.AMBER),
         use_container_width=True)
+    theme.note("The MAs compute on the bars displayed: the 200 MA on "
+               "monthly bars reaches back sixteen years, on dailies "
+               "about ten months — same label, different question, "
+               "and knowing which you're asking is part of reading "
+               "the chart. Wheel-zoom, drag a box, double-click to "
+               "reset; the range buttons re-slice server-side so the "
+               "scale refits.")
 else:
     st.warning("Price history unavailable (Yahoo rate limit?) — "
                "stats below may still load.")

@@ -1,7 +1,8 @@
 streamlit>=1.36
 pandas>=2.0
 plotly>=5.20
-yfinance>=0.2.40
+yfinance>=0.2.55
+curl_cffi>=0.7
 requests>=2.31
 feedparser>=6.0
 anthropic>=0.40

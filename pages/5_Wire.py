@@ -13,6 +13,10 @@ import streamlit as st
 from desk import theme, wire
 
 st.set_page_config(page_title="Wire — Desk", page_icon="▪", layout="wide")
+st.markdown(
+    "<style>.wireln{color:#E8E6E1;text-decoration:none}"
+    ".wireln:visited{color:#8A8880}"
+    ".wireln:hover{color:#FF9F1C}</style>", unsafe_allow_html=True)
 theme.header(
     "BOOK III · THE WIRE",
     "News Wire",
@@ -41,8 +45,10 @@ def tape(label: str, tier: str, feeds: list[tuple[str, str]],
     today = dt.datetime.now(ZoneInfo("America/New_York")).date()
     lines, fresh = [], 0
     for it in items:
+        seen = st.session_state.setdefault("wire_seen", set())
         is_today = bool(it["when"]) and it["when"].date() == today
-        fresh += int(is_today)
+        is_new = is_today and it["link"] not in seen
+        fresh += int(is_new)
         stamp = (it["when"].strftime("%d-%b %H:%M") if it["when"]
                  else "        --:--")
         title = it["title"].replace("<", "&lt;").replace(">", "&gt;")
@@ -51,11 +57,11 @@ def tape(label: str, tier: str, feeds: list[tuple[str, str]],
         chip = (f'<span style="color:{theme.INK};background:{src_color};'
                 f'font-size:0.62rem;padding:0 5px;border-radius:2px;'
                 f'font-weight:600;letter-spacing:0.08em;'
-                f'margin-right:8px">NEW</span>' if is_today else "")
+                f'margin-right:8px">NEW</span>' if is_new else "")
         row_style = (
             f'background:rgba(255,159,28,0.06);'
             f'border-left:2px solid {src_color};padding-left:8px;'
-            if is_today else 'opacity:0.62;padding-left:10px;')
+            if is_new else 'opacity:0.62;padding-left:10px;')
         lines.append(
             f'<div style="padding:4px 0;{row_style}'
             f'border-bottom:1px solid rgba(232,230,225,0.06);'
@@ -63,12 +69,14 @@ def tape(label: str, tier: str, feeds: list[tuple[str, str]],
             f'<span style="color:{theme.MUTED}">{stamp} ET</span>'
             f'<span style="color:{src_color};margin:0 10px">'
             f'{it["src"]:>4}</span>{chip}'
-            f'<a href="{it["link"]}" target="_blank" style="color:'
-            f'{theme.TEXT};text-decoration:none">{title}</a></div>')
+            f'<a class="wireln" href="{it["link"]}" '
+            f'target="_blank">{title}</a></div>')
+    st.session_state["wire_seen"].update(
+        it["link"] for it in items if it.get("link"))
     if fresh:
         st.markdown(f'<div class="desk-note" style="color:{src_color}">'
-                    f'{fresh} STOR{"Y" if fresh == 1 else "IES"} TODAY '
-                    f'· dimmed rows are yesterday\'s news</div>',
+                    f'{fresh} NEW SINCE YOU LAST LOOKED '
+                    f'· dimmed rows: seen this session or older</div>',
                     unsafe_allow_html=True)
     # CSS multi-column: up to 3 columns of >=340px, so wide screens read
     # like a broadsheet while phones collapse to one column on their own

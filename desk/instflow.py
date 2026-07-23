@@ -21,6 +21,7 @@ All keyless. All fail-soft.
 from __future__ import annotations
 
 import io
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -66,7 +67,15 @@ def oi_snapshot(today: str, max_expiries: int = 5,
             for exp in exps[:max_expiries]:
                 time.sleep(0.35)                 # pace Yahoo
                 try:
-                    ch = tk.option_chain(exp)
+                    ch = None
+                    for _try in range(3):
+                        try:
+                            ch = tk.option_chain(exp)
+                            break
+                        except Exception:
+                            time.sleep(1.5 * (_try + 1))
+                    if ch is None:
+                        continue
                 except Exception:
                     continue
                 for typ, frame in (("C", ch.calls), ("P", ch.puts)):

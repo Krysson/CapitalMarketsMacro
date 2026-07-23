@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.0.2"
+VERSION = "4.1.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -179,6 +179,12 @@ def _parse_command(c: str) -> tuple:
         return ("quote", "eia", _data.EIA_ALIASES[toks[0]][0], "")
     if len(toks) == 1 and toks[0] in _data.CBOE_ALIASES:
         return ("quote", "cboe", _data.CBOE_ALIASES[toks[0]], "")
+    joined = " ".join(toks)
+    if ("/" in joined or "*" in joined
+            or any(tk in ("+", "-") for tk in toks)):
+        import re as _re
+        if _re.fullmatch(r"[A-Z0-9\^=\.\-\s\+\*/\(\)]+", joined):
+            return ("quote", "expr", joined, "")
     if toks[0] in ("CRACK", "CRACK321", "CRACKS"):
         return ("quote", "calc", "CRACK", "")
     if re.fullmatch(r"[A-Z0-9.\-^=]{1,12}", toks[0]):
@@ -215,6 +221,7 @@ FUNCTIONS_TABLE = """
 | `CUSHING` `CRUDE` `GASOLINE` `NATGAS` `WTISPOT`… | Quote | EIA weekly petroleum/gas series (needs EIA_API_KEY) |
 | `SKEW` / `VVIX` | Quote | Cboe index history from Cboe's own CDN |
 | `CRACK` | Quote | computed 3-2-1 / gasoline / diesel crack spreads from CL, RB, HO |
+| `HYG/LQD` · `GC=F/SI=F` · `RB=F*42 - CL=F` | Quote | expression charts — `/` and `*` bind anywhere; `+` and `-` need spaces (so `BTC-USD` stays a ticker) |
 | `EIA <SERIES_ID>` | Quote | any EIA v1 series ID, e.g. EIA PET.WCESTUS1.W |
 | `SEARCH <words>` | Quote | search FRED's catalog, e.g. SEARCH housing starts |
 
@@ -387,8 +394,47 @@ def header(eyebrow: str, title: str, caption: str | None = None) -> None:
 
 # Mobile-safe chart config: no toolbar, no scroll-capture, double-tap
 # resets. Applied by theme.plot() — the one way charts reach the screen.
-_PLOTLY_CFG = {"displayModeBar": False, "scrollZoom": False,
-               "doubleClick": "reset"}
+# Bloomberg posture: opens clean, power available. Wheel + box zoom,
+# pan, double-click reset; toolbar trimmed to the four buttons that
+# matter. Chart CONTENT (MAs, bands, notes) is untouched by this.
+_PLOTLY_CFG = {"displayModeBar": True, "scrollZoom": True,
+               "doubleClick": "reset", "displaylogo": False,
+               "modeBarButtonsToRemove": [
+                   "lasso2d", "select2d", "autoScale2d",
+                   "hoverClosestCartesian", "hoverCompareCartesian",
+                   "toggleSpikelines"]}
+
+
+_LOOKBACKS = {"1M": 1/12, "3M": 0.25, "6M": 0.5, "1Y": 1.0,
+              "2Y": 2.0, "5Y": 5.0, "10Y": 10.0, "MAX": 99.0}
+
+
+def lookback(key: str, default: str = "1Y",
+             options: tuple = ("1M", "3M", "6M", "1Y", "2Y", "5Y",
+                               "MAX")) -> float:
+    """Range buttons, desk-style: server-side re-slice so the y-axis
+    refits the window perfectly (what Plotly's own x-zoom can't do).
+    Returns years as float."""
+    picker = getattr(st, "segmented_control", None)
+    if picker:
+        sel = picker(" ", options, default=default, key=key,
+                     label_visibility="collapsed")
+    else:                                   # older Streamlit fallback
+        sel = st.radio(" ", options, index=options.index(default),
+                       key=key, horizontal=True,
+                       label_visibility="collapsed")
+    return _LOOKBACKS.get(sel or default, 1.0)
+
+
+def fmt_last(series) -> str:
+    """'JUN 2026 · 6.72' — the last print, title-ready."""
+    try:
+        s = series.dropna()
+        ts, v = s.index[-1], float(s.iloc[-1])
+        val = f"{v:,.2f}" if abs(v) >= 1 else f"{v:,.3f}"
+        return f"{ts:%b %Y} · {val}".upper()
+    except Exception:
+        return ""
 
 
 def plot(fig: go.Figure, **kwargs) -> None:

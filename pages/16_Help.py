@@ -68,6 +68,20 @@ it. Nothing is backfilled — a reconstructed record is a claim, this
 one is evidence. `HIST` shows it; git history audits it.
 """)
 
+theme.panel_bar("Charts — navigation (v4.1)", "opens clean, power available")
+st.markdown("""
+Wheel to zoom · drag a box to zoom both axes · drag to pan ·
+double-click to reset · trimmed toolbar has camera-download. Range
+buttons re-slice server-side so the scale refits the window. Quote
+page extras: **D/W/M bars** (MAs compute on the bars displayed — same
+label, different question per interval), **LOG** toggle, and
+**expression charts** — `HYG/LQD`, `GC=F/SI=F`, `RB=F*42 - CL=F`.
+The rule: `/` and `*` bind anywhere; `+` and `-` need spaces around
+them, so `BTC-USD` stays a ticker. Cross-asset rows on Launchpad and
+Summary click through to the Quote page.
+""")
+st.divider()
+
 theme.panel_bar("The daily rhythm", "when to read, when to decide")
 st.markdown("""
 **7:45–8:15 ET — the read.** `CIR` runs the circuit; write priors and
