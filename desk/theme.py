@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.1.2"
+VERSION = "4.1.3"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -85,6 +85,15 @@ input[placeholder^="COMMAND"]::placeholder {
 div[data-baseweb="input"]:has(> input[placeholder^="COMMAND"]) {
   background:#FF9F1C !important;
   border-color:#FF9F1C !important; border-radius:2px !important; }
+
+/* ---- full-width on wide/multi-monitor windows (v4.1.3) ----
+   Streamlit caps and centers the main block; on a stretched window
+   that parks content mid-screen. The desk fills what it's given. */
+[data-testid="stMainBlockContainer"],
+section.main .block-container {
+  max-width: 100% !important;
+  padding-left: 2.2rem !important;
+  padding-right: 2.2rem !important; }
 
 /* ---- terminal chrome: navigation & controls (v3.16) ---- */
 section[data-testid="stSidebar"] {
