@@ -30,7 +30,7 @@ display glass only. Colors mean **direction, not advice**.
 | Paper Desk | `PAPER` | Simulated capital across every asset class the desk watches (equities/ETFs, futures at real multipliers, FX, crypto — options in 4.1): fills at the desk's mark plus honest slippage, an order ticket that REFUSES orders without generator + five gates + a kill-switch sentence, P&L by generator, JSON export/restore |
 | Help | `HELP` | The operating manual: full function table, command-bar priority rules, desk conventions, the daily rhythm, keys table |
 | Regime History | `HIST` | The four dials recorded nightly by a bot — colored strips over SPX, current streaks, and (once >30 rows) what SPX did after each red flip |
-| Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30`, `CUSHING`, `EIA <ID>` |
+| Quote | any ticker | Security/series lookup — `GOOG`, `GOOG FA`, `GOOG DES`, `CPI`, `EFFR`, `FRED DGS30`, `CUSHING`, `EIA <ID>`, `SKEW`, `CRACK` (computed 3-2-1) |
 
 Every page has a **command line** at the top — type a function, hit GO.
 It is security-aware, like the machine: any ticker (`GOOG`, `^VIX`,
@@ -40,7 +40,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v4.0.0** (shown in the sidebar). Flaky endpoints
+Current version: **v4.0.1** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 

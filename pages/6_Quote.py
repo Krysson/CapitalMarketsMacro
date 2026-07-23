@@ -81,6 +81,52 @@ if not q:
 
 kind, sym, func = q
 
+# ------------------------------------------------------ computed mode --
+if kind == "calc" and sym == "CRACK":
+    cr = data.crack_spreads()
+    if cr.empty:
+        st.error("Crack legs unavailable (CL=F / RB=F / HO=F) — Yahoo "
+                 "may be rate-limiting; try again shortly.")
+        st.stop()
+    years = st.selectbox("Lookback (years)", [1, 2, 3, 5], index=1)
+    tail = data.tail_years(cr, years)
+    last = cr.iloc[-1]
+    wk = cr.iloc[-6] if len(cr) > 6 else cr.iloc[0]
+    theme.panel_bar(
+        "3-2-1 CRACK SPREAD — computed",
+        f"${last['crack_321']:,.2f}/bbl  ({cr.index[-1]:%d-%b-%Y})")
+    fig = go.Figure(go.Scatter(x=tail.index, y=tail["crack_321"],
+                               mode="lines",
+                               line=dict(width=1.8, color=theme.AMBER)))
+    theme.plot(theme.style_fig(
+        fig, "3 CRUDE IN · 2 GASOLINE + 1 DISTILLATE OUT ($/BBL)",
+        height=360,
+        right_text=f"w/w {last['crack_321'] - wk['crack_321']:+.2f}",
+        right_color=(theme.GREEN
+                     if last['crack_321'] >= wk['crack_321']
+                     else theme.RED)),
+        use_container_width=True)
+    theme.readout(
+        theme.AMBER,
+        f"3-2-1 ${last['crack_321']:,.2f} · gasoline 1-1 "
+        f"${last['crack_gas']:,.2f} · diesel 1-1 "
+        f"${last['crack_diesel']:,.2f} per barrel. Widening = refiners "
+        f"minting money, crude demand pull; collapsing while crude "
+        f"holds = product demand rolling over before crude admits it — "
+        f"a G1 divergence for the energy patch.")
+    theme.note("Computed, not fetched: (2×RB×42 + HO×42 − 3×CL) ÷ 3 — "
+               "the ×42 converts $/gallon products to $/barrel, and "
+               "knowing that conversion is desk literacy. This is the "
+               "SCREEN margin, not any refinery's economics (real "
+               "margins vary by crude slate and configuration), and "
+               "seasonal gasoline spec changes put ripples in the raw "
+               "series — read regimes, not pennies. Cross-check: "
+               "REFINERY <GO> for utilization — cracks wide while "
+               "utilization runs high is the demand-pull confirmation. "
+               "[T2] The exchange-listed crack contracts exist but no "
+               "free feed carries them; same object, built from parts.")
+    st.stop()
+
 # ---------------------------------------------------------- Cboe mode --
 if kind == "cboe":
     s = data.cboe_series(sym)

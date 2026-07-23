@@ -399,6 +399,40 @@ FRED_ALIASES = {
 }
 
 
+# ------------------------------------------------------- computed ----
+# Derived series the desk builds from its own inputs. First resident:
+# the crack spread — pure arithmetic on three Yahoo futures, no new
+# data. The exchange-listed crack contracts (TradingView's ARE1! etc.)
+# are institutional products no free feed carries; this is the same
+# object computed from parts, which is better anyway: chartable back
+# years, tiered, and ours.
+
+def crack_spreads(period: str = "5y") -> pd.DataFrame:
+    """Daily 3-2-1, gasoline 1-1, and diesel 1-1 crack spreads ($/bbl)
+    from CL=F, RB=F, HO=F closes. RB/HO quote in $/gal — ×42 converts
+    to $/bbl (42 gallons per barrel: unit literacy is desk literacy).
+    Empty frame on failure. [T2 — Yahoo futures closes]"""
+    try:
+        legs = {}
+        for t in ("CL=F", "RB=F", "HO=F"):
+            o = ohlc(t, period=period)
+            if o.empty:
+                return pd.DataFrame()
+            legs[t] = o["Close"]
+        df = pd.DataFrame(legs).dropna()
+        if df.empty:
+            return pd.DataFrame()
+        cl, rb, ho = df["CL=F"], df["RB=F"] * 42, df["HO=F"] * 42
+        out = pd.DataFrame({
+            "crack_321": (2 * rb + ho - 3 * cl) / 3,
+            "crack_gas": rb - cl,
+            "crack_diesel": ho - cl,
+        }, index=df.index)
+        return out.dropna()
+    except Exception:
+        return pd.DataFrame()
+
+
 # --------------------------------------------------------------- Cboe ----
 # The index owner's own daily-history CSVs — keyless, updated daily.
 # Exists because Yahoo quietly dropped most Cboe proprietary indices

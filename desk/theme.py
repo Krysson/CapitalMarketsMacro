@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.0.0"
+VERSION = "4.0.1"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -179,6 +179,8 @@ def _parse_command(c: str) -> tuple:
         return ("quote", "eia", _data.EIA_ALIASES[toks[0]][0], "")
     if len(toks) == 1 and toks[0] in _data.CBOE_ALIASES:
         return ("quote", "cboe", _data.CBOE_ALIASES[toks[0]], "")
+    if toks[0] in ("CRACK", "CRACK321", "CRACKS"):
+        return ("quote", "calc", "CRACK", "")
     if re.fullmatch(r"[A-Z0-9.\-^=]{1,12}", toks[0]):
         func = toks[1] if len(toks) > 1 and toks[1] in _FUNC_TOKENS else ""
         return ("quote", "yf", toks[0], func)
@@ -212,6 +214,7 @@ FUNCTIONS_TABLE = """
 | `FRED <SERIES_ID>` | Quote | any FRED series, e.g. FRED DGS30 |
 | `CUSHING` `CRUDE` `GASOLINE` `NATGAS` `WTISPOT`… | Quote | EIA weekly petroleum/gas series (needs EIA_API_KEY) |
 | `SKEW` / `VVIX` | Quote | Cboe index history from Cboe's own CDN |
+| `CRACK` | Quote | computed 3-2-1 / gasoline / diesel crack spreads from CL, RB, HO |
 | `EIA <SERIES_ID>` | Quote | any EIA v1 series ID, e.g. EIA PET.WCESTUS1.W |
 | `SEARCH <words>` | Quote | search FRED's catalog, e.g. SEARCH housing starts |
 

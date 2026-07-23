@@ -1,24 +1,16 @@
-Capital Markets Desk — v4.0.0 — THE PAPER DESK + LIVE intraday mode (3.18 folded in)
-Changed/new files (full replacements; paste at these paths):
+Capital Markets Desk — v4.0.1 — the crack calculator (computed series mode)
+Changed files (full replacements; paste at these paths):
 
-desk/paper.py  ::  """Paper engine — the desk's own simulator, every asset class it watch
 desk/data.py  ::  """Data layer for the Capital Markets Desk.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDIT
-pages/18_Paper.py  ::  """Paper Desk — where ideas that cleared the gates get tested.
-app.py  ::  """Capital Markets Desk — entry point and navigation.
-pages/00_Launchpad.py  ::  """Launchpad — everything at once, nothing scrolls far, no prose.
+pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-PAPER DESK (PAPER / PB): homegrown simulator covering every asset
-class the desk watches — equities/ETFs, futures at REAL contract
-multipliers (ES $50/pt, CL 1000bbl, GC 100oz, 14 specs), FX, crypto;
-options deferred to 4.1 and said so on-page. Fills = desk mark +
-slippage ALWAYS against you (1 tick futures, 2-10bps by class),
-slippage tracked cumulatively. THE TICKET ENFORCES THE FUNNEL:
-refuses orders without a named generator, all five gates, and a
-kill-switch sentence; survivable-size check vs cash. Open positions
-show the kill switch beside P&L; closes prompt the reckoning; closed
-ledger + P&L-by-generator table. Book = local JSON, export/restore,
-two-press reset. LIVE TOGGLE beside the command bar on every page:
-market_history/ohlc/ticker_snapshot on ~60s cache (headless bot
-always slow-path). theme.VERSION 4.0.0. No new keys, no new hosting.
+CRACK <GO>: computed 3-2-1 crack spread from CL=F / RB=F / HO=F —
+(2xRBx42 + HOx42 - 3xCL)/3 — with gasoline and diesel 1-1 readouts,
+w/w delta, and the honest notes: screen margin not refinery
+economics, seasonal spec ripples, x42 unit-conversion lesson,
+REFINERY cross-check, G1-divergence framing for cracks collapsing
+while crude holds. New 'calc' quote mode = the home for future
+derived series. Rides ohlc()'s dual-TTL so LIVE mode applies. [T2]
+No new data sources, no new keys. theme.VERSION 4.0.1.
