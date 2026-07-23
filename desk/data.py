@@ -567,7 +567,7 @@ def eia_series(series_id: str) -> pd.Series:
         native["facets[series][]"] = short
         for route in ("petroleum/sum/sndw", "petroleum/pri/spt",
                       "natural-gas/stor/wkly", "petroleum/stoc/wstk",
-                      "petroleum/pnp/wiup"):
+                      "petroleum/pnp/wiup", "petroleum/pnp/unc"):
             rows = _rows(f"https://api.eia.gov/v2/{route}/data/", native)
             if rows:
                 break
