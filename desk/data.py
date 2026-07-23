@@ -535,17 +535,45 @@ def eia_series(series_id: str) -> pd.Series:
     key = _eia_key()
     if not key:
         return pd.Series(dtype=float, name=series_id)
-    try:
-        r = requests.get(
-            EIA_API + series_id,
-            params={"api_key": key, "length": 5000,
-                    "sort[0][column]": "period",
-                    "sort[0][direction]": "desc"},
-            timeout=30)
-        r.raise_for_status()
-        rows = r.json().get("response", {}).get("data", [])
+
+    def _rows(url, params):
+        try:
+            r = requests.get(url, params=params, timeout=30)
+            if not r.ok:
+                return []
+            return r.json().get("response", {}).get("data", []) or []
+        except Exception:
+            return []
+
+    base = {"api_key": key, "length": 5000,
+            "sort[0][column]": "period", "sort[0][direction]": "desc"}
+    rows = _rows(EIA_API + series_id, base)
+    if not rows:
+        # GOTCHA (verified live: WPULEUS3): the /seriesid/ translation
+        # route covers MOST but not ALL v1 IDs — refinery utilization
+        # is a known gap. Fall back to the v2 NATIVE datasets with the
+        # short ID as a series facet: the whole WPSR lives at
+        # petroleum/sum/sndw; spot prices at petroleum/pri/spt; the
+        # nat-gas storage weekly at natural-gas/stor/wkly.
+        short = series_id
+        for pre in ("PET.", "NG."):
+            if short.startswith(pre):
+                short = short[len(pre):]
+        for suf in (".W", ".D", ".M", ".A", ".4"):
+            if short.endswith(suf):
+                short = short[: -len(suf)]
+        native = dict(base)
+        native["data[0]"] = "value"
+        native["facets[series][]"] = short
+        for route in ("petroleum/sum/sndw", "petroleum/pri/spt",
+                      "natural-gas/stor/wkly", "petroleum/stoc/wstk",
+                      "petroleum/pnp/wiup"):
+            rows = _rows(f"https://api.eia.gov/v2/{route}/data/", native)
+            if rows:
+                break
         if not rows:
             return pd.Series(dtype=float, name=series_id)
+    try:
         idx, vals = [], []
         for o in rows:
             p = str(o.get("period", ""))

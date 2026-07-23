@@ -1,16 +1,13 @@
-Capital Markets Desk — v4.0.1 — the crack calculator (computed series mode)
+Capital Markets Desk — v4.0.2 — EIA seriesid translation-gap fix (REFINERY et al.)
 Changed files (full replacements; paste at these paths):
 
 desk/data.py  ::  """Data layer for the Capital Markets Desk.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL EDIT
-pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-CRACK <GO>: computed 3-2-1 crack spread from CL=F / RB=F / HO=F —
-(2xRBx42 + HOx42 - 3xCL)/3 — with gasoline and diesel 1-1 readouts,
-w/w delta, and the honest notes: screen margin not refinery
-economics, seasonal spec ripples, x42 unit-conversion lesson,
-REFINERY cross-check, G1-divergence framing for cracks collapsing
-while crude holds. New 'calc' quote mode = the home for future
-derived series. Rides ohlc()'s dual-TTL so LIVE mode applies. [T2]
-No new data sources, no new keys. theme.VERSION 4.0.1.
+FIX: EIA v2 /seriesid/ translation misses some v1 IDs — WPULEUS3
+(REFINERY) confirmed. eia_series() now falls back to the v2 NATIVE
+datasets (petroleum/sum/sndw, pri/spt, natural-gas/stor/wkly, stoc/
+wstk, pnp/wiup) with the stripped short ID as a series facet.
+Translation route stays first (working aliases unchanged, verified).
+README gotcha added. theme.VERSION 4.0.2.

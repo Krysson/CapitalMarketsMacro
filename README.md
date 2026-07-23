@@ -40,7 +40,7 @@ financials or the profile; macro aliases (`CPI`, `NFP`, `EFFR`, `SOFR`,
 `HELP <GO>` opens the operating manual: full function table, tips, conventions.
 The point is transferable muscle memory: navigate by mnemonic, not mouse.
 
-Current version: **v4.0.1** (shown in the sidebar). Flaky endpoints
+Current version: **v4.0.2** (shown in the sidebar). Flaky endpoints
 (Yahoo options chains) serve the last good pull with a timestamp when
 throttled, instead of erroring.
 
@@ -328,6 +328,10 @@ dry). Roughly once a year:
   directly again. st.iframe also shows scrollbars where
   components.html clipped — embed() injects a margin/overflow reset
   into the iframe document; don't remove it.
+- EIA's `/v2/seriesid/` translation route misses some v1 IDs (refinery
+  utilization was the one that bit) — eia_series() falls back to the v2
+  native datasets (petroleum/sum/sndw et al.) with the short ID as a
+  series facet; don't remove the ladder.
 - Inside a `clear_on_submit` form, never prefill a widget via a
   transient `value=` — the reverted value changes the widget's
   auto-ID on the submit rerun and the form returns a blank. Seed a
