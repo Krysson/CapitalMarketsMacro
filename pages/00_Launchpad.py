@@ -94,6 +94,10 @@ with b4:
     mini(r, "HYG/LQD", theme.GREEN, fmt="{:.4f}")
 
 # ---------------------------------- row C: table · liquidity · headlines --
+from desk import constraints
+constraints.render(hist, compact=True)
+st.divider()
+
 c1, c2, c3 = st.columns([2, 1.4, 2])
 
 with c1:

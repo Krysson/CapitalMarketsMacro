@@ -23,7 +23,8 @@ import datetime as dt
 
 import streamlit as st
 
-from desk import analyst, data, events, history, signals, theme
+from desk import (analyst, constraints, data, events, history,
+                  signals, theme)
 
 st.set_page_config(page_title="Ideas — Desk", page_icon="▪", layout="wide")
 theme.header(
@@ -357,6 +358,9 @@ if len(fired) >= 2:
 st.divider()
 
 # ------------------------------------------------------- the scan log ----
+constraints.render(data.market_history(period="2y"))
+st.divider()
+
 theme.panel_bar("The scan log — one line per generator",
                 "the empty lines make the full ones credible")
 GEN_KEYS = [("g1", "G1 Divergence"), ("g2", "G2 Crowding"),
