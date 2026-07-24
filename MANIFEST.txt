@@ -1,36 +1,21 @@
-Capital Markets Desk — v4.4.0 — MORNING READ · CONTEXT COMPLETENESS · MACRO DEPTH · VALUATION · BREADTH ENGINE
-Changed/new files (full replacements). NOTE: requirements.txt adds lxml;
-.github/workflows/snapshot.yml changed (breadth.csv wiring) — do not skip it.
+Capital Markets Desk — v4.4.1 — APP-SIDE ACCRUAL (Plan B is the plan)
+Changed/new files (full replacements):
 
-desk/breadth.py  ::  """Breadth internals — computed from S&P 500 members, because no
-desk/analyst.py  ::  """Desk Analyst — Claude wired to the live desk. ASK <GO>.
-desk/publish.py  ::  """Publisher for Notebook entries — the desk's public record.
-desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINA
-pages/0_Daily_Circuit.py  ::  """Daily Circuit — the book's 90-second read as a guided sequenc
-pages/1_Macro.py  ::  """Macro Dashboard — Book III, Ch. 4: Growth / Inflation / Polic
-pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cro
-pages/15_Ideas.py  ::  """Idea Desk — Chapter 15's eight generators and five gates, liv
-pages/20_Valuation.py  ::  """Valuation (VAL) — the horizon anchor. Valuation is a HORIZON 
-scripts/snapshot.py  ::  """Nightly signal snapshot — one row of the desk's live track re
-.github/workflows/snapshot.yml  ::  # Nightly signal snapshot — the desk's live-accrued track record
-requirements.txt  ::  streamlit>=1.36
-app.py  ::  """Capital Markets Desk — entry point and navigation.
+desk/accrue.py  ::  """App-side accrual (v4.4.1) — Plan B, now the plan.
+desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL 
+pages/0_Summary.py  ::  """Capital Markets Desk — Summary page (the desk's front door)."""
 README.md  ::  # Capital Markets Desk (Streamlit)
 
-MORNING READ (Daily Circuit): the desk stamps the facts (dials, SPX,
-VIX, net liq, live constraints), you write only the interpretation;
-one button publishes to reads/YYYY-MM-DD.md on the data branch — a
-dated archive of what you thought BEFORE you knew. CONTEXT
-COMPLETENESS: the Desk Analyst snapshot now carries the constraint
-map (hot rows), SKEW percentile, and latest ETF flow; Idea Desk G4
-upgrades from MANUAL to semi-auto — yellow/red map rows pre-populate
-the scan with an honest "how it lies". MACRO DEPTH: STLFSI4, NFCI,
-SLOOS, continuing claims, JOLTS quits, 5y5y forward — six FRED
-panels with teaching notes. VALUATION (VAL): Buffett indicator, ERP
-proxy, CAPE linked honestly (no fragile scrape) — horizon, never
-timing. BREADTH ENGINE: bot batch-downloads ~503 members via the
-chart endpoint (the unblocked one), computes %>200d/50d, cumulative
-A/D, NH-NL for the FULL trailing year (instant backfill), writes
-history/breadth.csv; Market page gains the internals panel (A/D vs
-SPX overlay = the confirmation chart) + sector participation count.
-theme.VERSION 4.4.0.
+VERDICT after two nights of runner logs: Yahoo hard-blocks the
+quote/fundamentals/options endpoints from GitHub IPs even with
+impersonation (chart endpoint passes — signals row proves it). NEW
+desk/accrue.py: when the Summary page loads and yesterday's flow
+rows (or today's OI snapshot) are missing from the data branch, the
+APP fetches them — its IPs work, proven daily by the rotation
+monitor and skew curve — and commits via the Notebook's GH_TOKEN
+machinery. Throttled (4h cache), fail-soft, status reported on the
+bot strip as APP-ACCRUAL. Morning OI accrual is better data anyway:
+chains report refreshed OI overnight. Gaps close at next open.
+REQUIRES: GH_TOKEN already in app secrets (it is — Notebook publish
+works). The nightly bot continues unchanged for signals + breadth.
+theme.VERSION 4.4.1.

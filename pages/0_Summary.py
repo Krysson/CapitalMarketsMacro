@@ -238,6 +238,13 @@ try:
               f'target="_blank" style="color:{theme.AMBER}">runs</a> · '
               f'<a href="https://github.com/{_o}/{_r}/tree/data" '
               f'target="_blank" style="color:{theme.AMBER}">record</a>')
+    try:
+        from desk import accrue as _acc
+        _amsg = _acc.run()
+        if _amsg:
+            _line += " · APP-ACCRUAL: " + _amsg
+    except Exception:
+        pass
     st.markdown(f'<div class="desk-note" style="color:{_col}">{_line}'
                 f'{_links}</div>', unsafe_allow_html=True)
 except Exception:

@@ -340,6 +340,14 @@ dry). Roughly once a year:
   directly again. st.iframe also shows scrollbars where
   components.html clipped — embed() injects a margin/overflow reset
   into the iframe document; don't remove it.
+- VERDICT (23-Jul, two nights of logs): Yahoo hard-blocks the quote/
+  fundamentals/options endpoints from GitHub runner IPs even with
+  curl_cffi impersonation; the chart endpoint passes. The bot keeps the
+  signals row; FLOW and OI accrual moved APP-SIDE (desk/accrue.py, runs
+  on Summary load when yesterday's rows are missing, commits via
+  GH_TOKEN). Morning accrual is better for OI anyway: chains report
+  refreshed OI overnight. If the app isn't opened for a day the gap
+  closes at the next open (flows use that day's CLOSE from history).
 - Yahoo blocks GitHub runner IPs selectively BY ENDPOINT: the chart
   endpoint (yf.download / .history) passes while fast_info and option
   chains get refused — hence the per-ticker ladders in flow.py, the
