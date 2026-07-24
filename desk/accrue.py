@@ -75,7 +75,13 @@ def run() -> str:
                 if ok:
                     _flow.load.clear()
             else:
-                msgs.append(f"flows {target}: no rows (Yahoo?)")
+                try:
+                    import yfinance as _yf
+                    _fi = _yf.Ticker("SPY").fast_info
+                    probe = f"probe shares={_fi.get('shares')!r}"
+                except Exception as _e:
+                    probe = f"probe {type(_e).__name__}: {_e}"[:100]
+                msgs.append(f"flows {target}: no rows ({probe})")
     except Exception as e:
         msgs.append(f"flows: skipped ({type(e).__name__})")
     # ---- OI ----
@@ -108,7 +114,13 @@ def run() -> str:
                                if ok and fps is not None
                                else "stored" if ok else "commit failed"))
             else:
-                msgs.append("OI: no chain data")
+                try:
+                    import yfinance as _yf
+                    probe = (f"probe exps="
+                             f"{len(_yf.Ticker('SPY').options)}")
+                except Exception as _e:
+                    probe = f"probe {type(_e).__name__}: {_e}"[:100]
+                msgs.append(f"OI: no chain data ({probe})")
     except Exception as e:
         msgs.append(f"OI: skipped ({type(e).__name__})")
     return " · ".join(msgs)
