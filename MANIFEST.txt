@@ -1,16 +1,25 @@
-Capital Markets Desk — v4.1.2 — month-contract futures fix (Paper Desk P&L)
-Changed files (full replacements; paste at these paths):
+Capital Markets Desk — v4.2.0 — RECONCILIATION ENGINE: brackets, spreads, options, the blotter
+Changed files (full replacements):
 
-desk/paper.py  ::  """Paper engine — the desk's own simulator, every asset class it wat
-desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL ED
-README.md  ::  # Capital Markets Desk (Streamlit)
+desk/paper.py  ::  """Paper engine v4.2 — reconciliation, brackets, spreads, options,
+desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL 
+pages/18_Paper.py  ::  """Paper Desk v4.2 — the blotter, brackets, spreads, options."""
 
-FIX: Yahoo month contracts (CLV26.NYM, ESZ26.CME — exchange suffixes
-.NYM/.CME/.CBT/.CMX/.NYB with month-code+year) were classified as
-EQUITIES: multiplier 1, bps slippage, cash debited — a real -$252
-printed as -$0. Now parsed to their root and inheriting its spec
-(CLV26 -> CL: $1000/pt, 1-tick slip, no cash debit). Unknown roots
-REFUSE the order rather than fill at a fake 1x. USER ACTION: close
-and re-enter any month-contract positions opened before this fix —
-stored positions keep their opening terms (impact: pennies).
-theme.VERSION 4.1.2.
+RESTING ORDERS: stops/targets on the ticket, evaluated on every page
+load at CURRENT marks — gap-honest (level 6700, gapped to 6650: you
+fill near 6650 and the event says so). Brackets = stop+target on one
+ticket; first crossed closes (OCO). Kill-switch-to-stop prompt on
+the stop field. FUTURES SPREADS: one position, two legs, one kill
+switch (SPREAD tab); gross large, net small — the point. OPTIONS
+PHASE ONE: long single-leg SPY/QQQ (SPY 2026-09-18 700 C), filled at
+ask / sold at bid (the spread IS the cost, charged both ways),
+15-min-delay honesty, EXPIRY auto-settles at intrinsic via
+reconcile(). Futures options: ETF proxies + glass, per decision; NO
+manual marks ever. THE BLOTTER: days held, basis, market value, DAY
+P&L vs prior close, unrealized %, weight %, stop/target columns;
+header gains GROSS/NET exposure + day P&L. Closed: holding days,
+return %, MAE/MFE from daily bars (MAE = the kill-switch auditor),
+close reason (MANUAL/STOP/TARGET/EXPIRY). Generator scorecard: win
+rate, avg win/loss, profit factor, expectancy. CSV export. Activity
+log. STARTING CAPITAL configurable on reset (default $1,000,000).
+theme.VERSION 4.2.0.
