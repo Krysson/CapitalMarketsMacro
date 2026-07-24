@@ -76,6 +76,7 @@ jobs:
           [ -f history/flows.csv ] && cp history/flows.csv /tmp/flows.csv
           [ -f history/oi_latest.csv ] && cp history/oi_latest.csv /tmp/oi_latest.csv
           [ -f history/oi_footprints.csv ] && cp history/oi_footprints.csv /tmp/oi_footprints.csv
+          [ -f history/breadth.csv ] && cp history/breadth.csv /tmp/breadth.csv
           rm -f history/*.csv
           git config user.name "desk-snapshot-bot"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -92,6 +93,7 @@ jobs:
           [ -f /tmp/flows.csv ] && cp /tmp/flows.csv history/flows.csv
           [ -f /tmp/oi_latest.csv ] && cp /tmp/oi_latest.csv history/oi_latest.csv
           [ -f /tmp/oi_footprints.csv ] && cp /tmp/oi_footprints.csv history/oi_footprints.csv
+          [ -f /tmp/breadth.csv ] && cp /tmp/breadth.csv history/breadth.csv
           git add history/
           if git commit -m "snapshot $(date -u +%F)"; then
             git push origin data
