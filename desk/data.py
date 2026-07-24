@@ -399,6 +399,64 @@ FRED_ALIASES = {
 }
 
 
+# ------------------------------------------------------------ EDGAR ----
+
+@st.cache_data(ttl=86400, show_spinner=False)
+def _cik_map() -> dict:
+    """Ticker -> CIK from SEC's own file. [T1]"""
+    try:
+        r = requests.get("https://www.sec.gov/files/company_tickers.json",
+                         headers={"User-Agent": "CapitalMarketsDesk "
+                                  "research contact@example.com"},
+                         timeout=20)
+        return {v["ticker"].upper(): str(v["cik_str"]).zfill(10)
+                for v in r.json().values()}
+    except Exception:
+        return {}
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def edgar_debt(ticker: str, n: int = 12) -> pd.DataFrame:
+    """Recent debt-offering filings (424B2/424B5/FWP) from EDGAR.
+    The primary source for 'what bonds has this company sold'. [T1]"""
+    cik = _cik_map().get(ticker.upper())
+    if not cik:
+        return pd.DataFrame()
+    try:
+        r = requests.get(
+            f"https://data.sec.gov/submissions/CIK{cik}.json",
+            headers={"User-Agent": "CapitalMarketsDesk research "
+                     "contact@example.com"}, timeout=20)
+        rec = r.json().get("filings", {}).get("recent", {})
+        rows = []
+        for form, date, acc, doc in zip(
+                rec.get("form", []), rec.get("filingDate", []),
+                rec.get("accessionNumber", []),
+                rec.get("primaryDocument", [])):
+            if form in ("424B2", "424B5", "FWP", "424B3"):
+                a = acc.replace("-", "")
+                rows.append({"Date": date, "Form": form,
+                             "Link": f"https://www.sec.gov/Archives/"
+                                     f"edgar/data/{int(cik)}/{a}/{doc}"})
+            if len(rows) >= n:
+                break
+        return pd.DataFrame(rows)
+    except Exception:
+        return pd.DataFrame()
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def ticker_profile(t: str) -> dict:
+    """The quote function suite's raw material: Yahoo .info, fail-soft
+    per field. [T2 aggregator — EDGAR is the primary source]."""
+    try:
+        import yfinance as yf
+        info = yf.Ticker(t).info or {}
+        return info if isinstance(info, dict) else {}
+    except Exception:
+        return {}
+
+
 # ---------------------------------------------------- bars & exprs ----
 
 def resample_ohlc(df: pd.DataFrame, interval: str) -> pd.DataFrame:

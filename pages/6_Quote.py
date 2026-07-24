@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from desk import data, theme
+from desk.paper import asset_class as paper_ac
 
 st.set_page_config(page_title="Quote — Desk", page_icon="▪", layout="wide")
 theme.header(
@@ -397,6 +398,29 @@ if not ohlc.empty:
         hi = max(win_lo.max(),
                  bars["High"][bars.index >= cutoff].max())
         fig.update_yaxes(range=[lo - pad, hi + pad])
+
+if not ohlc.empty and arg == "DEBT":
+    d = data.edgar_debt(sym)
+    theme.panel_bar(f"{sym} · DEBT OFFERINGS — SEC EDGAR", "[T1]")
+    if d.empty:
+        st.markdown('<div class="desk-note">No recent prospectus '
+                    'filings (424B2/424B5/FWP) — or a non-US filer '
+                    'outside EDGAR.</div>', unsafe_allow_html=True)
+    else:
+        for _, r in d.iterrows():
+            st.markdown(f'<div class="desk-note">{r["Date"]} · '
+                        f'{r["Form"]} · <a href="{r["Link"]}" '
+                        f'target="_blank" style="color:#FF9F1C">'
+                        f'prospectus</a></div>', unsafe_allow_html=True)
+        theme.note("424B2/424B5 are the prospectuses filed when a "
+                   "company actually SELLS bonds; FWP is the free-"
+                   "writing term sheet. Terms (size, coupon, maturity) "
+                   "are inside the documents — the primary source, "
+                   "which is why this is [T1] where the stats panel "
+                   "is [T2]. Secondary bond PRICES are the wall: "
+                   "TRACE isn't in FINRA's free API — that moat is "
+                   "what Bloomberg charges for.")
+    st.stop()
     ivl_name = {"D": "DAILY", "W": "WEEKLY", "M": "MONTHLY"}[ivl]
     theme.plot(
         theme.style_fig(fig, f"{sym} — {ivl_name}", height=420,
@@ -411,6 +435,89 @@ if not ohlc.empty:
                "the chart. Wheel-zoom, drag a box, double-click to "
                "reset; the range buttons re-slice server-side so the "
                "scale refits.")
+
+# ---- v4.3 function suite: equities only, fail-soft per module ----
+prof = data.ticker_profile(sym) if kind == "yf" and \
+    paper_ac(sym) == "EQUITY" else {}
+if prof:
+    def _fmt(v, money=False):
+        try:
+            v = float(v)
+            if money and abs(v) >= 1e9:
+                return f"{v/1e9:,.1f}B"
+            if money and abs(v) >= 1e6:
+                return f"{v/1e6:,.0f}M"
+            return f"{v:,.2f}"
+        except Exception:
+            return "—"
+    with st.expander("DES · description & key stats  [T2]"):
+        st.markdown(f'<div class="desk-note">'
+                    f'{prof.get("sector","—")} · '
+                    f'{prof.get("industry","—")} · '
+                    f'{prof.get("fullTimeEmployees","—")} employees'
+                    f'</div>', unsafe_allow_html=True)
+        st.markdown((prof.get("longBusinessSummary") or "")[:600])
+        kv = {"Mkt cap": _fmt(prof.get("marketCap"), True),
+              "Beta": _fmt(prof.get("beta")),
+              "P/E (ttm)": _fmt(prof.get("trailingPE")),
+              "P/E (fwd)": _fmt(prof.get("forwardPE")),
+              "Div yld %": _fmt((prof.get("dividendYield") or 0)),
+              "52w range": f'{_fmt(prof.get("fiftyTwoWeekLow"))} – '
+                           f'{_fmt(prof.get("fiftyTwoWeekHigh"))}',
+              "Avg vol": _fmt(prof.get("averageVolume"), True)}
+        st.markdown(" · ".join(f"**{k}** {v}" for k, v in kv.items()))
+    with st.expander("ANR · analyst coverage  [T2]"):
+        tm = prof.get("targetMeanPrice")
+        st.markdown(
+            f"Rec: **{(prof.get('recommendationKey') or '—').upper()}**"
+            f" ({prof.get('numberOfAnalystOpinions','—')} analysts) · "
+            f"Targets low {_fmt(prof.get('targetLowPrice'))} / mean "
+            f"{_fmt(tm)} / high {_fmt(prof.get('targetHighPrice'))}"
+            + (f" · vs last: "
+               f"{(float(tm)/float(close.iloc[-1])-1)*100:+.1f}%"
+               if tm else ""))
+        theme.note("Consensus is a crowding indicator as much as a "
+                   "forecast — everyone bullish means the marginal "
+                   "buyer is already in (G2).")
+    with st.expander("SI · short interest  [T2]"):
+        st.markdown(
+            f"Shares short: {_fmt(prof.get('sharesShort'), True)} · "
+            f"days-to-cover: {_fmt(prof.get('shortRatio'))} · "
+            f"% of float: "
+            f"{_fmt((prof.get('shortPercentOfFloat') or 0)*100)}%")
+        theme.note("Positioning STOCK — pair with the Flow page's "
+                   "FINRA daily short volume (the FLOW) for the full "
+                   "picture.")
+    with st.expander("HDS · ownership  [T2]"):
+        st.markdown(
+            f"Insiders: "
+            f"{_fmt((prof.get('heldPercentInsiders') or 0)*100)}% · "
+            f"Institutions: "
+            f"{_fmt((prof.get('heldPercentInstitutions') or 0)*100)}%")
+    with st.expander("ERN · next earnings  [T2]"):
+        ts = prof.get("earningsTimestamp")
+        try:
+            import datetime as _dt
+            e = _dt.datetime.fromtimestamp(ts).date() if ts else None
+        except Exception:
+            e = None
+        st.markdown(f"Next earnings: **{e or 'unknown'}**")
+        theme.note("Opening a position into a print is a choice, not "
+                   "an accident — the Paper Desk assumes you checked.")
+    st.markdown(f'<div class="desk-note">`{sym} DEBT <GO>` — bond '
+                f'offerings from EDGAR [T1]</div>',
+                unsafe_allow_html=True)
+if kind == "yf":
+    wc1, wc2 = st.columns([3, 1.2])
+    wreason = wc1.text_input("Park on the watchlist — why watching?",
+                             key="q_wl_reason")
+    if wc2.button("ADD TO WATCHLIST") and wreason:
+        from desk import watchlist as _wl
+        _items = _wl.load()
+        _ok, _msg = _wl.add(_items, sym, wreason)
+        (st.success if _ok else st.error)(_msg)
+        if _ok:
+            _wl.save(_items)
 else:
     st.warning("Price history unavailable (Yahoo rate limit?) — "
                "stats below may still load.")
