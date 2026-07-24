@@ -113,3 +113,40 @@ for panel, series_list in data.MACRO_SERIES.items():
         with cols[i % 2]:
             line(sid, bundle.get(sid), f"{name} ({units})",
                  yoy=sid in yoy_ids)
+
+# ----------------------------------------- stress, credit & depth (v4.4)
+st.divider()
+theme.panel_bar("STRESS, CREDIT PLUMBING & DEPTH",
+                "the trader-document additions — all FRED, all free")
+_D = {sid: data.fred_series(sid, start="2004-01-01")
+      for sid in ("STLFSI4", "NFCI", "DRTSCILM", "CCSA", "JTSQUR",
+                  "T5YIFR")}
+c1, c2 = st.columns(2)
+with c1:
+    line("STLFSI4", _D["STLFSI4"],
+         "ST. LOUIS FED FINANCIAL STRESS INDEX", color=theme.RED)
+    theme.note("Dozens of inputs in one line; 0 = normal. Breadth the "
+               "single HY-OAS spread can't see. [T1]")
+    line("DRTSCILM", _D["DRTSCILM"],
+         "SLOOS — % OF BANKS TIGHTENING C&I STANDARDS",
+         color=theme.AMBER)
+    theme.note("Quarterly and famously EARLY: lending standards lead "
+               "credit losses and capex by quarters. Above 0 = net "
+               "tightening. [T1]")
+    line("CCSA", _D["CCSA"], "CONTINUING JOBLESS CLAIMS",
+         color=theme.BLUE)
+    theme.note("Initial claims say who's being cut; continuing claims "
+               "say whether they find new work. The divergence is the "
+               "tell. [T1]")
+with c2:
+    line("NFCI", _D["NFCI"],
+         "CHICAGO FED NATIONAL FINANCIAL CONDITIONS", color=theme.RED)
+    theme.note("Negative = looser than average. Two stress lines "
+               "agreeing is signal; disagreeing is a question. [T1]")
+    line("JTSQUR", _D["JTSQUR"], "JOLTS QUITS RATE", color=theme.BLUE)
+    theme.note("The confidence gauge: people don't quit into a bad "
+               "market — rolls over BEFORE payrolls. [T1]")
+    line("T5YIFR", _D["T5YIFR"], "5Y5Y FORWARD INFLATION EXPECTATION",
+         color=theme.PURPLE)
+    theme.note("The Fed's preferred expectations lens; anchored ≈ "
+               "2-2.5%. Unanchoring HERE moves policy. [T1]")

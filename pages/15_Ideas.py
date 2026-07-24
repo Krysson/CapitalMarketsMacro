@@ -180,7 +180,27 @@ def run_generators() -> list[dict]:
 
     # G4 — Constraint map: rewards actual reading; the desk can only
     # keep the standing question in front of you.
-    add("G4 · Constraint-map scan", "MANUAL",
+    try:
+        _hot = [r for r in constraints.build(
+            data.market_history(period="2y"))
+            if r["status"] != theme.GREEN]
+    except Exception:
+        _hot = []
+    if _hot:
+        _rb = any(r["status"] == theme.RED for r in _hot)
+        add("G4 · Constraint-map scan",
+            "TRIPPED" if _rb else "WATCH",
+            "Trigger zones live — "
+            + "; ".join(f"{r['actor'].split(' (')[0]}: {r['now']}"
+                        for r in _hot[:3]) + ". "
+            "The map computed it — now do "
+            "the reading the machine can't (whose flow, how big, "
+            "already in price?).",
+            "the map's thresholds are estimates — a level being near "
+            "does not mean the flow is large, or that it isn't "
+            "already priced.")
+    else:
+        add("G4 · Constraint-map scan", "MANUAL — map all green",
         "standing question — did anything in the news change WHO is "
         "forced to do WHAT, at WHAT level? Margin methodologies, "
         "mandates, index rules, collateral triggers. Map entries go to "

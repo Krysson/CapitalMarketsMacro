@@ -121,7 +121,7 @@ st.divider()
 # cross-section, the live chart is the time series of the same object.
 theme.panel_bar("The glass — TradingView (display only)",
                 "heatmap + live SPX, adjacent by design")
-tab_spx, tab_hm = st.tabs(["Live SPX", "S&P 500 heatmap"])
+tab_hm, tab_spx = st.tabs(["S&P 500 heatmap", "Live SPX"])
 with tab_hm:
     theme.embed(
         """
@@ -184,3 +184,82 @@ with tab_spx:
                "for watching a session unfold. Display only: every "
                "computed check on this desk still runs on FRED and Yahoo "
                "data, so a widget outage never touches the signals.")
+
+# --------------------------------------------- breadth internals (v4.4)
+st.divider()
+from desk import breadth as _breadth
+
+theme.panel_bar("BREADTH INTERNALS — S&P 500 MEMBERS",
+                "computed nightly by the bot · S&P-scoped, not NYSE")
+_bf = _breadth.load()
+if _bf.empty:
+    st.markdown('<div class="desk-note">No breadth record yet — the '
+                'nightly bot computes member internals and backfills '
+                'a full year on its FIRST successful run (the batch '
+                'download endpoint is the one Yahoo doesn\'t block '
+                'from runners). Check tomorrow.</div>',
+                unsafe_allow_html=True)
+else:
+    _spx = hist.get("^GSPC", pd.Series(dtype=float)).dropna()
+    b1, b2 = st.columns(2)
+    with b1:
+        figb = go.Figure()
+        figb.add_scatter(x=_bf.index, y=_bf["pct_above_200d"],
+                         mode="lines", name="% > 200d",
+                         line=dict(width=1.8, color=theme.AMBER))
+        figb.add_scatter(x=_bf.index, y=_bf["pct_above_50d"],
+                         mode="lines", name="% > 50d",
+                         line=dict(width=1.2, color=theme.BLUE))
+        theme.plot(theme.style_fig(
+            figb, "% OF MEMBERS ABOVE 200D / 50D", height=300,
+            right_text=f"{_bf['pct_above_200d'].iloc[-1]:.0f}% · "
+                       f"{_bf['pct_above_50d'].iloc[-1]:.0f}%",
+            right_color=theme.AMBER), use_container_width=True)
+        theme.note("Under 50% above the 200-day while the index sits "
+                   "near highs = a market carried by few — the "
+                   "generals-without-soldiers pattern. [T2 computed]")
+        fign = go.Figure(go.Bar(x=_bf.index, y=_bf["nh_nl"],
+                                marker_color=[theme.GREEN if v >= 0
+                                              else theme.RED
+                                              for v in _bf["nh_nl"]]))
+        theme.plot(theme.style_fig(
+            fign, "NEW 52W HIGHS − NEW LOWS", height=240,
+            right_text=f"{_bf['nh_nl'].iloc[-1]:+.0f}",
+            right_color=theme.GREEN if _bf['nh_nl'].iloc[-1] >= 0
+            else theme.RED), use_container_width=True)
+    with b2:
+        figa = go.Figure()
+        figa.add_scatter(x=_bf.index, y=_bf["ad_line"], mode="lines",
+                         name="Cumulative A/D",
+                         line=dict(width=1.8, color=theme.BLUE))
+        if not _spx.empty:
+            sp = _spx.reindex(_bf.index).dropna()
+            figa.add_scatter(x=sp.index, y=sp.values, mode="lines",
+                             name="SPX", yaxis="y2",
+                             line=dict(width=1.1, color=theme.MUTED))
+            figa.update_layout(yaxis2=dict(overlaying="y", side="left",
+                                           showgrid=False,
+                                           showticklabels=False))
+        theme.plot(theme.style_fig(
+            figa, "CUMULATIVE ADVANCE-DECLINE vs SPX", height=300,
+            right_text=f"{_bf['ad_line'].iloc[-1]:+.0f}",
+            right_color=theme.BLUE), use_container_width=True)
+        theme.note("THE confirmation chart: price at new highs while "
+                   "the A/D line isn't = narrowing participation — "
+                   "the desk's RSP/SPY read, member-counted. Same "
+                   "index both lines, apples to apples. [T2]")
+        try:
+            _spdrs = [t for t in ("XLB", "XLC", "XLE", "XLF", "XLI",
+                                  "XLK", "XLP", "XLRE", "XLU", "XLV",
+                                  "XLY") if t in hist.columns]
+            _above = sum(
+                1 for t in _spdrs
+                if hist[t].dropna().iloc[-1]
+                > hist[t].dropna().rolling(200).mean().iloc[-1])
+            theme.readout(
+                theme.GREEN if _above >= 8 else
+                theme.YELLOW if _above >= 5 else theme.RED,
+                f"SECTOR PARTICIPATION: {_above}/{len(_spdrs)} SPDRs "
+                f"above their own 200-day.")
+        except Exception:
+            pass

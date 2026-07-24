@@ -1,21 +1,36 @@
-Capital Markets Desk — v4.3.0 — WATCHLIST · EDGAR DEBT · QUOTE FUNCTION SUITE
-Changed/new files (full replacements):
+Capital Markets Desk — v4.4.0 — MORNING READ · CONTEXT COMPLETENESS · MACRO DEPTH · VALUATION · BREADTH ENGINE
+Changed/new files (full replacements). NOTE: requirements.txt adds lxml;
+.github/workflows/snapshot.yml changed (breadth.csv wiring) — do not skip it.
 
-desk/watchlist.py  ::  """The Watchlist — the funnel's parking lot. Ch. 15: 'a candidate
-desk/data.py  ::  """Data layer for the Capital Markets Desk.
-desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL 
-pages/19_Watchlist.py  ::  """Watchlist (WL/MON) — the funnel's parking lot, scored."""
-pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
+desk/breadth.py  ::  """Breadth internals — computed from S&P 500 members, because no
+desk/analyst.py  ::  """Desk Analyst — Claude wired to the live desk. ASK <GO>.
+desk/publish.py  ::  """Publisher for Notebook entries — the desk's public record.
+desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINA
+pages/0_Daily_Circuit.py  ::  """Daily Circuit — the book's 90-second read as a guided sequenc
+pages/1_Macro.py  ::  """Macro Dashboard — Book III, Ch. 4: Growth / Inflation / Polic
+pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cro
+pages/15_Ideas.py  ::  """Idea Desk — Chapter 15's eight generators and five gates, liv
+pages/20_Valuation.py  ::  """Valuation (VAL) — the horizon anchor. Valuation is a HORIZON 
+scripts/snapshot.py  ::  """Nightly signal snapshot — one row of the desk's live track re
+.github/workflows/snapshot.yml  ::  # Nightly signal snapshot — the desk's live-accrued track record
+requirements.txt  ::  streamlit>=1.36
 app.py  ::  """Capital Markets Desk — entry point and navigation.
+README.md  ::  # Capital Markets Desk (Streamlit)
 
-WATCHLIST (WL/MON, new page + module): symbol + required REASON +
-source generator + optional trigger; % SINCE ADDED scores your
-watching; click-through to Quote; local JSON; ADD button on the
-Quote page; no fake alerts (your file, your eyes, the 7:45 read).
-EDGAR DEBT (TSLA DEBT <GO>): 424B2/424B5/FWP prospectus filings
-from SEC EDGAR [T1] with links; the note names the TRACE wall
-honestly. QUOTE FUNCTION SUITE (equities, fail-soft expanders,
-all [T2]): DES description+key stats, ANR analyst coverage with
-target-vs-last and the crowding note, SI short interest (paired
-with FINRA flow), HDS ownership, ERN next-earnings with the
-into-the-print warning. theme.VERSION 4.3.0.
+MORNING READ (Daily Circuit): the desk stamps the facts (dials, SPX,
+VIX, net liq, live constraints), you write only the interpretation;
+one button publishes to reads/YYYY-MM-DD.md on the data branch — a
+dated archive of what you thought BEFORE you knew. CONTEXT
+COMPLETENESS: the Desk Analyst snapshot now carries the constraint
+map (hot rows), SKEW percentile, and latest ETF flow; Idea Desk G4
+upgrades from MANUAL to semi-auto — yellow/red map rows pre-populate
+the scan with an honest "how it lies". MACRO DEPTH: STLFSI4, NFCI,
+SLOOS, continuing claims, JOLTS quits, 5y5y forward — six FRED
+panels with teaching notes. VALUATION (VAL): Buffett indicator, ERP
+proxy, CAPE linked honestly (no fragile scrape) — horizon, never
+timing. BREADTH ENGINE: bot batch-downloads ~503 members via the
+chart endpoint (the unblocked one), computes %>200d/50d, cumulative
+A/D, NH-NL for the FULL trailing year (instant backfill), writes
+history/breadth.csv; Market page gains the internals panel (A/D vs
+SPX overlay = the confirmation chart) + sector participation count.
+theme.VERSION 4.4.0.

@@ -131,6 +131,34 @@ def desk_snapshot() -> str:
         return "PRIMARY WIRE: " + " // ".join(heads) if heads else ""
     lines.append(_try(wires))
 
+    # v4.4 context completeness — the Analyst sees the whole desk.
+    def _x():
+        from desk import constraints as _con
+        from desk import data as _d
+        rows = _con.build(_d.market_history(period="2y"))
+        hot = [f"{r['actor']}: {r['now']} (trigger {r['level']})"
+               for r in rows if r["status"] != "#00C853"][:5]
+        return ("CONSTRAINT MAP (who is forced, at what level): "
+                + " | ".join(hot)) if hot else ""
+    lines.append(_try(_x))
+    def _sk():
+        from desk import data as _d
+        s = _d.cboe_series("SKEW")
+        yr = s.tail(252)
+        return (f"SKEW {float(s.iloc[-1]):.1f} "
+                f"({float((yr <= yr.iloc[-1]).mean()*100):.0f}th pct "
+                f"1y) [T1]") if not s.empty else ""
+    lines.append(_try(_sk))
+    def _fl():
+        from desk import flow as _f
+        fl = _f.compute_flows(_f.load())
+        last = fl[fl["date"] == fl["date"].max()]
+        eq = last[last["ticker"].isin(
+            ["SPY", "VOO", "QQQ", "IWM", "RSP"])]["flow_mm"].sum()
+        return (f"ETF FLOWS latest session: core equity {eq:+,.0f}mm "
+                f"[T2 accrued]") if not fl.empty else ""
+    lines.append(_try(_fl))
+    lines = [l for l in lines if l]
     return "\n".join(l for l in lines if l)
 
 

@@ -204,3 +204,54 @@ theme.note("The circuit isn't finished when you've LOOKED — it's finished "
            "when you've written. Evidence → Interpretation → Risks → "
            "Falsification → Decision. Most days the honest entry is "
            "'no change'; the discipline is writing it anyway.")
+
+# ------------------------------------------------ the morning read log --
+st.divider()
+theme.panel_bar("THE MORNING READ — on the record",
+                "what you thought BEFORE you knew what happened")
+from desk import constraints as _con
+from desk import history as _h
+from desk import publish as _pub
+
+_snap_lines = []
+try:
+    _row = _h.load().iloc[-1]
+    _snap_lines.append(
+        f"Dials: G{int(_row['growth_score'])} I{int(_row['inflation_score'])} "
+        f"P{int(_row['policy_score'])} L{int(_row['liquidity_score'])} · "
+        f"SPX {_row['spx']:,.0f} · VIX {_row['vix']:.1f} · "
+        f"VIX/VIX3M {_row['vix_vix3m']:.2f} · NetLiq {_row['net_liq_tn']:.2f}tn")
+except Exception:
+    pass
+try:
+    _hot = [f"{r['actor'].split(' (')[0]}: {r['now']}"
+            for r in _con.build(data.market_history(period='2y'))
+            if r["status"] != theme.GREEN][:3]
+    if _hot:
+        _snap_lines.append("Constraints live: " + "; ".join(_hot))
+except Exception:
+    pass
+_stamp = "\n".join("> " + l for l in _snap_lines) or "> (no record row)"
+st.markdown(f'<div class="desk-note">{_stamp}</div>',
+            unsafe_allow_html=True)
+with st.form("mread", clear_on_submit=True):
+    _read = st.text_area(
+        "The read (the desk stamps the facts above — you write only "
+        "the interpretation)", height=120,
+        placeholder="What matters today, what I'd do about it, and "
+                    "what would change my mind by the close.")
+    _go = st.form_submit_button("PUBLISH TO THE RECORD",
+                                use_container_width=True)
+if _go and _read.strip():
+    import datetime as _dt
+    _d0 = _dt.date.today().isoformat()
+    _md = (f"# Morning read — {_d0}\n\n" +
+           "\n".join(_snap_lines) + "\n\n" + _read.strip() + "\n")
+    _ok, _detail = _pub.publish_file(f"reads/{_d0}.md", _md,
+                                     f"morning read {_d0}")
+    (st.success if _ok else st.error)(
+        f"On the record: reads/{_d0}.md" if _ok else _detail)
+theme.note("Over months this becomes what the book can't fake: a "
+           "dated archive of what you thought before you knew. Same "
+           "GH_TOKEN machinery as the Notebook; git history makes "
+           "edits visible, which is the point.")

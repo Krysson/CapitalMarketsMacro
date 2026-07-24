@@ -11,7 +11,8 @@ The record is append-only and live-accrued: nothing is backfilled,
 every row is a timestamped git commit. A reconstructed record is a
 claim; this one is evidence.
 
-Note: desk modules import streamlit, so the cache decorators emit
+Note: desk modules import time
+import streamlit, so the cache decorators emit
 "No runtime found" warnings when run headless. Harmless — verified.
 """
 from __future__ import annotations
@@ -272,3 +273,30 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# ---------------------------------------------------- breadth (v4.4) --
+try:
+    from desk import breadth as _b
+    syms = _b.constituents()
+    print(f"breadth: {len(syms)} constituents")
+    import yfinance as _yf
+    frames = []
+    for i in range(0, len(syms), 100):
+        chunk = syms[i:i + 100]
+        d = _yf.download(chunk, period="1y", interval="1d",
+                         auto_adjust=True, progress=False,
+                         group_by="column")
+        c = d["Close"] if "Close" in d else d
+        frames.append(c)
+        time.sleep(1.0)
+    closes = pd.concat(frames, axis=1)
+    bf = _b.compute(closes)
+    bf.index.name = "date"
+    Path("history").mkdir(exist_ok=True)
+    bf.to_csv("history/breadth.csv")
+    print(f"breadth: wrote {len(bf)} rows "
+          f"(%>200d {bf['pct_above_200d'].iloc[-1]:.0f}, "
+          f"A/D {bf['ad_line'].iloc[-1]:+.0f}, "
+          f"NH-NL {bf['nh_nl'].iloc[-1]:+.0f})")
+except Exception as e:
+    print(f"breadth skipped ({type(e).__name__}: {e}) — gap is honest")

@@ -25,6 +25,7 @@ pg = st.navigation({
         st.Page("pages/7_Rates.py", title="Rates"),
         st.Page("pages/8_Futures.py", title="Futures & COT"),
         st.Page("pages/9_Global.py", title="Global & FX"),
+        st.Page("pages/20_Valuation.py", title="Valuation"),
         st.Page("pages/17_Flow.py", title="Flow"),
     ],
     "Research": [

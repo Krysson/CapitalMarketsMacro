@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.3.0"
+VERSION = "4.4.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -158,6 +158,7 @@ _ROUTES = {
     "BOOK": "pages/18_Paper.py",
     "WL": "pages/19_Watchlist.py", "MON": "pages/19_Watchlist.py",
     "WATCH": "pages/19_Watchlist.py",
+    "VAL": "pages/20_Valuation.py",
     "FLOW": "pages/17_Flow.py", "FLOWS": "pages/17_Flow.py",
 }
 
@@ -224,6 +225,7 @@ FUNCTIONS_TABLE = """
 | `GEN` / `IDEA` | Idea Desk | Ch. 15's eight generators + five gates — passcode-gated |
 | `PAPER` / `PB` | Paper Desk | test what cleared the gates — the ticket refuses orders without a kill switch |
 | `WL` / `MON` | Watchlist | the funnel's parking lot — % since added scores your watching |
+| `VAL` | Valuation | horizon anchors — Buffett indicator, ERP proxy; sets the runway, never the timing |
 | `TSLA DEBT` | Quote | bond offerings from SEC EDGAR [T1] |
 | `FLOW` | Flow Desk | rotation monitor, FINRA short-volume ratios, live-accrued ETF flows + streaks |
 | `HELP` / `?` | Help | this table + the operating manual |

@@ -174,6 +174,13 @@ def republish_entry(e: dict) -> tuple[bool, str]:
 
 
 @st.cache_data(ttl=900, show_spinner=False)
+def publish_file(path: str, content: str, msg: str) -> tuple[bool, str]:
+    """Generic publisher (v4.4) — morning reads live at reads/."""
+    if not enabled():
+        return False, "publishing not configured (see README)."
+    return _put(path, content, msg)
+
+
 def published_files() -> list[dict]:
     """The public record's file list (name + link), newest first.
     [] before anything is published or on any failure."""
