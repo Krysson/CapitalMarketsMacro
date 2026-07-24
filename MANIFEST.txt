@@ -1,14 +1,16 @@
-Capital Markets Desk — v4.4.2 — accrual diagnostic probes (2 files; supersedes the earlier 3-file 4.4.2 if downloaded)
-Changed files (full replacements):
+Capital Markets Desk — v4.4.3 — Quote page NameError fix + accrual probes (SUPERSEDES 4.4.2)
+Changed files (full replacements). Deploy these three; skip 4.4.2 if not yet pasted.
 
+pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
 desk/accrue.py  ::  """App-side accrual (v4.4.1) — Plan B, now the plan.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL 
 
-This morning's APP-ACCRUAL reported "no rows (Yahoo?)" — but the
-app's network provably works, so SOMETHING ELSE failed inside the
-per-ticker handlers, and fail-soft swallowed the evidence. This
-patch makes the accrual PROBE one live call whenever it comes up
-empty and print the actual exception type + message on the bot
-strip (e.g. "probe AttributeError: ..." or "probe shares=None").
-Deploy, reload Summary once, and read the strip: the next status
-line IS the diagnosis. theme.VERSION 4.4.2.
+QUOTE FIX: the v4.3 DEBT splice referenced a variable name that
+does not exist on that page (arg vs func) AND sat mid-block so the
+chart tail fell inside it — my net-down boots never exercised the
+chart body, so it shipped untested; this build boots the page WITH
+real bars in both modes. DEBT block relocated above the chart,
+condition fixed. ACCRUAL PROBES (from 4.4.2): when flow/OI accrual
+comes up empty the strip now names the live exception instead of
+guessing at Yahoo — deploy, reload Summary, paste me the line.
+theme.VERSION 4.4.3.

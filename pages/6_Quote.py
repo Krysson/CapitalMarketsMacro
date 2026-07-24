@@ -355,6 +355,29 @@ st.markdown(
     if price else f'<div class="desk-eyebrow">{sym} · {name}</div>',
     unsafe_allow_html=True)
 
+if not ohlc.empty and func == "DEBT":
+    d = data.edgar_debt(sym)
+    theme.panel_bar(f"{sym} · DEBT OFFERINGS — SEC EDGAR", "[T1]")
+    if d.empty:
+        st.markdown('<div class="desk-note">No recent prospectus '
+                    'filings (424B2/424B5/FWP) — or a non-US filer '
+                    'outside EDGAR.</div>', unsafe_allow_html=True)
+    else:
+        for _, r in d.iterrows():
+            st.markdown(f'<div class="desk-note">{r["Date"]} · '
+                        f'{r["Form"]} · <a href="{r["Link"]}" '
+                        f'target="_blank" style="color:#FF9F1C">'
+                        f'prospectus</a></div>', unsafe_allow_html=True)
+        theme.note("424B2/424B5 are the prospectuses filed when a "
+                   "company actually SELLS bonds; FWP is the free-"
+                   "writing term sheet. Terms (size, coupon, maturity) "
+                   "are inside the documents — the primary source, "
+                   "which is why this is [T1] where the stats panel "
+                   "is [T2]. Secondary bond PRICES are the wall: "
+                   "TRACE isn't in FINRA's free API — that moat is "
+                   "what Bloomberg charges for.")
+    st.stop()
+
 if not ohlc.empty:
     b1, b2, b3 = st.columns([2.2, 1.4, 5])
     with b1:
@@ -399,28 +422,6 @@ if not ohlc.empty:
                  bars["High"][bars.index >= cutoff].max())
         fig.update_yaxes(range=[lo - pad, hi + pad])
 
-if not ohlc.empty and arg == "DEBT":
-    d = data.edgar_debt(sym)
-    theme.panel_bar(f"{sym} · DEBT OFFERINGS — SEC EDGAR", "[T1]")
-    if d.empty:
-        st.markdown('<div class="desk-note">No recent prospectus '
-                    'filings (424B2/424B5/FWP) — or a non-US filer '
-                    'outside EDGAR.</div>', unsafe_allow_html=True)
-    else:
-        for _, r in d.iterrows():
-            st.markdown(f'<div class="desk-note">{r["Date"]} · '
-                        f'{r["Form"]} · <a href="{r["Link"]}" '
-                        f'target="_blank" style="color:#FF9F1C">'
-                        f'prospectus</a></div>', unsafe_allow_html=True)
-        theme.note("424B2/424B5 are the prospectuses filed when a "
-                   "company actually SELLS bonds; FWP is the free-"
-                   "writing term sheet. Terms (size, coupon, maturity) "
-                   "are inside the documents — the primary source, "
-                   "which is why this is [T1] where the stats panel "
-                   "is [T2]. Secondary bond PRICES are the wall: "
-                   "TRACE isn't in FINRA's free API — that moat is "
-                   "what Bloomberg charges for.")
-    st.stop()
     ivl_name = {"D": "DAILY", "W": "WEEKLY", "M": "MONTHLY"}[ivl]
     theme.plot(
         theme.style_fig(fig, f"{sym} — {ivl_name}", height=420,
