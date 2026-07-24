@@ -60,6 +60,12 @@ def oi_snapshot(today: str, max_expiries: int = 5,
             tk = yf.Ticker(und)
             spot = float(tk.fast_info.get("last_price") or 0)
             if spot <= 0:
+                # fast_info fields degrade to None on newer yfinance
+                # (24-Jul probe) — chart endpoint always answers
+                h = tk.history(period="2d", auto_adjust=True)
+                if not h.empty:
+                    spot = float(h["Close"].dropna().iloc[-1])
+            if spot <= 0:
                 continue
             exps = [e for e in tk.options
                     if 0 <= (pd.Timestamp(e)

@@ -91,13 +91,19 @@ def snapshot_rows(today: str) -> list[dict]:
             try:
                 time.sleep(0.5)
                 tk = yf.Ticker(t)
-                shf = tk.get_shares_full(
-                    start=pd.Timestamp.now() - pd.Timedelta(days=30))
-                if shf is not None and len(shf):
-                    sh = float(shf.iloc[-1])
-                h = tk.history(period="5d", auto_adjust=True)
-                if not h.empty:
-                    px = float(h["Close"].dropna().iloc[-1])
+                if not sh:
+                    # newer yfinance: fast_info.shares comes back None
+                    # (24-Jul probe) — quoteSummary still carries it
+                    sh = (tk.info or {}).get("sharesOutstanding")
+                if not sh:
+                    shf = tk.get_shares_full(
+                        start=pd.Timestamp.now() - pd.Timedelta(days=30))
+                    if shf is not None and len(shf):
+                        sh = float(shf.iloc[-1])
+                if not px:
+                    h = tk.history(period="5d", auto_adjust=True)
+                    if not h.empty:
+                        px = float(h["Close"].dropna().iloc[-1])
                 if sh and px:
                     n_ladder += 1
             except Exception:

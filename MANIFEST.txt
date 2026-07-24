@@ -1,16 +1,18 @@
-Capital Markets Desk — v4.4.3 — Quote page NameError fix + accrual probes (SUPERSEDES 4.4.2)
-Changed files (full replacements). Deploy these three; skip 4.4.2 if not yet pasted.
+Capital Markets Desk — v4.4.4 — fast_info degradation fix (the probes' verdict)
+Changed files (full replacements):
 
-pages/6_Quote.py  ::  """Quote — security & series lookup. The desk's DES / GP / FA.
-desk/accrue.py  ::  """App-side accrual (v4.4.1) — Plan B, now the plan.
+desk/flow.py  ::  """Flow layer — the Sector Flow Tracker's automatable half, in-app
+desk/instflow.py  ::  """Institutional flow — where big players can't hide.
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL 
 
-QUOTE FIX: the v4.3 DEBT splice referenced a variable name that
-does not exist on that page (arg vs func) AND sat mid-block so the
-chart tail fell inside it — my net-down boots never exercised the
-chart body, so it shipped untested; this build boots the page WITH
-real bars in both modes. DEBT block relocated above the chart,
-condition fixed. ACCRUAL PROBES (from 4.4.2): when flow/OI accrual
-comes up empty the strip now names the live exception instead of
-guessing at Yahoo — deploy, reload Summary, paste me the line.
-theme.VERSION 4.4.3.
+PROBE VERDICT (24-Jul strip): fast_info responds but returns NONE
+for shares (flows) and last_price (OI spot) under the yfinance
+version the 4.x requirements installed — both accrual failures, one
+root. FIX: flows ladder gains info[sharesOutstanding] before
+get_shares_full, price falls to history close; oi_snapshot spot
+falls to history close when fast_info yields nothing. Both paths
+unit-tested with fast_info-returns-None mocks (23/23 ETFs resolve;
+OI band filters correctly off history spot). After deploy, reload
+Summary: APP-ACCRUAL should print logged 23 and stored. 4.4.2/4.4.3
+probes remain in place — empties keep naming their causes.
+theme.VERSION 4.4.4.
