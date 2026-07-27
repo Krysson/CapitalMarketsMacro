@@ -1,5 +1,6 @@
 """Volatility Dashboard — Book III, Ch. 6: the observable vol complex."""
 import plotly.graph_objects as go
+import pandas as pd
 import streamlit as st
 
 from desk import data, theme
