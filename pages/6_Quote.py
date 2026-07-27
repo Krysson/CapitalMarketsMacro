@@ -416,6 +416,7 @@ if not ohlc.empty:
         fig.add_scatter(x=ma.index, y=ma.values, mode="lines",
                         name=f"SMA {win}",
                         line=dict(width=1.1, color=colr))
+    theme.last_price_line(fig, close)
     cutoff = close.index.max() - pd.DateOffset(days=int(yrs * 365.25))
     fig.update_layout(xaxis_rangeslider_visible=False,
                       xaxis_range=[max(cutoff, close.index.min()),

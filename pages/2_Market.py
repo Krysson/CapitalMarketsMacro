@@ -42,6 +42,7 @@ for win, color in [(20, theme.GREEN), (50, theme.BLUE),
     fig.add_scatter(x=_mv.index, y=_mv.values, mode="lines",
                     name=f"SMA {win}",
                     line=dict(width=1.1, color=color))
+theme.last_price_line(fig, spx)
 fig.update_layout(xaxis_rangeslider_visible=False)
 theme.plot(theme.style_fig(
     fig, "S&P 500 — trend vs 20 / 50 / 200-day",

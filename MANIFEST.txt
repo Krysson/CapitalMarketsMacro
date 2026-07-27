@@ -1,16 +1,12 @@
-Capital Markets Desk — v4.4.8 — full-span MAs (warm-up buffer) + Quote ribbon 20/50/100/200
+Capital Markets Desk — v4.4.9 — last-price line, bar-direction colored
 Changed files (full replacements):
 
-pages/2_Market.py  ::  fetch one tier longer, MAs on full history, display sliced
-pages/6_Quote.py  ::  buffered fetch per interval + SMA 20/100 added (the ribbon)
-desk/theme.py  ::  4.4.8
+desk/theme.py  ::  last_price_line() helper + 4.4.9
+pages/6_Quote.py  ::  line on the ticker chart (all D/W/M intervals)
+pages/2_Market.py  ::  line on the SPX trend chart
 
-THE STUNTED 200MA: the desk computed MAs on only the fetched window,
-so a 1y view left the first 199 bars blank and the line appeared 80%
-through the chart. Now every chart fetches WINDOW + WARM-UP (2y for
-1y daily; max for monthly bars, whose 200MA needs ~17y), computes MAs
-on the full buffer, and slices the DISPLAY to the selected range —
-TradingView behavior, bars-convention intact (MAs still compute on
-the displayed interval's bars). Quote chart gains SMA 20 and 100:
-the desk-native MA Ribbon, permanently sticky because it is
-furniture, not glass. theme.VERSION 4.4.8.
+TradingView-style dotted line at the last close with an axis-side
+price label — GREEN if the displayed bar is up vs the prior bar,
+RED if down, and INTERVAL-AWARE because it reads the resampled bars
+on the chart: daily view colors by the day, weekly by the week,
+monthly by the month. Title last-print retained. theme.VERSION 4.4.9.

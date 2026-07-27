@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.4.8"
+VERSION = "4.4.9"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -439,6 +439,28 @@ def lookback(key: str, default: str = "1Y",
                        key=key, horizontal=True,
                        label_visibility="collapsed")
     return _LOOKBACKS.get(sel or default, 1.0)
+
+
+def last_price_line(fig, closes) -> None:
+    """TradingView-style last-price marker (v4.4.9): dotted line at
+    the last close with an axis-side label, GREEN if the displayed
+    bar is up vs the PRIOR bar, RED if down — interval-aware because
+    it reads the bars on the chart: a weekly view colors by the week,
+    monthly by the month."""
+    try:
+        c = closes.dropna()
+        if len(c) < 2:
+            return
+        last, prev = float(c.iloc[-1]), float(c.iloc[-2])
+        col = GREEN if last >= prev else RED
+        fig.add_hline(y=last, line_dash="dot", line_width=1,
+                      line_color=col,
+                      annotation_text=f"{last:,.2f}",
+                      annotation_position="right",
+                      annotation_font_color=col,
+                      annotation_bgcolor="#000000")
+    except Exception:
+        pass
 
 
 def fmt_last(series) -> str:
