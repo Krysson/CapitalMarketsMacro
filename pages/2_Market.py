@@ -121,7 +121,9 @@ st.divider()
 # cross-section, the live chart is the time series of the same object.
 theme.panel_bar("The glass — TradingView (display only)",
                 "heatmap + live SPX, adjacent by design")
-tab_hm, tab_spx = st.tabs(["S&P 500 heatmap", "Live SPX"])
+# HOUSE RULE: Live SPX is ALWAYS the first (default) tab — do not
+# reorder. (Reverted once by a build from a stale local copy.)
+tab_spx, tab_hm = st.tabs(["Live SPX", "S&P 500 heatmap"])
 with tab_hm:
     theme.embed(
         """
@@ -165,6 +167,7 @@ with tab_spx:
           new TradingView.widget({
             "container_id": "tv_spx",
             "symbol": "SPX500USD",
+          "studies": ["STD;MA%1Ribbon"],
             "interval": "D",
             "timezone": "America/New_York",
             "theme": "dark",
