@@ -1,16 +1,16 @@
-Capital Markets Desk — v4.4.7 — THE WALLS panel + breadth-after-exit fix
+Capital Markets Desk — v4.4.8 — full-span MAs (warm-up buffer) + Quote ribbon 20/50/100/200
 Changed files (full replacements):
 
-scripts/snapshot.py  ::  breadth job now a function called BEFORE SystemExit
-pages/3_Volatility.py  ::  THE WALLS — put/call OI by strike from oi_latest
-desk/theme.py  ::  4.4.7
+pages/2_Market.py  ::  fetch one tier longer, MAs on full history, display sliced
+pages/6_Quote.py  ::  buffered fetch per interval + SMA 20/100 added (the ribbon)
+desk/theme.py  ::  4.4.8
 
-BREADTH ROOT CAUSE (24-Jul log, zero breadth output): the job was
-appended AFTER raise SystemExit(main()) — code after an exit never
-runs. Tonight expects: breadth: 503 constituents ... wrote ~250 rows.
-THE WALLS (Vol page): 'read the chain' pointed at furniture that
-didn't exist — now the desk's own nightly OI record renders as
-put/call shelves by strike with a spot line, PUT/CALL WALL readout
-with distances, and honest tiering (T1 OI, T3 dealer inference —
-walls are zones, not laws; cross-check footprints for shelves under
-construction). theme.VERSION 4.4.7.
+THE STUNTED 200MA: the desk computed MAs on only the fetched window,
+so a 1y view left the first 199 bars blank and the line appeared 80%
+through the chart. Now every chart fetches WINDOW + WARM-UP (2y for
+1y daily; max for monthly bars, whose 200MA needs ~17y), computes MAs
+on the full buffer, and slices the DISPLAY to the selected range —
+TradingView behavior, bars-convention intact (MAs still compute on
+the displayed interval's bars). Quote chart gains SMA 20 and 100:
+the desk-native MA Ribbon, permanently sticky because it is
+furniture, not glass. theme.VERSION 4.4.8.

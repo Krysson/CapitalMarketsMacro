@@ -9,7 +9,12 @@ theme.header("BOOK III · CH. 5", "Market Dashboard",
              "Trend, participation, and cross-asset confirmation.")
 
 period = st.selectbox("Lookback", ["6mo", "1y", "2y", "5y"], index=1)
-hist = data.market_history(period=period)
+# Fetch one tier longer so the 200MA spans the whole view
+# (TradingView behavior); the trend chart slices back to the window.
+_FETCH_UP = {"6mo": "2y", "1y": "2y", "2y": "5y", "5y": "10y"}
+hist = data.market_history(period=_FETCH_UP.get(period, period))
+_cut_days = {"6mo": 183, "1y": 366, "2y": 731, "5y": 1827}.get(period, 366)
+_t0 = pd.Timestamp.now() - pd.Timedelta(days=_cut_days)
 
 if hist.empty:
     st.error("Market data unavailable — Yahoo Finance may be rate-limiting. "
@@ -17,17 +22,25 @@ if hist.empty:
     st.stop()
 
 # ---- Trend: SPX candlesticks with the MA ribbon ----
-spx_ohlc = data.ohlc("^GSPC", period=period)
+spx_ohlc = data.ohlc("^GSPC", period=_FETCH_UP.get(period, period))
 spx = hist["^GSPC"].dropna()
 fig = go.Figure()
-if not spx_ohlc.empty:
-    fig.add_trace(theme.candles(spx_ohlc, "S&P 500"))
+_view = spx_ohlc[spx_ohlc.index >= _t0] if not spx_ohlc.empty else spx_ohlc
+if not _view.empty:
+    fig.add_trace(theme.candles(_view, "S&P 500"))
 else:
-    fig.add_scatter(x=spx.index, y=spx.values, mode="lines", name="S&P 500",
+    _sv = spx[spx.index >= _t0]
+    fig.add_scatter(x=_sv.index, y=_sv.values, mode="lines",
+                    name="S&P 500",
                     line=dict(width=2, color=theme.TEXT))
-for win, color in [(20, theme.GREEN), (50, theme.BLUE), (200, theme.RED)]:
+# MAs compute on the FULL fetched history, display sliced to the
+# window — so the 200-day spans the whole chart, TradingView-style.
+for win, color in [(20, theme.GREEN), (50, theme.BLUE),
+                   (200, theme.RED)]:
     ma = spx.rolling(win).mean()
-    fig.add_scatter(x=ma.index, y=ma.values, mode="lines", name=f"SMA {win}",
+    _mv = ma[ma.index >= _t0]
+    fig.add_scatter(x=_mv.index, y=_mv.values, mode="lines",
+                    name=f"SMA {win}",
                     line=dict(width=1.1, color=color))
 fig.update_layout(xaxis_rangeslider_visible=False)
 theme.plot(theme.style_fig(
@@ -167,7 +180,7 @@ with tab_spx:
           new TradingView.widget({
             "container_id": "tv_spx",
             "symbol": "SPX500USD",
-          "studies": ["MA%1Ribbon"],
+          "studies": ["STD;MA%1Ribbon"],
             "interval": "D",
             "timezone": "America/New_York",
             "theme": "dark",

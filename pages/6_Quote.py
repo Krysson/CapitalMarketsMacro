@@ -395,14 +395,23 @@ if not ohlc.empty:
                               "percents. The right lens past a few "
                               "years.")
     ivl = ivl or "D"
-    full = data.ohlc(sym, period="max") if yrs > 10 else \
-        data.ohlc(sym, period="10y") if yrs > 5 else ohlc \
-        if yrs <= 1 else data.ohlc(sym, period="5y")
+    # Fetch WINDOW + WARM-UP so the 200MA spans the whole view
+    # (TradingView behavior): 200 daily bars ≈ 10 months extra, 200
+    # weekly ≈ 4y, 200 monthly ≈ 17y. MAs still compute on displayed
+    # bars — just on a longer buffer than shown.
+    if ivl == "M" or yrs > 10:
+        _per = "max"
+    elif ivl == "W":
+        _per = "max" if yrs > 5 else "10y"
+    else:
+        _per = ("10y" if yrs > 5 else "5y" if yrs > 1 else "2y")
+    full = data.ohlc(sym, period=_per)
     bars = data.resample_ohlc(full, ivl)
     close = bars["Close"]
     fig = go.Figure()
     fig.add_trace(theme.candles(bars, sym))
-    for win, colr in ((50, theme.BLUE), (200, theme.RED)):
+    for win, colr in ((20, theme.GREEN), (50, theme.BLUE),
+                      (100, theme.PURPLE), (200, theme.RED)):
         ma = close.rolling(win).mean()
         fig.add_scatter(x=ma.index, y=ma.values, mode="lines",
                         name=f"SMA {win}",
