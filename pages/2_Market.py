@@ -1,5 +1,6 @@
 """Market Dashboard — Book III, Ch. 5: trend, participation, cross-asset."""
 import plotly.graph_objects as go
+import pandas as pd
 import streamlit as st
 
 from desk import data, theme
