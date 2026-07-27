@@ -108,6 +108,76 @@ if not skew_cb.empty:
                "drawn strike by strike from today's chain.")
     st.divider()
 
+# ---- THE WALLS — open interest by strike (v4.4.7) ----
+theme.panel_bar("THE WALLS — SPY OPEN INTEREST BY STRIKE",
+                "from the desk's own nightly OI record")
+try:
+    import io as _io
+
+    import requests as _rq
+
+    from desk.history import OWNER as _o, REPO as _r
+    _oi = pd.DataFrame()
+    _rr = _rq.get(f"https://raw.githubusercontent.com/{_o}/{_r}"
+                  f"/data/history/oi_latest.csv", timeout=15)
+    if _rr.ok and _rr.text.strip():
+        _oi = pd.read_csv(_io.StringIO(_rr.text))
+    _spy = _oi[_oi["und"] == "SPY"] if not _oi.empty else _oi
+    if _spy.empty:
+        st.markdown('<div class="desk-note">No OI record yet — the '
+                    'morning accrual builds it; once present, this '
+                    'panel maps it.</div>', unsafe_allow_html=True)
+    else:
+        _ag = (_spy.groupby(["strike", "type"])["oi"].sum()
+               .unstack(fill_value=0))
+        _spot = float(_spy["spot"].iloc[0])
+        _figw = go.Figure()
+        if "P" in _ag:
+            _figw.add_bar(y=_ag.index, x=-_ag["P"], orientation="h",
+                          name="Puts", marker_color=theme.RED)
+        if "C" in _ag:
+            _figw.add_bar(y=_ag.index, x=_ag["C"], orientation="h",
+                          name="Calls", marker_color=theme.GREEN)
+        _figw.add_hline(y=_spot, line_color=theme.AMBER,
+                        line_width=1.2,
+                        annotation_text=f"spot {_spot:,.0f}",
+                        annotation_font_color=theme.AMBER)
+        _figw.update_layout(barmode="overlay",
+                            xaxis_title="open interest "
+                                        "(puts left · calls right)")
+        theme.plot(theme.style_fig(
+            _figw, "AGGREGATE OI ACROSS EXPIRIES ≤45D", height=420),
+            use_container_width=True)
+        _pw = _ag[_ag.index < _spot]["P"] if "P" in _ag else None
+        _cw = _ag[_ag.index > _spot]["C"] if "C" in _ag else None
+        _pk = (float(_pw.idxmax())
+               if _pw is not None and len(_pw) else None)
+        _ck = (float(_cw.idxmax())
+               if _cw is not None and len(_cw) else None)
+        if _pk and _ck:
+            theme.readout(
+                theme.AMBER,
+                f"PUT WALL {_pk:,.0f} ({int(_pw.max()):,} OI, "
+                f"{(_pk / _spot - 1) * 100:+.1f}% from spot) · CALL "
+                f"WALL {_ck:,.0f} ({int(_cw.max()):,} OI, "
+                f"{(_ck / _spot - 1) * 100:+.1f}%). Between the "
+                f"walls, dealer hedging tends to DAMPEN moves; a "
+                f"decisive break of the put wall is where it can "
+                f"flip to AMPLIFYING.")
+        theme.note("The 'read the walls' furniture: your own nightly "
+                   "OI record (±10% of spot, OI ≥500, expiries ≤45d) "
+                   "aggregated by strike. The biggest put shelf "
+                   "below spot marks where dealers' likely "
+                   "long-gamma cushion concentrates — INFERRED from "
+                   "OI, not observed; which side dealers hold is not "
+                   "public, so walls are zones, not laws. "
+                   "Cross-check the Flow page's footprints: shelves "
+                   "BUILT recently matter more than old furniture. "
+                   "[T1 OI · T3 dealer inference]")
+except Exception as _e:
+    st.warning(f"Walls panel skipped ({type(_e).__name__}).")
+st.divider()
+
 st.subheader("SPY implied-volatility skew (live from the options chain)")
 st.markdown('<div class="desk-caption">IV by strike, expiration nearest 45 '
             'days. The upward slope to the left IS the skew — crash '

@@ -1,17 +1,16 @@
-Capital Markets Desk — v4.4.6 — Live SPX first (guarded) + MA Ribbon preloaded
+Capital Markets Desk — v4.4.7 — THE WALLS panel + breadth-after-exit fix
 Changed files (full replacements):
 
-pages/2_Market.py  ::  """Market Dashboard — Book III, Ch. 5: trend, participation, cro
-desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINA
+scripts/snapshot.py  ::  breadth job now a function called BEFORE SystemExit
+pages/3_Volatility.py  ::  THE WALLS — put/call OI by strike from oi_latest
+desk/theme.py  ::  4.4.7
 
-TAB ORDER: Live SPX restored as the default tab, now with a guard
-comment so no future build reverts it (root cause: v4.4.0 shipped
-this page from a local copy that predated the manual swap — my
-drift, my fix). MA RIBBON: the TradingView embed now requests the
-MA Ribbon study on load (studies param). CAVEAT: study IDs on the
-free embed are finicky — if the ribbon does not render after
-deploy, the widget silently ignores unknown IDs (chart still
-works); report and we try the alternate ID form. True per-user
-persistence of widget settings is not possible in an anonymous
-embed — preloading via config is the only sticky mechanism.
-theme.VERSION 4.4.6.
+BREADTH ROOT CAUSE (24-Jul log, zero breadth output): the job was
+appended AFTER raise SystemExit(main()) — code after an exit never
+runs. Tonight expects: breadth: 503 constituents ... wrote ~250 rows.
+THE WALLS (Vol page): 'read the chain' pointed at furniture that
+didn't exist — now the desk's own nightly OI record renders as
+put/call shelves by strike with a spot line, PUT/CALL WALL readout
+with distances, and honest tiering (T1 OI, T3 dealer inference —
+walls are zones, not laws; cross-check footprints for shelves under
+construction). theme.VERSION 4.4.7.

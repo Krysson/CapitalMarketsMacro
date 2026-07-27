@@ -271,32 +271,40 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    raise SystemExit(main())
+def _breadth_job():
+    """v4.4 breadth — MUST run before SystemExit; the first
+    version sat after it and never executed (24-Jul log)."""
+    import time
+    from pathlib import Path
+    import pandas as pd
+    try:
+        from desk import breadth as _b
+        syms = _b.constituents()
+        print(f"breadth: {len(syms)} constituents")
+        import yfinance as _yf
+        frames = []
+        for i in range(0, len(syms), 100):
+            chunk = syms[i:i + 100]
+            d = _yf.download(chunk, period="1y", interval="1d",
+                             auto_adjust=True, progress=False,
+                             group_by="column")
+            c = d["Close"] if "Close" in d else d
+            frames.append(c)
+            time.sleep(1.0)
+        closes = pd.concat(frames, axis=1)
+        bf = _b.compute(closes)
+        bf.index.name = "date"
+        Path("history").mkdir(exist_ok=True)
+        bf.to_csv("history/breadth.csv")
+        print(f"breadth: wrote {len(bf)} rows "
+              f"(%>200d {bf['pct_above_200d'].iloc[-1]:.0f}, "
+              f"A/D {bf['ad_line'].iloc[-1]:+.0f}, "
+              f"NH-NL {bf['nh_nl'].iloc[-1]:+.0f})")
+    except Exception as e:
+        print(f"breadth skipped ({type(e).__name__}: {e}) — gap is honest")
 
-# ---------------------------------------------------- breadth (v4.4) --
-try:
-    from desk import breadth as _b
-    syms = _b.constituents()
-    print(f"breadth: {len(syms)} constituents")
-    import yfinance as _yf
-    frames = []
-    for i in range(0, len(syms), 100):
-        chunk = syms[i:i + 100]
-        d = _yf.download(chunk, period="1y", interval="1d",
-                         auto_adjust=True, progress=False,
-                         group_by="column")
-        c = d["Close"] if "Close" in d else d
-        frames.append(c)
-        time.sleep(1.0)
-    closes = pd.concat(frames, axis=1)
-    bf = _b.compute(closes)
-    bf.index.name = "date"
-    Path("history").mkdir(exist_ok=True)
-    bf.to_csv("history/breadth.csv")
-    print(f"breadth: wrote {len(bf)} rows "
-          f"(%>200d {bf['pct_above_200d'].iloc[-1]:.0f}, "
-          f"A/D {bf['ad_line'].iloc[-1]:+.0f}, "
-          f"NH-NL {bf['nh_nl'].iloc[-1]:+.0f})")
-except Exception as e:
-    print(f"breadth skipped ({type(e).__name__}: {e}) — gap is honest")
+
+if __name__ == "__main__":
+    _rc = main()
+    _breadth_job()
+    raise SystemExit(_rc)
