@@ -15,8 +15,16 @@ theme.header("BOOK II · VALUATION", "Valuation",
 
 # Buffett indicator
 try:
-    w = data.fred_series("WILL5000PR", start="1990-01-01")
     g = data.fred_series("GDP", start="1990-01-01")
+    w = data.fred_series("WILL5000PR", start="1990-01-01")
+    src = "FRED WILL5000PR [T1]"
+    if w.empty:
+        # Wilshire ended its FRED partnership (2024) and the series
+        # died — the TED-spread lesson, live. Yahoo still carries the
+        # index level; proportional, labeled honestly.
+        o = data.ohlc("^W5000", period="max")
+        w = o["Close"] if not o.empty else w
+        src = "Yahoo ^W5000 [T2] — FRED series discontinued"
     if not w.empty and not g.empty:
         g_d = g.reindex(w.index, method="ffill")
         buf = (w / g_d * 100).dropna()
@@ -25,17 +33,24 @@ try:
                                    line=dict(width=1.8,
                                              color=theme.AMBER)))
         theme.plot(theme.style_fig(
-            fig, "BUFFETT INDICATOR — WILSHIRE 5000 / GDP (%)",
+            fig, "BUFFETT INDICATOR — TOTAL MARKET / GDP (%)",
             height=340, right_text=theme.fmt_last(buf),
             right_color=theme.AMBER), use_container_width=True)
-        theme.note("Total market cap over GDP — Buffett's 'best "
-                   "single measure' quote made him its namesake. "
-                   "Historical mean sits far below recent decades; "
-                   "structurally higher margins and global revenues "
-                   "argue the old mean is stale, which is the honest "
-                   "debate to hold, not resolve. [T1 inputs]")
-except Exception:
-    st.warning("FRED unavailable for the Buffett indicator.")
+        theme.note(f"Total market cap over GDP — Buffett's 'best "
+                   f"single measure' line made him its namesake. "
+                   f"Structurally higher margins and global revenues "
+                   f"argue the old mean is stale — the honest debate "
+                   f"to hold, not resolve. Source: {src}.")
+    else:
+        missing = ("GDP (FRED)" if g.empty else "") + \
+                  (" and " if g.empty and w.empty else "") + \
+                  ("Wilshire level (FRED + Yahoo both empty)"
+                   if w.empty else "")
+        st.warning(f"Buffett indicator skipped — no data for "
+                   f"{missing}. Empty panels say why (v4.4.5 house "
+                   f"rule).")
+except Exception as e:
+    st.warning(f"Buffett indicator skipped ({type(e).__name__}).")
 
 # ERP proxy + dividend yield
 try:

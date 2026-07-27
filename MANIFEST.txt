@@ -1,18 +1,15 @@
-Capital Markets Desk — v4.4.4 — fast_info degradation fix (the probes' verdict)
+Capital Markets Desk — v4.4.5 — Buffett fallback · explained empties · strip ordering
 Changed files (full replacements):
 
-desk/flow.py  ::  """Flow layer — the Sector Flow Tracker's automatable half, in-app
-desk/instflow.py  ::  """Institutional flow — where big players can't hide.
+pages/20_Valuation.py  ::  """Valuation (VAL) — the horizon anchor. Valuation is a HORIZON to
+pages/0_Summary.py  ::  """Capital Markets Desk — Summary page (the desk's front door)."""
 desk/theme.py  ::  """Shared visual identity for the Capital Markets Desk — TERMINAL 
 
-PROBE VERDICT (24-Jul strip): fast_info responds but returns NONE
-for shares (flows) and last_price (OI spot) under the yfinance
-version the 4.x requirements installed — both accrual failures, one
-root. FIX: flows ladder gains info[sharesOutstanding] before
-get_shares_full, price falls to history close; oi_snapshot spot
-falls to history close when fast_info yields nothing. Both paths
-unit-tested with fast_info-returns-None mocks (23/23 ETFs resolve;
-OI band filters correctly off history spot). After deploy, reload
-Summary: APP-ACCRUAL should print logged 23 and stored. 4.4.2/4.4.3
-probes remain in place — empties keep naming their causes.
-theme.VERSION 4.4.4.
+BUFFETT INDICATOR: FRED WILL5000PR died when Wilshire ended the
+partnership (2024) — the page now falls to Yahoo ^W5000 [T2],
+labeled, and when BOTH sources are empty the panel SAYS SO instead
+of vanishing (new house rule: empty panels explain themselves —
+silent absence is what cost us this week). STRIP ORDERING: the
+app accrual now runs BEFORE the session counts, so the bot strip
+reads post-accrual state — no more "flows 0 sessions" next to
+"logged 20" from the same page load. theme.VERSION 4.4.5.
