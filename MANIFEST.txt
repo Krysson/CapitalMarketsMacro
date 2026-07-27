@@ -1,16 +1,10 @@
-Capital Markets Desk — v4.5.0 — keyboard-first: type anywhere, the command bar catches it
-Changed file (full replacement):
+Capital Markets Desk — v4.5.1 — keyboard capture, self-reporting
+Changed file: desk/theme.py (full replacement)
 
-desk/theme.py  ::  global key capture injected beside the command bar + 4.5.0
-
-Bloomberg is keyboard-first; now so is the desk. A page-level
-listener catches printable keys whenever you are NOT focused in
-another input, focuses the command bar, smooth-scrolls it into
-view, and lands your keystroke in it — start typing VOL from
-anywhere on any page and hit Enter. '/' always jumps to the bar
-(and selects existing text), the CRM convention. Modifier combos
-and typing inside forms/tickets are untouched. FAIL-SOFT: the
-script no-ops if Streamlit's DOM shifts — it can never break a
-page. Browser-side behavior cannot be tested headless: if a
-keystroke ever fails to land or lands doubled, report it —
-selector or event-timing tweak, one file. theme.VERSION 4.5.0.
+The injector now prints its own status in tiny gray text under the
+command bar: KEYS: armed (green, working) / blocked — sandboxed
+iframe (red — Streamlit denies parent access and the feature is
+infeasible on this platform) / command bar not found (yellow —
+selector fix). Whatever it says IS the diagnosis; report the exact
+wording. If it says armed and typing still does nothing, report
+that too — different fix (event timing). theme.VERSION 4.5.1.
