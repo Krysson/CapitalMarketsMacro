@@ -1,12 +1,16 @@
-Capital Markets Desk — v4.4.9 — last-price line, bar-direction colored
-Changed files (full replacements):
+Capital Markets Desk — v4.5.0 — keyboard-first: type anywhere, the command bar catches it
+Changed file (full replacement):
 
-desk/theme.py  ::  last_price_line() helper + 4.4.9
-pages/6_Quote.py  ::  line on the ticker chart (all D/W/M intervals)
-pages/2_Market.py  ::  line on the SPX trend chart
+desk/theme.py  ::  global key capture injected beside the command bar + 4.5.0
 
-TradingView-style dotted line at the last close with an axis-side
-price label — GREEN if the displayed bar is up vs the prior bar,
-RED if down, and INTERVAL-AWARE because it reads the resampled bars
-on the chart: daily view colors by the day, weekly by the week,
-monthly by the month. Title last-print retained. theme.VERSION 4.4.9.
+Bloomberg is keyboard-first; now so is the desk. A page-level
+listener catches printable keys whenever you are NOT focused in
+another input, focuses the command bar, smooth-scrolls it into
+view, and lands your keystroke in it — start typing VOL from
+anywhere on any page and hit Enter. '/' always jumps to the bar
+(and selects existing text), the CRM convention. Modifier combos
+and typing inside forms/tickets are untouched. FAIL-SOFT: the
+script no-ops if Streamlit's DOM shifts — it can never break a
+page. Browser-side behavior cannot be tested headless: if a
+keystroke ever fails to land or lands doubled, report it —
+selector or event-timing tweak, one file. theme.VERSION 4.5.0.

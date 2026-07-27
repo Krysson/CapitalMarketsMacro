@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.4.9"
+VERSION = "4.5.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -255,6 +255,62 @@ def command_line() -> None:
                 "command", label_visibility="collapsed",
                 placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
             go = c2.form_submit_button("GO", use_container_width=True)
+    # ---- keyboard capture (v4.5): type anywhere -> command bar ----
+    # Bloomberg is keyboard-first; so is the desk. A listener on the
+    # parent page catches printable keys when you are NOT in another
+    # input, focuses the command bar, scrolls it into view, and lands
+    # the character. "/" always jumps to the bar. Fail-soft: if
+    # Streamlit's DOM shifts, this becomes a no-op, never a break.
+    try:
+        import streamlit.components.v1 as _components
+        _components.html("""
+<script>
+(function () {
+  var P = window.parent.document;
+  if (P.__deskKeys) return;
+  P.__deskKeys = true;
+  function bar() {
+    var ins = P.querySelectorAll('input[type="text"]');
+    for (var i = 0; i < ins.length; i++) {
+      var ph = ins[i].getAttribute('placeholder') || '';
+      if (ph.indexOf('COMMAND') === 0) return ins[i];
+    }
+    return null;
+  }
+  function setVal(el, v) {
+    var s = Object.getOwnPropertyDescriptor(
+      window.parent.HTMLInputElement.prototype, 'value').set;
+    s.call(el, v);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  P.addEventListener('keydown', function (e) {
+    try {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var a = P.activeElement;
+      var typing = a && (a.tagName === 'INPUT' ||
+        a.tagName === 'TEXTAREA' || a.isContentEditable ||
+        a.tagName === 'SELECT');
+      var b = bar();
+      if (!b) return;
+      if (e.key === '/' && (!typing || a === b)) {
+        e.preventDefault();
+        b.focus(); b.select();
+        b.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        return;
+      }
+      if (typing) return;
+      if (e.key.length === 1 && .test(e.key)) {
+        e.preventDefault();
+        b.focus();
+        b.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        setVal(b, b.value + e.key);
+      }
+    } catch (err) {}
+  }, true);
+})();
+</script>""", height=0)
+    except Exception:
+        pass
     with right:
         st.toggle("LIVE", key="intraday",
                   help="~60s market-data polling while you watch a "
