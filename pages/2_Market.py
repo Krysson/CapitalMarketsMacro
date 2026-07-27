@@ -167,7 +167,7 @@ with tab_spx:
           new TradingView.widget({
             "container_id": "tv_spx",
             "symbol": "SPX500USD",
-          "studies": ["STD;MA%1Ribbon"],
+          "studies": ["MA%1Ribbon"],
             "interval": "D",
             "timezone": "America/New_York",
             "theme": "dark",
