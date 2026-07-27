@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.5.1"
+VERSION = "4.5.2"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -294,7 +294,10 @@ def command_line() -> None:
       st.call(el, v);
       el.dispatchEvent(new Event('input', { bubbles: true }));
     }
-    P.addEventListener('keydown', function (e) {
+    var n = 0, lastEv = null;
+    function handler(e) {
+      if (e === lastEv) return;
+      lastEv = e;
       try {
         if (e.ctrlKey || e.metaKey || e.altKey) return;
         var a = P.activeElement;
@@ -314,8 +317,18 @@ def command_line() -> None:
           b.scrollIntoView({block:'center', behavior:'smooth'});
           setVal(b, b.value + e.key);
         }
-      } catch (err) {}
+      } catch (err) { say('handler error: ' + err.name, '#E4572E'); }
+    }
+    P.addEventListener('keydown', function (e) {
+      n++; say('armed · heard ' + n + ' (' + e.key + ')', '#3E8E5A');
+      handler(e);
     }, true);
+    var W = window.parent;
+    try { W.addEventListener('keydown', function (e) {
+      n++; say('armed · heard ' + n + ' (win:' + e.key + ')',
+               '#3E8E5A');
+      handler(e);
+    }, true); } catch (e3) {}
     say(bar() ? 'armed' : 'armed — command bar not found on this page',
         bar() ? '#3E8E5A' : '#E7B800');
   } catch (e2) { say('failed: ' + e2.name, '#E4572E'); }

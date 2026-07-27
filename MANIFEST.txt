@@ -1,10 +1,11 @@
-Capital Markets Desk — v4.5.1 — keyboard capture, self-reporting
+Capital Markets Desk — v4.5.2 — keyboard capture: live event echo
 Changed file: desk/theme.py (full replacement)
 
-The injector now prints its own status in tiny gray text under the
-command bar: KEYS: armed (green, working) / blocked — sandboxed
-iframe (red — Streamlit denies parent access and the feature is
-infeasible on this platform) / command bar not found (yellow —
-selector fix). Whatever it says IS the diagnosis; report the exact
-wording. If it says armed and typing still does nothing, report
-that too — different fix (event timing). theme.VERSION 4.5.1.
+The status line now ECHOES every keystroke the listener hears:
+'KEYS: armed · heard 3 (v)'. Deploy, click empty page background
+once, type a letter, watch the line. IF THE COUNTER MOVES but the
+bar stays empty -> events arrive, insertion fails (fixable). IF IT
+NEVER MOVES -> keystrokes aren't reaching the app document; the
+capture surface is wrong and likely unfixable on this platform.
+Also listens on the window as a second surface (deduped). Report
+the exact line text after typing 2-3 keys. theme.VERSION 4.5.2.
