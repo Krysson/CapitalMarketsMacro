@@ -34,7 +34,7 @@ PRIMARY_FEEDS = [
     # v4.7: the fiscal hand — refunding, sanctions (OFAC), debt-limit
     # machinery. Treasury's cash decisions drive the TGA, one of the
     # three variables in the net-liquidity identity. [T1]
-    ("TSY", "https://home.treasury.gov/rss/press.xml"),
+    ("TSY", "https://news.google.com/rss/search?q=site:home.treasury.gov"),
 ]
 def google_url(query: str) -> str:
     """Google News RSS for a search query — free, keyless, durable."""
