@@ -158,6 +158,26 @@ def desk_snapshot() -> str:
         return (f"ETF FLOWS latest session: core equity {eq:+,.0f}mm "
                 f"[T2 accrued]") if not fl.empty else ""
     lines.append(_try(_fl))
+    def _wire():
+        from desk import wire as _w
+        prim, _ = _w.fetch_tape(_w.PRIMARY_FEEDS)
+        out = ["[T1] OFFICIAL WIRE — releases/statements from the "
+               "primary institutions (facts with dates):"]
+        out += [f"  {i['source']}: {i['title'][:110]}"
+                for i in prim[:8]]
+        try:
+            narr, _ = _w.fetch_tape(_w.GOOGLE_NARRATIVE_FEEDS)
+        except Exception:
+            narr = []
+        if narr:
+            out.append("[T3] NARRATIVE WIRE — circulating claims, "
+                       "NOT verified facts; read as sentiment and "
+                       "positioning fuel; flag divergence from desk "
+                       "data (G8):")
+            out += [f"  {i['source']}: {i['title'][:110]}"
+                    for i in narr[:6]]
+        return "\n".join(out) if len(out) > 1 else ""
+    lines.append(_try(_wire))
     lines = [l for l in lines if l]
     return "\n".join(l for l in lines if l)
 

@@ -31,6 +31,10 @@ PRIMARY_FEEDS = [
     ("BLS", "https://www.bls.gov/feed/ppi.rss"),
     ("BLS", "https://www.bls.gov/feed/jolts.rss"),
     ("BEA", "https://apps.bea.gov/rss/rss.xml"),
+    # v4.7: the fiscal hand — refunding, sanctions (OFAC), debt-limit
+    # machinery. Treasury's cash decisions drive the TGA, one of the
+    # three variables in the net-liquidity identity. [T1]
+    ("TSY", "https://home.treasury.gov/rss/press.xml"),
 ]
 def google_url(query: str) -> str:
     """Google News RSS for a search query — free, keyless, durable."""

@@ -158,6 +158,15 @@ if chat and chat[-1]["role"] == "user":
                 safe_chunks = (c.replace("$", "\\$")
                                for c in stream.text_stream)
                 reply = st.write_stream(safe_chunks)
+                try:
+                    from desk import apilog
+                    _u = stream.get_final_message().usage
+                    apilog.log("analyst", _u.input_tokens,
+                               _u.output_tokens)
+                    st.caption(f"receipt: {_u.input_tokens:,} in / "
+                               f"{_u.output_tokens:,} out · logged")
+                except Exception:
+                    pass
             if reply:
                 reply = reply.replace("\\$", "$")   # store clean text
         except Exception as ex:

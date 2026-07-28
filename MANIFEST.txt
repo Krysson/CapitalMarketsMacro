@@ -1,11 +1,21 @@
-Capital Markets Desk — v4.6.2 — palette autofocus
-Changed file: desk/theme.py (full replacement)
+Capital Markets Desk — v4.7.0 — THE WIRE PASS · TREASURY FEED · ^SKEW CLEANUP · API RECEIPTS
+Changed/new files (full replacements; desk/apilog.py is NEW):
 
-st.dialog does not focus its first input and text_input has no
-autofocus param, so a 12-line script inside the dialog finds its
-own input in the parent DOM and focuses it (polling up to 1.5s for
-render). Odds are good: the keyboard saga proved DOM ACCESS works
-from components here — only event listening was blocked. Fail-soft:
-if the extension lockdown blocks this too, behavior reverts to
-exactly today's (one click), never worse. Test: Ctrl+Space, type
-immediately without clicking. theme.VERSION 4.6.2.
+desk/wire.py  ::  TSY press feed joins the official tier [T1]
+desk/analyst.py  ::  snapshot gains two-tier wire ([T1] official / [T3] narrative)
+desk/data.py  ::  ^SKEW removed from boot fetch (Cboe CDN is the source)
+desk/apilog.py  ::  NEW — one receipt line per Claude call (api_usage.csv)
+desk/theme.py  ::  4.7.0
+pages/12_Desk_Analyst.py  ::  receipt after each chat call
+pages/15_Ideas.py  ::  receipt after each funnel run
+
+THE WIRE PASS: the Analyst and Funnel now SEE the wire — Fed, BLS,
+BEA and (new) TREASURY as [T1] facts-with-dates; Google/CNBC/
+MarketWatch as [T3] circulating claims, explicitly framed: read as
+sentiment and positioning fuel, flag divergence from desk data
+(G8). Treasury completes the fiscal-monetary pair — refunding,
+OFAC sanctions, debt-limit: the hand that moves the TGA inside the
+net-liquidity identity. ^SKEW: the wasted rate-limited Yahoo knock
+at every boot is gone. RECEIPTS: every Claude call logs when/
+surface/tokens and prints a one-line receipt under the reply.
+Snapshot verified fail-soft with the network dead. theme.VERSION 4.7.0.

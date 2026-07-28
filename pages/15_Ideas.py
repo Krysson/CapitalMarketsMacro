@@ -485,6 +485,15 @@ else:
                     safe = (c.replace("$", "\\$")
                             for c in stream.text_stream)
                     reply = st.write_stream(safe)
+                try:
+                    from desk import apilog
+                    _u = stream.get_final_message().usage
+                    apilog.log("funnel", _u.input_tokens,
+                               _u.output_tokens)
+                    st.caption(f"receipt: {_u.input_tokens:,} in / "
+                               f"{_u.output_tokens:,} out · logged")
+                except Exception:
+                    pass
             st.session_state["last_ideas"] = reply
         except Exception as ex:
             st.error(f"Generator failed: {type(ex).__name__} — check "

@@ -143,8 +143,7 @@ MARKET_TICKERS = {
     "^VIX": "VIX",
     "^VIX3M": "VIX 3M",
     "^VVIX": "VVIX",
-    "^SKEW": "SKEW",
-    "^MOVE": "MOVE",
+    "^MOVE": "MOVE",   # ^SKEW removed v4.7: Yahoo dropped Cboe indices; desk uses Cboe CDN
 }
 
 
