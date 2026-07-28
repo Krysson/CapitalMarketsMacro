@@ -1,0 +1,10 @@
+[
+  {
+    "symbol": "GOOG",
+    "reason": "Testing if the Wl will persist",
+    "generator": "G2 Crowding",
+    "trigger": "If price crosses the 50 day ma",
+    "added": "2026-07-28",
+    "px_added": 334.0150146484375
+  }
+]
