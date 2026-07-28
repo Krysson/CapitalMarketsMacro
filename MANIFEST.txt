@@ -1,11 +1,14 @@
-Capital Markets Desk — v4.5.2 — keyboard capture: live event echo
+Capital Markets Desk — v4.5.3 — keyboard capture: final form (supersedes 4.5.0-4.5.2)
 Changed file: desk/theme.py (full replacement)
 
-The status line now ECHOES every keystroke the listener hears:
-'KEYS: armed · heard 3 (v)'. Deploy, click empty page background
-once, type a letter, watch the line. IF THE COUNTER MOVES but the
-bar stays empty -> events arrive, insertion fails (fixable). IF IT
-NEVER MOVES -> keystrokes aren't reaching the app document; the
-capture surface is wrong and likely unfixable on this platform.
-Also listens on the window as a second surface (deduped). Report
-the exact line text after typing 2-3 keys. theme.VERSION 4.5.2.
+INVISIBLE: the status line is gone — diagnostics now print to the
+browser console (F12) as [desk keys] lines. DESKTOP-ONLY: touch
+devices skip capture entirely (soft keyboards have nothing to
+capture; the mobile clutter line is gone). RACE FIXED: the bar is
+looked up per keystroke, never only at load. HOTKEY DUEL: capture
+runs in the capture phase with stopPropagation, so typing CRACK no
+longer summons Streamlit's clear-cache dialog on the letter c —
+and c/r remain Streamlit hotkeys only when the desk has no bar to
+feed. DESKTOP TEST: click empty background, type VOL — chars
+should land in the bar; if not, F12 console shows [desk keys]
+lines that name the failure. theme.VERSION 4.5.3.

@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.5.2"
+VERSION = "4.5.3"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -264,76 +264,67 @@ def command_line() -> None:
     try:
         import streamlit.components.v1 as _components
         _components.html("""
-<div id="ks" style="font-family:monospace;font-size:11px;
-     color:#6b6b6b">KEYS: loading…</div>
 <script>
 (function () {
-  var out = document.getElementById('ks');
-  function say(m, c) { out.textContent = 'KEYS: ' + m;
-                       out.style.color = c || '#6b6b6b'; }
-  var P;
-  try { P = window.parent.document; }
-  catch (e) { say('blocked — sandboxed iframe (' + e.name + ')',
-                  '#E4572E'); return; }
-  if (!P) { say('blocked — no parent access', '#E4572E'); return; }
-  try {
-    if (P.__deskKeys) { say('armed (already)', '#3E8E5A'); return; }
-    P.__deskKeys = true;
-    function bar() {
-      var ins = P.querySelectorAll('input[type="text"]');
-      for (var i = 0; i < ins.length; i++) {
-        var ph = ins[i].getAttribute('placeholder') || '';
-        if (ph.indexOf('COMMAND') === 0) return ins[i];
+  function log(m) { try { console.log('[desk keys] ' + m); }
+                    catch (e) {} }
+  var P, W;
+  try { P = window.parent.document; W = window.parent; }
+  catch (e) { log('blocked: ' + e.name); return; }
+  if (!P || P.__deskKeys) return;
+  // desktop-only: a soft keyboard has nothing to capture
+  if ('ontouchstart' in W && W.innerWidth < 900) {
+    log('touch device — capture disabled'); return; }
+  P.__deskKeys = true;
+  function bar() {
+    var ins = P.querySelectorAll('input[type="text"]');
+    for (var i = 0; i < ins.length; i++) {
+      var ph = ins[i].getAttribute('placeholder') || '';
+      if (ph.indexOf('COMMAND') === 0) return ins[i];
+    }
+    return null;
+  }
+  function setVal(el, v) {
+    var w = el.ownerDocument.defaultView;
+    var st = Object.getOwnPropertyDescriptor(
+      w.HTMLInputElement.prototype, 'value').set;
+    st.call(el, v);
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  var lastEv = null;
+  function handler(e) {
+    if (e === lastEv) return;
+    lastEv = e;
+    try {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      var a = P.activeElement;
+      var typing = a && (a.tagName === 'INPUT' ||
+        a.tagName === 'TEXTAREA' || a.isContentEditable ||
+        a.tagName === 'SELECT');
+      var b = bar();
+      if (!b) { log('no bar for key ' + e.key); return; }
+      if (e.key === '/' && (!typing || a === b)) {
+        e.preventDefault(); e.stopPropagation();
+        b.focus(); b.select();
+        b.scrollIntoView({block:'center', behavior:'smooth'});
+        return;
       }
-      return null;
-    }
-    function setVal(el, v) {
-      var w = el.ownerDocument.defaultView;
-      var st = Object.getOwnPropertyDescriptor(
-        w.HTMLInputElement.prototype, 'value').set;
-      st.call(el, v);
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    var n = 0, lastEv = null;
-    function handler(e) {
-      if (e === lastEv) return;
-      lastEv = e;
-      try {
-        if (e.ctrlKey || e.metaKey || e.altKey) return;
-        var a = P.activeElement;
-        var typing = a && (a.tagName === 'INPUT' ||
-          a.tagName === 'TEXTAREA' || a.isContentEditable ||
-          a.tagName === 'SELECT');
-        var b = bar();
-        if (!b) return;
-        if (e.key === '/' && (!typing || a === b)) {
-          e.preventDefault(); b.focus(); b.select();
-          b.scrollIntoView({block:'center', behavior:'smooth'});
-          return;
-        }
-        if (typing) return;
-        if (e.key.length === 1) {
-          e.preventDefault(); b.focus();
-          b.scrollIntoView({block:'center', behavior:'smooth'});
-          setVal(b, b.value + e.key);
-        }
-      } catch (err) { say('handler error: ' + err.name, '#E4572E'); }
-    }
-    P.addEventListener('keydown', function (e) {
-      n++; say('armed · heard ' + n + ' (' + e.key + ')', '#3E8E5A');
-      handler(e);
-    }, true);
-    var W = window.parent;
-    try { W.addEventListener('keydown', function (e) {
-      n++; say('armed · heard ' + n + ' (win:' + e.key + ')',
-               '#3E8E5A');
-      handler(e);
-    }, true); } catch (e3) {}
-    say(bar() ? 'armed' : 'armed — command bar not found on this page',
-        bar() ? '#3E8E5A' : '#E7B800');
-  } catch (e2) { say('failed: ' + e2.name, '#E4572E'); }
+      if (typing) return;
+      if (e.key.length === 1) {
+        e.preventDefault(); e.stopPropagation();
+        b.focus();
+        b.scrollIntoView({block:'center', behavior:'smooth'});
+        setVal(b, b.value + e.key);
+        log('captured ' + e.key);
+      }
+    } catch (err) { log('handler ' + err.name); }
+  }
+  P.addEventListener('keydown', handler, true);
+  try { W.addEventListener('keydown', handler, true); }
+  catch (e3) {}
+  log('armed (console-only diagnostics)');
 })();
-</script>""", height=20)
+</script>""", height=0)
     except Exception:
         pass
     with right:
