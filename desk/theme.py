@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.6.0"
+VERSION = "4.6.1"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -245,7 +245,7 @@ FUNCTIONS_TABLE = """
 """
 
 
-@st.dialog("COMMAND <GO> · CTRL+K")
+@st.dialog("COMMAND <GO> · CTRL+SPACE")
 def _palette() -> None:
     """The palette: / from anywhere, type a mnemonic, Enter."""
     with st.form("palette_form", clear_on_submit=True, border=False):
@@ -290,8 +290,8 @@ def command_line() -> None:
                 placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
             go = c2.form_submit_button("GO", use_container_width=True)
     with right:
-        pal = st.button("⌘K", shortcut="Ctrl+K", key="palette_btn",
-                        help="Command palette — Ctrl+K (Cmd+K on Mac) from anywhere")
+        pal = st.button("PAL", shortcut="Ctrl+Space", key="palette_btn",
+                        help="Command palette — Ctrl+Space from anywhere")
         st.toggle("LIVE", key="intraday",
                   help="~60s market-data polling while you watch a "
                        "session (prices/quotes only — FRED, chains, "
