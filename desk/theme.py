@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.6.1"
+VERSION = "4.6.2"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -253,6 +253,26 @@ def _palette() -> None:
                              placeholder="VOL · MAP · HYG/LQD · "
                                          "TSLA DEBT · HELP")
         psub = st.form_submit_button("GO", use_container_width=True)
+    # Autofocus: st.dialog doesn't focus its first input, so a tiny
+    # script does. DOM access from components provably works here
+    # (the keyboard saga's probes); only event LISTENING was blocked.
+    try:
+        import streamlit.components.v1 as _c
+        _c.html("""<script>
+(function () {
+  var tries = 0;
+  var t = setInterval(function () {
+    try {
+      var d = window.parent.document.querySelector(
+        '[data-testid="stDialog"] input[type="text"]');
+      if (d) { d.focus(); clearInterval(t); }
+    } catch (e) { clearInterval(t); }
+    if (++tries > 30) clearInterval(t);
+  }, 50);
+})();
+</script>""", height=0)
+    except Exception:
+        pass
     if psub and pcmd.strip():
         _dispatch(pcmd)
 

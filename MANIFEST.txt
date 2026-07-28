@@ -1,11 +1,11 @@
-Capital Markets Desk — v4.6.1 — palette chord: Ctrl+Space (Ctrl+K was browser-reserved)
+Capital Markets Desk — v4.6.2 — palette autofocus
 Changed file: desk/theme.py (full replacement)
 
-Ctrl+K never reached the page — Chrome/Edge claim it for the
-address bar. Streamlit's validator rejects punctuation chords
-(Ctrl+/ and Ctrl+. both refused), leaving Ctrl+Space / Alt+K /
-Ctrl+M; Ctrl+Space wins (unclaimed by Chrome/Edge; Ctrl+M mutes
-tabs in some browsers, Alt chords hit menu accelerators). If
-Ctrl+Space collides with an IME or your muscle memory disagrees,
-it is a one-word edit: shortcut='Alt+K' on the palette_btn line.
-theme.VERSION 4.6.1.
+st.dialog does not focus its first input and text_input has no
+autofocus param, so a 12-line script inside the dialog finds its
+own input in the parent DOM and focuses it (polling up to 1.5s for
+render). Odds are good: the keyboard saga proved DOM ACCESS works
+from components here — only event listening was blocked. Fail-soft:
+if the extension lockdown blocks this too, behavior reverts to
+exactly today's (one click), never worse. Test: Ctrl+Space, type
+immediately without clicking. theme.VERSION 4.6.2.
