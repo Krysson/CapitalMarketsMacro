@@ -166,16 +166,23 @@ def desk_snapshot() -> str:
         out += [f"  {i['source']}: {i['title'][:110]}"
                 for i in prim[:8]]
         try:
-            narr, _ = _w.fetch_tape(_w.GOOGLE_NARRATIVE_FEEDS)
-        except Exception:
-            narr = []
+            narr, _ = _w.fetch_tape(_w.NARRATIVE_FEEDS
+                                    + _w.GOOGLE_NARRATIVE_FEEDS)
+        except Exception as e:
+            narr, _err = [], type(e).__name__
+        else:
+            _err = None
         if narr:
             out.append("[T3] NARRATIVE WIRE — circulating claims, "
                        "NOT verified facts; read as sentiment and "
                        "positioning fuel; flag divergence from desk "
                        "data (G8):")
             out += [f"  {i['source']}: {i['title'][:110]}"
-                    for i in narr[:6]]
+                    for i in narr[:8]]
+        else:
+            # empties explain themselves (v4.4.5 house rule)
+            out.append("[T3] NARRATIVE WIRE: unavailable this load"
+                       + (f" ({_err})" if _err else " (feeds empty)"))
         return "\n".join(out) if len(out) > 1 else ""
     lines.append(_try(_wire))
     lines = [l for l in lines if l]

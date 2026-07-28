@@ -1,21 +1,13 @@
-Capital Markets Desk — v4.7.0 — THE WIRE PASS · TREASURY FEED · ^SKEW CLEANUP · API RECEIPTS
-Changed/new files (full replacements; desk/apilog.py is NEW):
+Capital Markets Desk — v4.7.1 — Analyst narrative wire fix
+Changed files: desk/analyst.py, desk/theme.py (full replacements)
 
-desk/wire.py  ::  TSY press feed joins the official tier [T1]
-desk/analyst.py  ::  snapshot gains two-tier wire ([T1] official / [T3] narrative)
-desk/data.py  ::  ^SKEW removed from boot fetch (Cboe CDN is the source)
-desk/apilog.py  ::  NEW — one receipt line per Claude call (api_usage.csv)
-desk/theme.py  ::  4.7.0
-pages/12_Desk_Analyst.py  ::  receipt after each chat call
-pages/15_Ideas.py  ::  receipt after each funnel run
-
-THE WIRE PASS: the Analyst and Funnel now SEE the wire — Fed, BLS,
-BEA and (new) TREASURY as [T1] facts-with-dates; Google/CNBC/
-MarketWatch as [T3] circulating claims, explicitly framed: read as
-sentiment and positioning fuel, flag divergence from desk data
-(G8). Treasury completes the fiscal-monetary pair — refunding,
-OFAC sanctions, debt-limit: the hand that moves the TGA inside the
-net-liquidity identity. ^SKEW: the wasted rate-limited Yahoo knock
-at every boot is gone. RECEIPTS: every Claude call logs when/
-surface/tokens and prints a one-line receipt under the reply.
-Snapshot verified fail-soft with the network dead. theme.VERSION 4.7.0.
+The v4.7.0 snapshot fetched only the Google narrative lanes and
+swallowed any failure silently — the Analyst saw [T1] but not [T3]
+and honestly said so. Now it fetches the SAME set the Wire page
+renders (NARRATIVE_FEEDS + GOOGLE_NARRATIVE_FEEDS, so CNBC/
+MarketWatch/Google lanes incl. G-OIL — the Iran/oil narrative
+lane), takes 8 headlines, and when the narrative tape is genuinely
+unavailable the snapshot SAYS SO with the exception name instead
+of omitting the block (v4.4.5 house rule, applied to the machine's
+own context). Test: ask the Analyst what is on the narrative wire.
+theme.VERSION 4.7.1.
