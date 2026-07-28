@@ -173,7 +173,28 @@ def _empty(cash: float = DEFAULT_CASH) -> dict:
             "positions": [], "log": []}
 
 
+def _remote_book() -> dict | None:
+    try:
+        import requests
+
+        from desk.history import OWNER, REPO
+        r = requests.get(f"https://raw.githubusercontent.com/{OWNER}/"
+                         f"{REPO}/data/state/paper_book.json",
+                         timeout=10)
+        if r.ok:
+            v = json.loads(r.text)
+            if isinstance(v, dict) and "positions" in v:
+                return v
+    except Exception:
+        pass
+    return None
+
+
 def load_book() -> dict:
+    if not STORE.exists():
+        v = _remote_book()
+        if v is not None:
+            STORE.write_text(json.dumps(v, indent=2))
     if STORE.exists():
         try:
             b = json.loads(STORE.read_text())
@@ -187,6 +208,13 @@ def load_book() -> dict:
 
 def save_book(book: dict) -> None:
     STORE.write_text(json.dumps(book, indent=2))
+    try:
+        from desk import publish
+        publish.publish_file("state/paper_book.json",
+                             json.dumps(book, indent=2),
+                             "paper book sync")
+    except Exception:
+        pass
 
 
 def _log(book, msg):

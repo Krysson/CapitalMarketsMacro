@@ -178,7 +178,7 @@ def publish_file(path: str, content: str, msg: str) -> tuple[bool, str]:
     """Generic publisher (v4.4) — morning reads live at reads/."""
     if not enabled():
         return False, "publishing not configured (see README)."
-    return _put(path, content, msg)
+    return _put(path, content, msg, _get_sha(path))
 
 
 def published_files() -> list[dict]:

@@ -18,7 +18,29 @@ from desk import paper
 STORE = Path("watchlist.json")
 
 
+def _remote() -> list | None:
+    try:
+        import requests
+
+        from desk.history import OWNER, REPO
+        r = requests.get(f"https://raw.githubusercontent.com/{OWNER}/"
+                         f"{REPO}/data/state/watchlist.json", timeout=10)
+        if r.ok:
+            v = json.loads(r.text)
+            if isinstance(v, list):
+                return v
+    except Exception:
+        pass
+    return None
+
+
 def load() -> list[dict]:
+    if not STORE.exists():
+        # reboot wiped the local cache — restore from the record
+        v = _remote()
+        if v is not None:
+            STORE.write_text(json.dumps(v, indent=2))
+            return v
     if STORE.exists():
         try:
             w = json.loads(STORE.read_text())
@@ -31,6 +53,15 @@ def load() -> list[dict]:
 
 def save(items: list[dict]) -> None:
     STORE.write_text(json.dumps(items, indent=2))
+    # v4.6 persistence: save-through to the data branch (single-
+    # operator machinery — silently skipped without GH_TOKEN)
+    try:
+        from desk import publish
+        publish.publish_file("state/watchlist.json",
+                             json.dumps(items, indent=2),
+                             "watchlist sync")
+    except Exception:
+        pass
 
 
 def add(items, symbol, reason, generator="", trigger="") -> tuple[bool, str]:

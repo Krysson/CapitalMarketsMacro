@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.5.3"
+VERSION = "4.6.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -154,6 +154,7 @@ _ROUTES = {
     "HISTORY": "pages/14_History.py",
     "GEN": "pages/15_Ideas.py", "IDEA": "pages/15_Ideas.py",
     "IDEAS": "pages/15_Ideas.py",
+    "MAP": "pages/00_Launchpad.py", "CON": "pages/00_Launchpad.py",
     "PAPER": "pages/18_Paper.py", "PB": "pages/18_Paper.py",
     "BOOK": "pages/18_Paper.py",
     "WL": "pages/19_Watchlist.py", "MON": "pages/19_Watchlist.py",
@@ -224,6 +225,7 @@ FUNCTIONS_TABLE = """
 | `HIST` / `TRACK` | Regime History | the dials' live-accrued track record, one git commit per night |
 | `GEN` / `IDEA` | Idea Desk | Ch. 15's eight generators + five gates — passcode-gated |
 | `PAPER` / `PB` | Paper Desk | test what cleared the gates — the ticket refuses orders without a kill switch |
+| `MAP` / `CON` | Launchpad | the constraint map — who is forced, at what level |
 | `WL` / `MON` | Watchlist | the funnel's parking lot — % since added scores your watching |
 | `VAL` | Valuation | horizon anchors — Buffett indicator, ERP proxy; sets the runway, never the timing |
 | `TSLA DEBT` | Quote | bond offerings from SEC EDGAR [T1] |
@@ -243,6 +245,38 @@ FUNCTIONS_TABLE = """
 """
 
 
+@st.dialog("COMMAND <GO> · CTRL+K")
+def _palette() -> None:
+    """The palette: / from anywhere, type a mnemonic, Enter."""
+    with st.form("palette_form", clear_on_submit=True, border=False):
+        pcmd = st.text_input("command", label_visibility="collapsed",
+                             placeholder="VOL · MAP · HYG/LQD · "
+                                         "TSLA DEBT · HELP")
+        psub = st.form_submit_button("GO", use_container_width=True)
+    if psub and pcmd.strip():
+        _dispatch(pcmd)
+
+
+def _dispatch(raw: str) -> None:
+    """Shared router for the bar and the palette."""
+    action = _parse_command(raw.strip().upper())
+    if action[0] == "page":
+        st.switch_page(action[1])
+    elif action[0] == "quote":
+        st.session_state["quote_query"] = action[1:]
+        st.session_state.pop("fred_search", None)
+        st.switch_page("pages/6_Quote.py")
+    elif action[0] == "search":
+        st.session_state["fred_search"] = action[1]
+        st.session_state.pop("quote_query", None)
+        st.switch_page("pages/6_Quote.py")
+    elif action[0] == "unknown":
+        st.markdown(
+            f'<div class="desk-note" style="color:{RED}">{action[1]} '
+            f'— UNKNOWN FUNCTION. TYPE HELP for the list.</div>',
+            unsafe_allow_html=True)
+
+
 def command_line() -> None:
     """Bloomberg-style command field. Renders on every page via header().
     The LIVE toggle (right) flips the market fetchers onto a ~60s cache
@@ -255,84 +289,20 @@ def command_line() -> None:
                 "command", label_visibility="collapsed",
                 placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
             go = c2.form_submit_button("GO", use_container_width=True)
-    # ---- keyboard capture (v4.5): type anywhere -> command bar ----
-    # Bloomberg is keyboard-first; so is the desk. A listener on the
-    # parent page catches printable keys when you are NOT in another
-    # input, focuses the command bar, scrolls it into view, and lands
-    # the character. "/" always jumps to the bar. Fail-soft: if
-    # Streamlit's DOM shifts, this becomes a no-op, never a break.
-    try:
-        import streamlit.components.v1 as _components
-        _components.html("""
-<script>
-(function () {
-  function log(m) { try { console.log('[desk keys] ' + m); }
-                    catch (e) {} }
-  var P, W;
-  try { P = window.parent.document; W = window.parent; }
-  catch (e) { log('blocked: ' + e.name); return; }
-  if (!P || P.__deskKeys) return;
-  // desktop-only: a soft keyboard has nothing to capture
-  if ('ontouchstart' in W && W.innerWidth < 900) {
-    log('touch device — capture disabled'); return; }
-  P.__deskKeys = true;
-  function bar() {
-    var ins = P.querySelectorAll('input[type="text"]');
-    for (var i = 0; i < ins.length; i++) {
-      var ph = ins[i].getAttribute('placeholder') || '';
-      if (ph.indexOf('COMMAND') === 0) return ins[i];
-    }
-    return null;
-  }
-  function setVal(el, v) {
-    var w = el.ownerDocument.defaultView;
-    var st = Object.getOwnPropertyDescriptor(
-      w.HTMLInputElement.prototype, 'value').set;
-    st.call(el, v);
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-  }
-  var lastEv = null;
-  function handler(e) {
-    if (e === lastEv) return;
-    lastEv = e;
-    try {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      var a = P.activeElement;
-      var typing = a && (a.tagName === 'INPUT' ||
-        a.tagName === 'TEXTAREA' || a.isContentEditable ||
-        a.tagName === 'SELECT');
-      var b = bar();
-      if (!b) { log('no bar for key ' + e.key); return; }
-      if (e.key === '/' && (!typing || a === b)) {
-        e.preventDefault(); e.stopPropagation();
-        b.focus(); b.select();
-        b.scrollIntoView({block:'center', behavior:'smooth'});
-        return;
-      }
-      if (typing) return;
-      if (e.key.length === 1) {
-        e.preventDefault(); e.stopPropagation();
-        b.focus();
-        b.scrollIntoView({block:'center', behavior:'smooth'});
-        setVal(b, b.value + e.key);
-        log('captured ' + e.key);
-      }
-    } catch (err) { log('handler ' + err.name); }
-  }
-  P.addEventListener('keydown', handler, true);
-  try { W.addEventListener('keydown', handler, true); }
-  catch (e3) {}
-  log('armed (console-only diagnostics)');
-})();
-</script>""", height=0)
-    except Exception:
-        pass
     with right:
+        pal = st.button("⌘K", shortcut="Ctrl+K", key="palette_btn",
+                        help="Command palette — Ctrl+K (Cmd+K on Mac) from anywhere")
         st.toggle("LIVE", key="intraday",
                   help="~60s market-data polling while you watch a "
                        "session (prices/quotes only — FRED, chains, "
                        "and records keep their schedules). The tape "
                        "streams; the charts poll.")
+    # ---- command palette (v4.6): press "/" anywhere ----
+    # Native st.button shortcut (Streamlit 1.60) + st.dialog: the
+    # keyboard-first goal, achieved with platform machinery instead
+    # of injected JS — no sandbox to escape, nothing to break.
+    if pal:
+        _palette()
     if not (go and cmd.strip()):
         return
     c = cmd.upper().replace("<GO>", "").strip()

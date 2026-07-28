@@ -1,14 +1,25 @@
-Capital Markets Desk — v4.5.3 — keyboard capture: final form (supersedes 4.5.0-4.5.2)
-Changed file: desk/theme.py (full replacement)
+Capital Markets Desk — v4.6.0 — COMMAND PALETTE · MAP · PERSISTENCE · ENTRYPOINT ARMOR
+Changed/new files (full replacements; streamlit_app.py is NEW at repo root):
 
-INVISIBLE: the status line is gone — diagnostics now print to the
-browser console (F12) as [desk keys] lines. DESKTOP-ONLY: touch
-devices skip capture entirely (soft keyboards have nothing to
-capture; the mobile clutter line is gone). RACE FIXED: the bar is
-looked up per keystroke, never only at load. HOTKEY DUEL: capture
-runs in the capture phase with stopPropagation, so typing CRACK no
-longer summons Streamlit's clear-cache dialog on the letter c —
-and c/r remain Streamlit hotkeys only when the desk has no bar to
-feed. DESKTOP TEST: click empty background, type VOL — chars
-should land in the bar; if not, F12 console shows [desk keys]
-lines that name the failure. theme.VERSION 4.5.3.
+desk/theme.py  ::  'Ctrl+K palette (native shortcut + st.dialog) · MAP/CON · 4.6.0
+desk/publish.py  ::  publish_file now sha-aware (updates, not just creates)
+desk/watchlist.py  ::  save-through to data branch, restore on boot
+desk/paper.py  ::  paper book save-through + restore on boot
+streamlit_app.py  ::  NEW — entrypoint wrapper (28-Jul sidebar incident armor)
+
+PALETTE: press Ctrl+K (Cmd+K on Mac) anywhere -> centered dialog -> type VOL / MAP /
+HYG/LQD / TSLA DEBT -> Enter. Native Streamlit 1.60 shortcut param —
+no injected JS, nothing for extensions to break. Known cosmetic wart:
+a confirmed Streamlit bug briefly highlights dialog elements on
+shortcut-open. MAP/CON routes to the Launchpad (constraint map).
+PERSISTENCE: every watchlist/paper mutation commits state/*.json to
+the data branch via GH_TOKEN and restores automatically after any
+reboot — reboots become non-events; books become git-visible
+(public repo: deliberate). Readers without a token keep local-only.
+SUPERSEDES 4.5.3/4.5.4 (this theme.py has no injector). Deploy all
+five; palette test: Ctrl+K from the Macro page. theme.VERSION 4.6.0.
+
+NOTE: '/' as the chord was REJECTED by Streamlit's shortcut
+validator (single chars must be alphanumeric-style tokens), caught
+by the sandbox boot before deploy — Ctrl+K is the industry palette
+standard anyway (Slack, Linear, GitHub).
