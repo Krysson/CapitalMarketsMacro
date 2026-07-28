@@ -1,18 +1,10 @@
-Capital Markets Desk — v4.7.2 — SNAPSHOT ON GLASS · per-source wire balance · import-race fix
-Changed files (full replacements):
+Capital Markets Desk — v4.7.3 — the wire blocks render (src vs source)
+Changed files: desk/analyst.py, desk/theme.py (full replacements)
 
-pages/12_Desk_Analyst.py  ::  WHAT THE ANALYST SEES expander
-desk/analyst.py  ::  per-source cap on [T1] + lazy desk imports
-desk/theme.py  ::  4.7.2
-
-THE INSTRUMENT: an expander above the chat shows the EXACT snapshot
-prepended to every message. Open it, read the wire blocks directly:
-if [T3] NARRATIVE WIRE is present there, the model sees it and any
-denial is an articulation problem (prompt fix); if absent or marked
-unavailable-with-reason, the glass names the code path. No more
-asking the machine what it can see. ALSO: per-source cap on the
-official wire — the TSY Google-mirror's fresh timestamps were
-flooding the newest-first sort, which is why the Analyst saw only
-Treasury; now max 3 per source. AND: analyst.py's module-level desk
-imports moved lazy — the KeyError 'desk.data' traceback in your log
-is a Python 3.14 threaded-import race. theme.VERSION 4.7.2.
+THE GLASS CONVICTED THE CODE: fetch_tape items carry the key 'src';
+the v4.7 wire blocks asked for 'source', raised KeyError on the
+first item, and the fail-soft wrapper silently ate both [T1] and
+[T3] — which is why the snapshot showed only the original PRIMARY
+WIRE line (it reads 'title' only). Key accesses fixed. After
+deploy, open WHAT THE ANALYST SEES: both tiers should render.
+theme.VERSION 4.7.3.

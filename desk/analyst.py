@@ -170,9 +170,9 @@ def desk_snapshot() -> str:
         # FED/BLS/BEA (28-Jul observation)
         _seen = {}
         for i in prim:
-            if _seen.get(i["source"], 0) < 3:
-                out.append(f"  {i['source']}: {i['title'][:110]}")
-                _seen[i["source"]] = _seen.get(i["source"], 0) + 1
+            if _seen.get(i["src"], 0) < 3:
+                out.append(f"  {i['src']}: {i['title'][:110]}")
+                _seen[i["src"]] = _seen.get(i["src"], 0) + 1
             if sum(_seen.values()) >= 10:
                 break
         try:
@@ -187,7 +187,7 @@ def desk_snapshot() -> str:
                        "NOT verified facts; read as sentiment and "
                        "positioning fuel; flag divergence from desk "
                        "data (G8):")
-            out += [f"  {i['source']}: {i['title'][:110]}"
+            out += [f"  {i['src']}: {i['title'][:110]}"
                     for i in narr[:8]]
         else:
             # empties explain themselves (v4.4.5 house rule)
