@@ -14,7 +14,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from desk import data, events, signals
+# v4.7.2: imports moved into functions — Python 3.14 + Streamlit's
+# threaded page runs produced KeyError:'desk.data' import races.
 
 
 def _try(fn, default=""):
@@ -25,6 +26,7 @@ def _try(fn, default=""):
 
 
 def desk_snapshot() -> str:
+    from desk import data, events, signals  # lazy: see note above
     """Every computed reading on the desk, as compact text. Each line is
     independently guarded — a dead feed drops its line, never the chat."""
     lines = [f"DESK SNAPSHOT — {dt.datetime.now(ZoneInfo('America/New_York')):%a %d %b %Y %H:%M} ET",
@@ -163,8 +165,16 @@ def desk_snapshot() -> str:
         prim, _ = _w.fetch_tape(_w.PRIMARY_FEEDS)
         out = ["[T1] OFFICIAL WIRE — releases/statements from the "
                "primary institutions (facts with dates):"]
-        out += [f"  {i['source']}: {i['title'][:110]}"
-                for i in prim[:8]]
+        # per-source cap: the TSY Google-mirror's fresh timestamps
+        # otherwise flood the newest-first sort and crowd out
+        # FED/BLS/BEA (28-Jul observation)
+        _seen = {}
+        for i in prim:
+            if _seen.get(i["source"], 0) < 3:
+                out.append(f"  {i['source']}: {i['title'][:110]}")
+                _seen[i["source"]] = _seen.get(i["source"], 0) + 1
+            if sum(_seen.values()) >= 10:
+                break
         try:
             narr, _ = _w.fetch_tape(_w.NARRATIVE_FEEDS
                                     + _w.GOOGLE_NARRATIVE_FEEDS)

@@ -132,6 +132,13 @@ for msg in st.session_state["analyst_chat"]:
     with st.chat_message(msg["role"]):
         st.markdown(_md_safe(msg["content"]))
 
+with st.expander("WHAT THE ANALYST SEES — the exact snapshot "
+                 "(v4.7.2 transparency)"):
+    st.code(analyst.desk_snapshot(), language=None)
+    st.caption("This text is prepended to every message. If a block "
+               "is missing here, the Analyst genuinely cannot see it "
+               "— the glass is the diagnosis.")
+
 prompt = st.chat_input("Ask the desk…")
 if prompt:
     st.session_state["analyst_chat"].append(

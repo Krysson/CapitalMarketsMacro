@@ -1,13 +1,18 @@
-Capital Markets Desk — v4.7.1 — Analyst narrative wire fix
-Changed files: desk/analyst.py, desk/theme.py (full replacements)
+Capital Markets Desk — v4.7.2 — SNAPSHOT ON GLASS · per-source wire balance · import-race fix
+Changed files (full replacements):
 
-The v4.7.0 snapshot fetched only the Google narrative lanes and
-swallowed any failure silently — the Analyst saw [T1] but not [T3]
-and honestly said so. Now it fetches the SAME set the Wire page
-renders (NARRATIVE_FEEDS + GOOGLE_NARRATIVE_FEEDS, so CNBC/
-MarketWatch/Google lanes incl. G-OIL — the Iran/oil narrative
-lane), takes 8 headlines, and when the narrative tape is genuinely
-unavailable the snapshot SAYS SO with the exception name instead
-of omitting the block (v4.4.5 house rule, applied to the machine's
-own context). Test: ask the Analyst what is on the narrative wire.
-theme.VERSION 4.7.1.
+pages/12_Desk_Analyst.py  ::  WHAT THE ANALYST SEES expander
+desk/analyst.py  ::  per-source cap on [T1] + lazy desk imports
+desk/theme.py  ::  4.7.2
+
+THE INSTRUMENT: an expander above the chat shows the EXACT snapshot
+prepended to every message. Open it, read the wire blocks directly:
+if [T3] NARRATIVE WIRE is present there, the model sees it and any
+denial is an articulation problem (prompt fix); if absent or marked
+unavailable-with-reason, the glass names the code path. No more
+asking the machine what it can see. ALSO: per-source cap on the
+official wire — the TSY Google-mirror's fresh timestamps were
+flooding the newest-first sort, which is why the Analyst saw only
+Treasury; now max 3 per source. AND: analyst.py's module-level desk
+imports moved lazy — the KeyError 'desk.data' traceback in your log
+is a Python 3.14 threaded-import race. theme.VERSION 4.7.2.
