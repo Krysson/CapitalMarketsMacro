@@ -1,5 +1,13 @@
 [
   {
+    "symbol": "CL=F",
+    "reason": "testing if the WL will persist data through a reboot",
+    "generator": "G5 Regime transition",
+    "trigger": "if price crosses the 200 day ma within the next week",
+    "added": "2026-07-28",
+    "px_added": 79.44000244140625
+  },
+  {
     "symbol": "GOOG",
     "reason": "Testing if the Wl will persist",
     "generator": "G2 Crowding",
