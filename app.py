@@ -17,6 +17,7 @@ pg = st.navigation({
                 default=True),
         st.Page("pages/00_Launchpad.py", title="Launchpad"),
         st.Page("pages/0_Daily_Circuit.py", title="Daily Circuit"),
+        st.Page("pages/21_Recap.py", title="Overnight Recap"),
     ],
     "Markets": [
         st.Page("pages/1_Macro.py", title="Macro"),

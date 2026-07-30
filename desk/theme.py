@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.7.3"
+VERSION = "4.8.0"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -155,6 +155,7 @@ _ROUTES = {
     "GEN": "pages/15_Ideas.py", "IDEA": "pages/15_Ideas.py",
     "IDEAS": "pages/15_Ideas.py",
     "MAP": "pages/00_Launchpad.py", "CON": "pages/00_Launchpad.py",
+    "REC": "pages/21_Recap.py", "RECAP": "pages/21_Recap.py",
     "PAPER": "pages/18_Paper.py", "PB": "pages/18_Paper.py",
     "BOOK": "pages/18_Paper.py",
     "WL": "pages/19_Watchlist.py", "MON": "pages/19_Watchlist.py",
@@ -225,6 +226,7 @@ FUNCTIONS_TABLE = """
 | `HIST` / `TRACK` | Regime History | the dials' live-accrued track record, one git commit per night |
 | `GEN` / `IDEA` | Idea Desk | Ch. 15's eight generators + five gates — passcode-gated |
 | `PAPER` / `PB` | Paper Desk | test what cleared the gates — the ticket refuses orders without a kill switch |
+| `REC` / `RECAP` | Overnight Recap | yesterday in English, computed from the record |
 | `MAP` / `CON` | Launchpad | the constraint map — who is forced, at what level |
 | `WL` / `MON` | Watchlist | the funnel's parking lot — % since added scores your watching |
 | `VAL` | Valuation | horizon anchors — Buffett indicator, ERP proxy; sets the runway, never the timing |

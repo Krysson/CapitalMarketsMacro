@@ -1,10 +1,19 @@
-Capital Markets Desk — v4.7.3 — the wire blocks render (src vs source)
-Changed files: desk/analyst.py, desk/theme.py (full replacements)
+Capital Markets Desk — v4.8.0 — THE OVERNIGHT RECAP · prompt refresh · snapshot completeness
+Changed/new files (full replacements; pages/21_Recap.py is NEW):
 
-THE GLASS CONVICTED THE CODE: fetch_tape items carry the key 'src';
-the v4.7 wire blocks asked for 'source', raised KeyError on the
-first item, and the fail-soft wrapper silently ate both [T1] and
-[T3] — which is why the snapshot showed only the original PRIMARY
-WIRE line (it reads 'title' only). Key accesses fixed. After
-deploy, open WHAT THE ANALYST SEES: both tiers should render.
-theme.VERSION 4.7.3.
+pages/21_Recap.py  ::  NEW — REC/RECAP: yesterday in English, computed
+desk/theme.py  ::  REC + RECAP routes, HELP row, 4.8.0
+desk/analyst.py  ::  WIRE DISCIPLINE in the system prompt; snapshot
+  gains BREADTH internals and THE WALLS (computed put/call walls)
+app.py  ::  Overnight Recap in the sidebar (by Daily Circuit)
+
+THE RECAP: deterministic and free — dial flips, tape deltas,
+thresholds crossed (ratio through 1.00 gets a named line), breadth
+deltas, top-3 new OI footprints, balanced official wire; date picker
+reaches any day the record covers (the Time Machine's daily
+edition). NARRATE: passcode-gated, one API call, receipt logged.
+PROMPTS: the Analyst now knows its wire tiers by name, is told to
+flag narrative-vs-data divergence (G8), and will enumerate its
+snapshot sections when asked — Tuesday's confusion, banned.
+SNAPSHOT: breadth + computed walls join the context; the dealer row
+finally answers its own question. theme.VERSION 4.8.0.

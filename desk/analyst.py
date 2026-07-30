@@ -195,6 +195,37 @@ def desk_snapshot() -> str:
                        + (f" ({_err})" if _err else " (feeds empty)"))
         return "\n".join(out) if len(out) > 1 else ""
     lines.append(_try(_wire))
+    def _brd():
+        from desk import breadth as _b
+        d = _b.load()
+        if d.empty:
+            return ""
+        l, p = d.iloc[-1], d.iloc[-2]
+        return (f"BREADTH ({str(d.index[-1])[:10]}): %>200d "
+                f"{l['pct_above_200d']:.0f} · %>50d "
+                f"{l['pct_above_50d']:.0f} · A/D {l['ad_line']:+,.0f} "
+                f"({l['ad_line']-p['ad_line']:+,.0f}/d) · NH-NL "
+                f"{l['nh_nl']:+.0f} [T2 computed]")
+    lines.append(_try(_brd))
+    def _walls():
+        import io as _io
+
+        import requests as _rq
+        from desk.history import OWNER as _o, REPO as _r
+        rr = _rq.get(f"https://raw.githubusercontent.com/{_o}/{_r}"
+                     f"/data/history/oi_latest.csv", timeout=10)
+        d = pd.read_csv(_io.StringIO(rr.text))
+        d = d[d["und"] == "SPY"]
+        ag = d.groupby(["strike", "type"])["oi"].sum().unstack(
+            fill_value=0)
+        spot = float(d["spot"].iloc[0])
+        pw = ag[ag.index < spot]["P"].idxmax()
+        cw = ag[ag.index > spot]["C"].idxmax()
+        return (f"THE WALLS (SPY, desk OI record): put wall "
+                f"{pw:g} ({(pw/spot-1)*100:+.1f}%) · call wall "
+                f"{cw:g} ({(cw/spot-1)*100:+.1f}%) · spot "
+                f"{spot:,.0f} [T1 OI · T3 dealer inference]")
+    lines.append(_try(_walls))
     lines = [l for l in lines if l]
     return "\n".join(l for l in lines if l)
 
@@ -202,7 +233,13 @@ def desk_snapshot() -> str:
 SYSTEM_PROMPT = """You are the Desk Analyst on the Capital Markets Desk — \
 the free, terminal-styled training desk that accompanies a capital-markets \
 book series. Your audience is trainee analysts learning how a real desk \
-reasons in real time. You have the live desk snapshot below; treat its \
+reasons in real time. \
+WIRE DISCIPLINE: your snapshot carries an OFFICIAL WIRE ([T1] — \
+facts with dates from the institutions) and a NARRATIVE WIRE ([T3] \
+— circulating claims; sentiment and positioning fuel, not fact). \
+When giving a read, check whether narrative and desk data DIVERGE \
+(generator G8) and say so. When asked what you can see, enumerate \
+your snapshot's sections by name. You have the live desk snapshot below; treat its \
 readings as [F] facts (delayed free data) and everything you infer from \
 them as [I].
 
