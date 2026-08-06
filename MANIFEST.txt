@@ -1,19 +1,44 @@
-Capital Markets Desk — v4.8.0 — THE OVERNIGHT RECAP · prompt refresh · snapshot completeness
-Changed/new files (full replacements; pages/21_Recap.py is NEW):
+CAPITAL MARKETS DESK — v4.8.2 (BOOT FIX + ROLLED-UP v4.8.1)
+August 5, 2026
 
-pages/21_Recap.py  ::  NEW — REC/RECAP: yesterday in English, computed
-desk/theme.py  ::  REC + RECAP routes, HELP row, 4.8.0
-desk/analyst.py  ::  WIRE DISCIPLINE in the system prompt; snapshot
-  gains BREADTH internals and THE WALLS (computed put/call walls)
-app.py  ::  Overnight Recap in the sidebar (by Daily Circuit)
+Baseline: v4.8.0 on main (v4.8.1 was delivered but never pushed).
+Three replacement files, drop-in at repo paths. One push fixes both
+the boot failure and the Volatility page crash.
 
-THE RECAP: deterministic and free — dial flips, tape deltas,
-thresholds crossed (ratio through 1.00 gets a named line), breadth
-deltas, top-3 new OI footprints, balanced official wire; date picker
-reaches any day the record covers (the Time Machine's daily
-edition). NARRATE: passcode-gated, one API call, receipt logged.
-PROMPTS: the Analyst now knows its wire tiers by name, is told to
-flag narrative-vs-data divergence (G8), and will enumerate its
-snapshot sections when asked — Tuesday's confusion, banned.
-SNAPSHOT: breadth + computed walls join the context; the dealer row
-finally answers its own question. theme.VERSION 4.8.0.
+FILES
+  requirements.txt      — BOOT FIX. Streamlit Cloud reboot resolved
+                          streamlit 1.61.0 + starlette 1.4.0; starlette
+                          1.4 changed GZipResponder's signature (new
+                          required thread_minimum_size kwarg) and
+                          streamlit's gzip middleware doesn't pass it,
+                          so the server 500'd health checks before
+                          app.py ever ran. Added starlette<1.4 (resolver
+                          verified -> 1.3.1 alongside streamlit 1.61.0)
+                          and capped streamlit<1.62. Revisit both lines
+                          together at the next deliberate upgrade.
+  desk/theme.py         — v4.8.1 change re-delivered: theme.plot
+                          translates deprecated use_container_width ->
+                          width='stretch'/'content' centrally; two GO
+                          buttons updated. VERSION bumped to 4.8.2
+                          (missed in the v4.8.1 package — caught here).
+  pages/3_Volatility.py — v4.8.1 change re-delivered: ^SKEW KeyError
+                          fix. Local .get()-guarded labels; ^SKEW routes
+                          through the Cboe CDN series; guarded hist.get
+                          fallback; explained-empty note when the feed
+                          is down.
+
+TESTS (pre-package)
+  pip resolver (dry-run) — streamlit==1.61.0 + starlette<1.4 resolves
+                           cleanly to starlette 1.3.1: PASS
+  ast.parse              — theme.py, 3_Volatility.py: PASS
+  content fingerprints   — SKEW fix, kwarg translation, VERSION 4.8.2
+                           present in packaged files: PASS
+  boot (real-data mocks) — carried from v4.8.1 (unchanged logic):
+                           kwarg translation paths, SKEW->Cboe routing,
+                           empty-feed path, hist.get guard: PASS
+
+NOTE
+  Root cause of the outage was unbounded version ranges resolving on
+  every reboot. Full-stack pinning (pandas/numpy/etc.) deliberately
+  NOT done here — hotfix touches only the broken pair. A pinned
+  lockfile discussion queues under v4.9.0 cleanups if wanted.

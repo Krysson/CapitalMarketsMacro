@@ -16,7 +16,7 @@ import streamlit as st
 
 from desk import data as _data
 
-VERSION = "4.8.0"
+VERSION = "4.8.2"
 
 INK = "#000000"
 PANEL = "#0D0D0D"
@@ -254,7 +254,7 @@ def _palette() -> None:
         pcmd = st.text_input("command", label_visibility="collapsed",
                              placeholder="VOL · MAP · HYG/LQD · "
                                          "TSLA DEBT · HELP")
-        psub = st.form_submit_button("GO", use_container_width=True)
+        psub = st.form_submit_button("GO", width="stretch")
     # Autofocus: st.dialog doesn't focus its first input, so a tiny
     # script does. DOM access from components provably works here
     # (the keyboard saga's probes); only event LISTENING was blocked.
@@ -310,7 +310,7 @@ def command_line() -> None:
             cmd = c1.text_input(
                 "command", label_visibility="collapsed",
                 placeholder="COMMAND <GO>   ·   TYPE HELP FOR FUNCTIONS")
-            go = c2.form_submit_button("GO", use_container_width=True)
+            go = c2.form_submit_button("GO", width="stretch")
     with right:
         pal = st.button("PAL", shortcut="Ctrl+Space", key="palette_btn",
                         help="Command palette — Ctrl+Space from anywhere")
@@ -539,8 +539,14 @@ def fmt_last(series) -> str:
 
 
 def plot(fig: go.Figure, **kwargs) -> None:
-    """House renderer: full width + mobile config on every chart."""
-    kwargs.setdefault("use_container_width", True)
+    """House renderer: full width + mobile config on every chart.
+
+    v4.8.1: Streamlit 1.60 deprecated use_container_width (removal
+    announced for after 2025-12-31). Pages still pass it; translate
+    here so every chart stays quiet and keeps working when the kwarg
+    is finally dropped. width='stretch' == old True, 'content' == False."""
+    ucw = kwargs.pop("use_container_width", True)
+    kwargs.setdefault("width", "stretch" if ucw else "content")
     cfg = {**_PLOTLY_CFG, **kwargs.pop("config", {})}
     st.plotly_chart(fig, config=cfg, **kwargs)
 

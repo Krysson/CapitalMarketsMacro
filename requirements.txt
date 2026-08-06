@@ -1,4 +1,10 @@
-streamlit>=1.36
+streamlit>=1.36,<1.62
+# starlette 1.4.0 changed GZipResponder's signature (new required
+# thread_minimum_size kwarg); streamlit's gzip middleware (<=1.61)
+# doesn't pass it and the server 500s before app.py ever runs.
+# Pin below 1.4 until a streamlit release supports it, then revisit
+# both lines together. (2026-08-05 boot failure, v4.8.2)
+starlette<1.4
 pandas>=2.0
 plotly>=5.20
 yfinance>=0.2.55

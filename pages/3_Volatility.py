@@ -291,19 +291,39 @@ SERIES_NOTES = {
              "good context tool — read it alongside VIX and PCC, never "
              "alone.",
 }
+# v4.8.1: ^SKEW left MARKET_TICKERS in v4.7 (Yahoo dropped Cboe
+# indices) but this picker still offered it — the label lookup raised
+# KeyError and data.ohlc would have come back empty anyway. SKEW's
+# daily series rides the Cboe CDN (skew_cb, fetched at the top of this
+# page); labels are local and .get()-guarded so a future list edit
+# degrades the label, never the page.
+SERIES_LABELS = {"^VIX": "VIX", "^VVIX": "VVIX",
+                 "^MOVE": "MOVE", "^SKEW": "SKEW (Cboe)"}
 pick = st.selectbox("Series", ["^VIX", "^VVIX", "^MOVE", "^SKEW"],
-                    format_func=lambda t: data.MARKET_TICKERS[t])
-series_ohlc = data.ohlc(pick, period="2y")
+                    format_func=lambda t: SERIES_LABELS.get(
+                        t, data.MARKET_TICKERS.get(t, t.lstrip("^"))))
+series_ohlc = (pd.DataFrame() if pick == "^SKEW"
+               else data.ohlc(pick, period="2y"))
 fig = go.Figure()
+have_series = True
 if not series_ohlc.empty and series_ohlc["Open"].notna().sum() > 50:
-    fig.add_trace(theme.candles(series_ohlc, data.MARKET_TICKERS[pick]))
+    fig.add_trace(theme.candles(series_ohlc, SERIES_LABELS.get(pick, pick)))
     fig.update_layout(xaxis_rangeslider_visible=False)
     height = 360
 else:
-    s = hist[pick].dropna()
-    fig.add_scatter(x=s.index, y=s.values, mode="lines",
-                    line=dict(width=1.6, color=theme.BLUE))
+    s = skew_cb if pick == "^SKEW" else hist.get(pick)
+    s = s.dropna() if s is not None else pd.Series(dtype=float)
+    s = data.tail_years(s, 2)
+    have_series = not s.empty
+    if have_series:
+        fig.add_scatter(x=s.index, y=s.values, mode="lines",
+                        line=dict(width=1.6, color=theme.BLUE))
     height = 300
-theme.plot(theme.style_fig(fig, height=height, unified_hover=False),
-                use_container_width=True)
-theme.note(SERIES_NOTES[pick])
+if have_series:
+    theme.plot(theme.style_fig(fig, height=height, unified_hover=False),
+               use_container_width=True)
+    theme.note(SERIES_NOTES[pick])
+else:
+    theme.note(f"{SERIES_LABELS.get(pick, pick)} series unavailable — "
+               "source feed unreachable (Cboe CDN for SKEW, Yahoo for "
+               "the rest). The chart returns when the feed does.")
