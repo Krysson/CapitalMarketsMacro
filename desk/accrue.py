@@ -121,7 +121,14 @@ def run() -> str:
                      if not latest.empty and "date" in latest
                      else None)
         today = dt.date.today().isoformat()
-        if snap_date != today:
+        # v4.9.2: a record stored degraded at 7am (zero-OI feed) can
+        # heal later the same day — OI often populates mid-morning.
+        # Retry while the stored record is degraded; the zero-OI
+        # guard below still refuses to replace healthy with zeros.
+        latest_deg = (not latest.empty and "oi" in latest and float(
+            pd.to_numeric(latest["oi"], errors="coerce")
+            .fillna(0).sum()) <= 0)
+        if snap_date != today or latest_deg:
             snap = _inst.oi_snapshot(today)
             if snap is not None and not snap.empty and float(
                     pd.to_numeric(snap["oi"], errors="coerce")
@@ -137,7 +144,10 @@ def run() -> str:
                 snap = None
             if snap is not None and not snap.empty:
                 fps = pd.DataFrame()
-                if not latest.empty:
+                # v4.9.2: never diff against a degraded (zero-OI)
+                # prior record — oi_prev=0 would mint the entire OI
+                # as a fake overnight footprint.
+                if not latest.empty and not latest_deg:
                     fps = _inst.footprints(latest, snap)
                 sha = _pub._get_sha("history/oi_latest.csv")
                 ok, _ = _pub._put("history/oi_latest.csv",

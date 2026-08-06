@@ -1,54 +1,65 @@
-CAPITAL MARKETS DESK — v4.9.1 (THE MEASUREMENT PASS)
+CAPITAL MARKETS DESK — v4.9.2 (THE HONEST ZERO)
 August 6, 2026
 
-Baseline: v4.9.0 — APPLY v4.9.0 FIRST. Four replacement files,
-drop-in at repo paths. No new feeds; same data, better yardsticks.
+Baseline: v4.9.1 — apply 4.9.0 → 4.9.1 → this, in order. Four
+replacement files, drop-in at repo paths. This is the pre-freeze
+fix pass from live QA of 4.9.1.
+
+ROOT CAUSE FIXED — STATIC SHARES SOURCE
+  Ten accrued sessions showed byte-identical shares outstanding for
+  every fund (SPY at exactly 917,782,016 for two weeks — impossible;
+  SPY creates/redeems daily). Yahoo's quote-endpoint shares figure
+  is a rarely-refreshed DISPLAY number, and the snapshot ladder
+  treated its answer as success, so the fundamentals timeseries that
+  actually updates (get_shares_full) never ran. Every flow has been
+  structurally $0 since accrual start — the blank charts, the
+  "$+0mm no rotation signature" line, and "GLD +0.00%" were
+  arithmetic on a dead input.
 
 FILES
-  desk/flow.py       — normalize_flows(): latest session per fund as
-                       % of prior-day AUM, 5-session rolling sum, and
-                       a z-score vs the fund's OWN accrued record
-                       (honest small-n rule: no z until 10 sessions,
-                       n printed). shortvol_history() +
-                       shortvol_percentiles(): today's short ratio as
-                       a percentile of each symbol's own record.
-  desk/accrue.py     — accrues history/shortvol.csv (date, symbol,
-                       short_ratio) one session per day, deduped by
-                       file date, reusing finra_short()'s cache —
-                       the accrue-your-own pattern from flows/
-                       signals, because FINRA has no history
-                       endpoint. Includes v4.9.0's zero-OI guard.
-  pages/17_Flow.py   — FLOW SCOREBOARD strip (4 chips: loudest ETF
-                       flow vs itself, highest short ratio + own-
-                       record percentile, heaviest dark-pool name,
-                       footprint intensity percentile — all from
-                       calls the page already caches; each fails
-                       soft to an em-dash with a named reason).
-                       Measurement-pass table in the ETF section
-                       (%AUM / 5-day / z / n). Short-vol section
-                       gains a VS OWN RECORD readout with honest
-                       record-building notes until n=10. ATS table
-                       gains a vs-4-week-average column. Footprints
-                       gain Notional $mm, % from spot, and a CAMP
-                       flag (same contract on 2+ of last 5 record
-                       days).
-  desk/theme.py      — VERSION 4.9.1.
+  desk/flow.py      — snapshot ladder INVERTED: get_shares_full
+                      (the series Yahoo updates) runs first; quote
+                      figures are the fallback. New flows_static():
+                      record old enough to judge + every flow
+                      exactly zero = dead input, not a quiet market.
+  desk/accrue.py    — OI same-day HEAL: a record stored degraded at
+                      7am retries on later loads (OI often populates
+                      mid-morning); the zero-OI guard still refuses
+                      to replace healthy with zeros. Footprint diffs
+                      are BLOCKED against a degraded prior record —
+                      oi_prev=0 would mint the entire OI as a fake
+                      overnight footprint.
+  pages/17_Flow.py  — TWO-COLUMN REFLOW: row 1 = rotation monitor |
+                      short-volume; row 2 = dark venues | ETF flow
+                      record; scoreboard, footprints, and the expiry
+                      cut stay full-width. Scoreboard gains its
+                      explanation note (all four chips defined, incl.
+                      what "record n=X" means). ETF section now
+                      detects the static-source state and replaces
+                      blank charts and misleading $0 readouts with a
+                      named SOURCE DEGRADED explanation + the
+                      post-mortem note; scoreboard ETF chip shows
+                      "source static" in red. z-scores render as
+                      +x.x or an em-dash, never "None".
+  desk/theme.py     — VERSION 4.9.2.
 
 TESTS (pre-package)
-  ast + imports      — 4 files under streamlit 1.61: PASS
-  measurement suite  — %AUM arithmetic exact vs hand-computed AUM,
-    z present at n=15 / withheld at n<10, small-fund-outranks-SPY
-    ordering, roll5 sum, shortvol percentile exact rank + NaN under
-    10 obs + empty-history safety, ATS vs-4wk +50% exact, footprint
-    notional $2.8bn / moneyness -9.1% exact, CAMP fires on a 3-day
-    line and stays off a one-shot, accrual date-dedup: ALL PASS
+  ast + imports — 4 files: PASS. flows_static returns TRUE on the
+  ACTUAL dead flows.csv from the data branch, FALSE on the same
+  record with one real print added, FALSE on thin/empty. Ladder
+  order verified at the call-site level (get_shares_full precedes
+  fast_info). Heal retry fires on the actual degraded 06-Aug OI
+  record, not on healthy same-day; degraded-prev footprint diff
+  blocked. z formatting exact. Reflow verified on unique anchors
+  with every v4.9.1 feature (scoreboard, measurement pass, vs-4wk,
+  CAMP, expiry cut, VS OWN RECORD) intact post-indent.
 
-NOTES
-  Percentile/z views are honest about thin records by design — the
-  short-ratio record starts accruing with the first app load after
-  deploy, and z-scores on ETF flows arrive when the flow record
-  (started 23-Jul) reaches 10 sessions per fund. Expect "record
-  n=X" subtitles for the first stretch; that is the feature working,
-  not failing. FINRA short INTEREST (the settled twice-monthly
-  stock figure) is deliberately NOT in this release — parked to
-  v4.10.0 pending live endpoint verification.
+WHAT TO EXPECT ON DEPLOY
+  Flow page: SOURCE DEGRADED panel where the blank charts were —
+  correct until the first accrual with the fixed ladder writes a
+  session with real share deltas; flows then compute forward from
+  that session (the zero rows stay as an honest scar). Vol page:
+  WALLS WITHHELD stands until a healthy OI snapshot; with the heal
+  fix, that can now happen the SAME DAY on any app load once Yahoo
+  populates OI. If the walls are back by your afternoon check, the
+  heal worked.

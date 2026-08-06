@@ -80,9 +80,25 @@ def snapshot_rows(today: str) -> list[dict]:
         if i:
             time.sleep(0.35)              # pace Yahoo
         sh = px = None
+        # v4.9.2 — LADDER INVERTED. The 06-Aug post-mortem: ten
+        # sessions of byte-identical shares (SPY 917,782,016 for two
+        # weeks) because fast_info/quoteSummary serve a rarely-
+        # refreshed DISPLAY figure and "succeed" with it, so the
+        # fundamentals timeseries below never ran. get_shares_full is
+        # the series Yahoo actually updates — it goes FIRST now; the
+        # quote figures are the fallback, not the primary.
+        try:
+            shf = yf.Ticker(t).get_shares_full(
+                start=pd.Timestamp.now() - pd.Timedelta(days=30))
+            if shf is not None and len(shf):
+                sh = float(shf.iloc[-1])
+        except Exception:
+            pass
         try:
             fi = yf.Ticker(t).fast_info
-            sh, px = fi.get("shares"), fi.get("last_price")
+            if not sh:
+                sh = fi.get("shares")
+            px = fi.get("last_price")
             if sh and px:
                 n_fast += 1
         except Exception:
@@ -380,3 +396,14 @@ def shortvol_percentiles(hist: pd.DataFrame,
         rows.append({"Symbol": s, "short_ratio": r["short_ratio"],
                      "pctl": pct, "n_obs": len(h)})
     return pd.DataFrame(rows)
+
+
+def flows_static(flows: pd.DataFrame, min_sessions: int = 3) -> bool:
+    """Pure. True when the record is old enough to judge and EVERY
+    flow in it is exactly zero — the signature of a static shares
+    source, not of a market where nobody created or redeemed
+    anything for weeks. Real records have noise; dead inputs have
+    silence."""
+    if flows.empty or flows["date"].nunique() < min_sessions:
+        return False
+    return bool((flows["flow_mm"] == 0).all())
