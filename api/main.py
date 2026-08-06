@@ -13,7 +13,7 @@ import datetime as dt
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI(title="Capital Markets Desk API", version="5.0.0-alpha.0")
+app = FastAPI(title="Capital Markets Desk API", version="5.0.0-alpha.1")
 
 # open CORS for Phase 0 so the lovable preview / Vercel page can
 # call it; Phase 4 locks this to the real origins.
@@ -21,13 +21,32 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["GET"], allow_headers=["*"])
 
 
-def _attempt(fn):
-    """Run one probe leg; never raise. -> {ok, detail | error}."""
+def _attempt(fn, tries: int = 3):
+    """Run one probe leg with backoff; never raise.
+    -> {ok, attempts, detail | error}. v2: a shared-IP rate limit
+    (Render free egresses through a pool Yahoo throttles) can pass
+    on a later try — one attempt can't tell PARTIAL from NO-GO."""
+    import time
+    last = None
+    for i in range(tries):
+        try:
+            return {"ok": True, "attempts": i + 1, "detail": fn()}
+        except Exception as e:
+            last = f"{type(e).__name__}: {str(e)[:160]}"
+            if i < tries - 1:
+                time.sleep(3 * (i + 1))
+    return {"ok": False, "attempts": tries, "error": last}
+
+
+def _session():
+    """Browser-impersonated HTTP session (curl_cffi). The Streamlit
+    app's fetches succeed partly on the strength of this; give the
+    probe the same footing. Falls back to yfinance's default."""
     try:
-        return {"ok": True, "detail": fn()}
-    except Exception as e:
-        return {"ok": False,
-                "error": f"{type(e).__name__}: {str(e)[:160]}"}
+        from curl_cffi import requests as _cf
+        return _cf.Session(impersonate="chrome")
+    except Exception:
+        return None
 
 
 @app.get("/")
@@ -79,8 +98,9 @@ def probe():
     import pandas as pd
     import yfinance as yf
 
-    tk = yf.Ticker("SPY")
-    legs = {}
+    sess = _session()
+    tk = yf.Ticker("SPY", session=sess) if sess else yf.Ticker("SPY")
+    legs = {"impersonated_session": bool(sess)}
 
     def chart():
         h = tk.history(period="5d", auto_adjust=True)
@@ -144,7 +164,10 @@ def probe():
                 "serves live" if (q_ok and o_ok) else
                 "PARTIAL — chart pipe works; quotes/chains route "
                 "through the accrual+cache pattern" if ch_ok else
-                "NO-GO — Yahoo dark from this host; all market data "
-                "rides the data branch / Supabase"),
+                "NO-GO/THROTTLED — nothing answered even with "
+                "retries + impersonation; if errors say RateLimit "
+                "it's the shared-IP pool, not a block — re-probe at "
+                "a different hour before treating this as final; "
+                "either way v5 serves from the record first"),
         },
     }
