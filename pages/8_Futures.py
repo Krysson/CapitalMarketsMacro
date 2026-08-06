@@ -67,7 +67,7 @@ st.dataframe(
     ).format({"Last": "{:,.2f}", **{c: "{:+.2f}" for c in pct_cols}},
              na_rep="—"),
     hide_index=True, height=min(700, 40 + 36 * len(df)),
-    use_container_width=True)
+    width="stretch")
 theme.note("Read complexes, not single names. Energy + copper rising "
            "together = real demand (growth confirmation for the Circuit); "
            "gold alone rising = a hedge bid, not an economy. Grains and "
@@ -96,7 +96,7 @@ if not ohlc.empty:
         theme.style_fig(fig, f"{dict(all_contracts)[pick]} ({pick}) — "
                              f"1Y FRONT-MONTH", height=380,
                         unified_hover=False),
-        use_container_width=True)
+        width="stretch")
     theme.note("Continuous front-month: the chained series rolls from "
                "contract to contract, so long-run levels carry roll "
                "artifacts. Trust the shape and the trend; don't compute "
@@ -133,7 +133,7 @@ if st.session_state.get("fut_curve_root"):
         theme.plot(
             theme.style_fig(fig, f"{CURVE_NAMES[r]} — LISTED MONTHS",
                             height=300),
-            use_container_width=True)
+            width="stretch")
         st.markdown(
             f'<div style="font-family:\'IBM Plex Mono\',monospace;'
             f'color:{color}">{shape} — back month '

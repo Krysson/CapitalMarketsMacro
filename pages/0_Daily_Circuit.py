@@ -98,7 +98,7 @@ else:
                                line=dict(width=1.8, color=theme.PURPLE)))
     fig.add_hline(y=1.0, line=dict(color=theme.RED, width=1, dash="dash"))
     theme.plot(theme.style_fig(fig, "VIX / VIX3M — 6 months",
-                                    height=240), use_container_width=True)
+                                    height=240), width="stretch")
     theme.note("The tripwire, not a timing tool. Crosses above 1.0 mark "
                "regime shifts; how long it STAYS above matters more than "
                "the cross itself. Full complex (VVIX, MOVE, SKEW, the "
@@ -130,7 +130,7 @@ else:
     fig.add_scatter(x=ma50.index, y=ma50.values, mode="lines", name="50d MA",
                     line=dict(width=1, color=theme.MUTED, dash="dot"))
     theme.plot(theme.style_fig(fig, "RSP / SPY — 6 months",
-                                    height=240), use_container_width=True)
+                                    height=240), width="stretch")
     theme.note("Breadth proxy — narrow leadership can persist far longer "
                "than feels reasonable, so this is a fragility read, not a "
                "sell signal. New index highs WITH a falling ratio = the "
@@ -241,7 +241,7 @@ with st.form("mread", clear_on_submit=True):
         placeholder="What matters today, what I'd do about it, and "
                     "what would change my mind by the close.")
     _go = st.form_submit_button("PUBLISH TO THE RECORD",
-                                use_container_width=True)
+                                width="stretch")
 if _go and _read.strip():
     import datetime as _dt
     _d0 = _dt.date.today().isoformat()

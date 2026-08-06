@@ -71,7 +71,7 @@ else:
                                  "vs SPY 1M": "{:+.1f}",
                                  "Vol vs 20d": "{:.2f}×"}, na_rep="—"),
                 subset=["1W %", "1M %", "vs SPY 1M"]),
-            use_container_width=True, height=min(560, 60 + 35 * len(df)))
+            width="stretch", height=min(560, 60 + 35 * len(df)))
         lead, lag = df.index[0], df.index[-1]
         theme.readout(
             theme.AMBER,
@@ -105,7 +105,7 @@ else:
         .style.format({"ShortVolume": "{:,.0f}",
                        "TotalVolume": "{:,.0f}",
                        "short_ratio": "{:.1%}"}),
-        use_container_width=True, height=min(560, 60 + 35 * len(fs)))
+        width="stretch", height=min(560, 60 + 35 * len(fs)))
     hi = fs.iloc[0]
     theme.readout(
         theme.AMBER,
@@ -153,7 +153,7 @@ else:
         .style.format({"ATS shares": "{:,.0f}",
                        "ATS trades": "{:,.0f}",
                        "Shares/trade": "{:,.0f}"}, na_rep="—"),
-        use_container_width=True,
+        width="stretch",
         height=min(560, 60 + 35 * len(last)))
     conc = instflow.ats_concentration(ats)
     if not conc.empty:
@@ -217,7 +217,7 @@ else:
         theme.plot(theme.style_fig(
             fig, f"NET FLOW BY GROUP — {last_day:%d-%b-%Y} ($mm)",
             height=280, unified_hover=False),
-            use_container_width=True)
+            width="stretch")
         eq = float(gd.reindex(["Sector", "Broad"])["net_mm"].sum())
         fi = (float(gd.loc["Fixed Income", "net_mm"])
               if "Fixed Income" in gd.index else 0.0)
@@ -236,7 +236,7 @@ else:
         st.dataframe(
             theme.neg_red(stk.set_index("ticker").style.format(
                 {"total_mm": "{:+,.0f}", "days": "{:d}"})),
-            use_container_width=True)
+            width="stretch")
         theme.readout(
             theme.AMBER,
             f"LIVE STREAKS: {len(stk)} — ≥3 one-sided sessions and "
@@ -258,7 +258,7 @@ else:
                              name=col, line=dict(width=1.6, color=colr))
     theme.plot(theme.style_fig(
         fig2, "CUMULATIVE NET FLOW SINCE ACCRUAL START ($mm)",
-        height=320), use_container_width=True)
+        height=320), width="stretch")
 theme.note("Flow = Δ(shares outstanding) × price — creations and "
            "redemptions, the same arithmetic the paid aggregators "
            "sell. [T2]: Yahoo's shares figure can lag a day, which is "
@@ -304,7 +304,7 @@ else:
                          "d_oi": "Δ OI", "prev_volume": "Day's volume"})
         .style.format({"OI before": "{:,}", "OI after": "{:,}",
                        "Δ OI": "{:+,}", "Day's volume": "{:,}"}),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
         height=min(500, 40 + 36 * len(recent)))
     big = recent.iloc[0]
     theme.readout(
@@ -321,6 +321,50 @@ else:
                "row is on the data branch, timestamped before whatever "
                "happens next. ≥20k-contract jumps also fire a nightly "
                "desk-alert issue.")
+
+# ---- v4.9.0: flow by expiry — a display cut of the same record ----
+theme.panel_bar("Footprints by expiry",
+                "same record · grouped by date the bet expires")
+try:
+    if fp.empty:
+        theme.note("Appears with the footprint record — nothing to "
+                   "group yet.")
+    else:
+        _last = fp["date"].max()
+        _cut = fp[fp["date"] == _last].copy()
+        _byx = (_cut.groupby(["und", "expiry", "type"])["d_oi"].sum()
+                .unstack(fill_value=0).reset_index())
+        for _c in ("C", "P"):
+            if _c not in _byx:
+                _byx[_c] = 0
+        _byx["net"] = _byx["C"] + _byx["P"]
+        _byx = _byx.sort_values("net", ascending=False)
+        st.dataframe(
+            _byx.rename(columns={"und": "Und", "expiry": "Expiry",
+                                 "C": "Δ OI calls", "P": "Δ OI puts",
+                                 "net": "Δ OI total"})
+            .style.format({"Δ OI calls": "{:+,}", "Δ OI puts": "{:+,}",
+                           "Δ OI total": "{:+,}"}),
+            hide_index=True, width="stretch",
+            height=min(420, 40 + 36 * len(_byx)))
+        _top = _byx.iloc[0]
+        theme.readout(
+            theme.AMBER,
+            f"CONCENTRATION: {_top['und']} {_top['expiry']} took "
+            f"{int(_top['net']):+,} contracts of overnight OI "
+            f"({str(_last)[:10]} diff). WHERE on the calendar size "
+            f"lands is a statement about WHEN the bettor expects to "
+            f"be right — same-week loading reads event-driven; "
+            f"out-months read positional.")
+        theme.note("A display cut of the footprint record above — no "
+                   "new feed, same [T1] OI diffs, grouped by the date "
+                   "the bet expires instead of by contract. Pairs "
+                   "with the OpEx calendar (Calendar page): size "
+                   "landing ON an expiration is pin-and-roll "
+                   "mechanics; size landing past one is conviction "
+                   "with a longer clock.")
+except Exception as _e:
+    theme.note(f"Expiry cut unavailable ({type(_e).__name__}).")
 
 st.page_link("pages/15_Ideas.py",
              label="Streak forming? Run it through the eight "

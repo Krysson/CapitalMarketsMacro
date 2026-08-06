@@ -53,7 +53,7 @@ theme.plot(theme.style_fig(
                 "  · delayed"),
     right_color=(theme.GREEN if spx.iloc[-1] >= spx.iloc[-2]
                  else theme.RED)),
-    use_container_width=True)
+    width="stretch")
 
 ma200 = spx.rolling(200).mean().iloc[-1]
 dist = (spx.iloc[-1] / ma200 - 1) * 100
@@ -81,7 +81,7 @@ def ratio_chart(num, den, title, note, up_txt, dn_txt):
     fig.add_scatter(x=ma50.index, y=ma50.values, mode="lines", name="50d MA",
                     line=dict(width=1, color=theme.MUTED, dash="dot"))
     theme.plot(theme.style_fig(fig, title, height=290),
-                    use_container_width=True)
+                    width="stretch")
     if len(r) > 21:
         d = (r.iloc[-1] / r.iloc[-22] - 1) * 100
         theme.readout(theme.GREEN if d > 0 else theme.AMBER,
@@ -124,7 +124,7 @@ if sel:
                                       color=palette[i % len(palette)]))
     fig.update_layout(yaxis_title="% change over lookback")
     theme.plot(theme.style_fig(fig, height=380),
-                    use_container_width=True)
+                    width="stretch")
     theme.note("Confirmation check: does the rest of the world agree with "
                "equities? Stocks rising alone — while copper, credit, and "
                "crypto sag — is a divergence worth a Notebook entry. Broad "
@@ -232,7 +232,7 @@ else:
             figb, "% OF MEMBERS ABOVE 200D / 50D", height=300,
             right_text=f"{_bf['pct_above_200d'].iloc[-1]:.0f}% · "
                        f"{_bf['pct_above_50d'].iloc[-1]:.0f}%",
-            right_color=theme.AMBER), use_container_width=True)
+            right_color=theme.AMBER), width="stretch")
         theme.note("Under 50% above the 200-day while the index sits "
                    "near highs = a market carried by few — the "
                    "generals-without-soldiers pattern. [T2 computed]")
@@ -244,7 +244,7 @@ else:
             fign, "NEW 52W HIGHS − NEW LOWS", height=240,
             right_text=f"{_bf['nh_nl'].iloc[-1]:+.0f}",
             right_color=theme.GREEN if _bf['nh_nl'].iloc[-1] >= 0
-            else theme.RED), use_container_width=True)
+            else theme.RED), width="stretch")
     with b2:
         figa = go.Figure()
         figa.add_scatter(x=_bf.index, y=_bf["ad_line"], mode="lines",
@@ -261,7 +261,7 @@ else:
         theme.plot(theme.style_fig(
             figa, "CUMULATIVE ADVANCE-DECLINE vs SPX", height=300,
             right_text=f"{_bf['ad_line'].iloc[-1]:+.0f}",
-            right_color=theme.BLUE), use_container_width=True)
+            right_color=theme.BLUE), width="stretch")
         theme.note("THE confirmation chart: price at new highs while "
                    "the A/D line isn't = narrowing participation — "
                    "the desk's RSP/SPY read, member-counted. Same "

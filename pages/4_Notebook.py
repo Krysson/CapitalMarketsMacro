@@ -65,7 +65,7 @@ with st.form("jot", clear_on_submit=True, border=False):
     jot_text = jc1.text_input(
         "jot", label_visibility="collapsed",
         placeholder="10:14 — RSP/SPY green while SPX flat; watching…")
-    if jc2.form_submit_button("JOT", use_container_width=True) \
+    if jc2.form_submit_button("JOT", width="stretch") \
             and jot_text.strip():
         jots.insert(0, {"ts": dt.datetime.now().strftime("%Y-%m-%d %H:%M"),
                         "text": jot_text.strip()})

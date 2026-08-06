@@ -44,7 +44,7 @@ for label, pos, color, width in snaps:
                         line=dict(width=width, color=color),
                         marker=dict(size=5))
 theme.plot(theme.style_fig(fig, None, height=340),
-                use_container_width=True)
+                width="stretch")
 theme.note("The price of money at every maturity, and how it moved. "
            "Shape is the message: upward-sloping = normal; humped or "
            "inverted = the market pricing cuts ahead; the whole curve "
@@ -84,7 +84,7 @@ if not s_2s10s.empty:
 theme.plot(theme.style_fig(fig, "CURVE SPREADS (pp)", height=300,
                            right_text=theme.fmt_last(s_2s10s),
                            right_color=theme.AMBER),
-                use_container_width=True)
+                width="stretch")
 if not s_2s10s.empty:
     v = float(s_2s10s.iloc[-1])
     days = ""
@@ -118,7 +118,7 @@ if not nom.empty and not real.empty:
     theme.plot(
         theme.style_fig(fig, "10Y DECOMPOSITION — NOMINAL = REAL + "
                              "BREAKEVEN (%)", height=300),
-        use_container_width=True)
+        width="stretch")
     def d63(s):
         s = s.dropna()
         return (float(s.iloc[-1]) - float(s.iloc[-64])) * 100 \
@@ -162,7 +162,7 @@ else:
                                     height=320,
                                     right_text=theme.fmt_last(hy),
                                     right_color=theme.RED),
-                    use_container_width=True)
+                    width="stretch")
     if not hy.empty:
         v = float(hy.iloc[-1])
         color, msg = ((theme.YELLOW, "priced for perfection — no cushion "
@@ -190,7 +190,7 @@ else:
                                              "PREMIUM (pp)", height=240,
                                      right_text=theme.fmt_last(diff),
                                      right_color=theme.PURPLE),
-                        use_container_width=True)
+                        width="stretch")
         theme.note("Compression = reach-for-yield, risk appetite high. "
                    "Rapid widening = flight to quality WITHIN credit — "
                    "often visible before the equity index reacts.")
@@ -211,7 +211,7 @@ else:
         "securityTerm": "Term", "offeringAmount": "Size $bn"}).head(15)
     st.dataframe(
         show.style.format({"Size $bn": "{:,.0f}"}, na_rep="TBA"),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
         height=min(580, 40 + 36 * len(show)))
     theme.note("Every auction is a live test of demand at these yields. "
                "Bills roll constantly and rarely matter; the COUPON "
@@ -251,7 +251,7 @@ else:
                        "Direct %": "{:.1f}",
                        "Dealer %": "{:.1f}"}, na_rep="—")
         .pipe(theme.neg_red),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
         height=min(500, 40 + 36 * len(show)))
     graded = res.dropna(subset=["indirect_pct"])
     if len(graded) >= 4:
@@ -284,7 +284,7 @@ if pos:
                            name=name, line=dict(width=1.6, color=colr))
     theme.plot(theme.style_fig(
         fig_pd, "PRIMARY DEALER NET POSITIONS — WEEKLY ($bn)",
-        height=320), use_container_width=True)
+        height=320), width="stretch")
     theme.note("What this chart is: the actual bond inventory sitting "
                "on Wall Street dealers' books, reported to the NY Fed "
                "every week. Almost nobody retail reads it. How to use "

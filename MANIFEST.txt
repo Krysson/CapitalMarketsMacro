@@ -1,44 +1,70 @@
-CAPITAL MARKETS DESK — v4.8.2 (BOOT FIX + ROLLED-UP v4.8.1)
-August 5, 2026
+CAPITAL MARKETS DESK — v4.9.0 (THE MACRO FILTER)
+August 6, 2026
 
-Baseline: v4.8.0 on main (v4.8.1 was delivered but never pushed).
-Three replacement files, drop-in at repo paths. One push fixes both
-the boot failure and the Volatility page crash.
+Baseline: v4.8.2 on main. 29 replacement files, drop-in at repo
+paths. Full replacements per house convention — no diffs.
 
-FILES
-  requirements.txt      — BOOT FIX. Streamlit Cloud reboot resolved
-                          streamlit 1.61.0 + starlette 1.4.0; starlette
-                          1.4 changed GZipResponder's signature (new
-                          required thread_minimum_size kwarg) and
-                          streamlit's gzip middleware doesn't pass it,
-                          so the server 500'd health checks before
-                          app.py ever ran. Added starlette<1.4 (resolver
-                          verified -> 1.3.1 alongside streamlit 1.61.0)
-                          and capped streamlit<1.62. Revisit both lines
-                          together at the next deliberate upgrade.
-  desk/theme.py         — v4.8.1 change re-delivered: theme.plot
-                          translates deprecated use_container_width ->
-                          width='stretch'/'content' centrally; two GO
-                          buttons updated. VERSION bumped to 4.8.2
-                          (missed in the v4.8.1 package — caught here).
-  pages/3_Volatility.py — v4.8.1 change re-delivered: ^SKEW KeyError
-                          fix. Local .get()-guarded labels; ^SKEW routes
-                          through the Cboe CDN series; guarded hist.get
-                          fallback; explained-empty note when the feed
-                          is down.
+WHAT SHIPS (the eight scoped items + the walls fix)
+
+1  MACRO FILTER — desk/wire.py grows a deterministic INCLUDE-list
+   (policy / regime / market-structure buckets), word-boundary
+   matched so "rates" catches "rate cut" but never "corporate" or
+   "moderate". Wire page gets a MACRO/ALL toggle (default MACRO)
+   with an explained-quiet state when nothing clears the list. The
+   Desk Analyst's [T3] narrative block is macro-filtered ALWAYS —
+   fewer tokens per call; the apilog receipts will show it.
+2  FISCAL DATA PASS — desk/fed.py gains a fiscaldata.treasury.gov
+   layer: tga_daily() (Daily Treasury Statement, $mm, vintage-
+   tolerant field/name matching), debt_to_penny(),
+   interest_expense_fytd(). data.net_liquidity() now prefers the
+   daily DTS TGA over FRED's weekly WTREGEN, falling back per house
+   rules. Fed page gains a three-metric fiscal tape panel.
+3  CLEANUPS — Wire page docstring/note now credit Fed, BLS, BEA,
+   AND Treasury; the red BLS FEED DOWN line is suppressed only when
+   Akamai blocks BLS and the Google backup answers (any other dead
+   feed still shows); 64 direct use_container_width kwargs swept to
+   width='stretch' across all pages (theme.plot translation from
+   v4.8.1 remains as the backstop).
+4  OPEX CALENDAR — desk/events.opex_dates(): third Fridays +
+   quarterly triple-witching flags, pure computation, nothing to
+   fail. Rendered as chips on the Calendar page.
+5  VARIANCE RISK PREMIUM — Volatility page panel: VIX vs 21-day
+   realized SPY vol, sign-colored readout, methodology-gap note
+   (teaches the sign, not the basis). [T1 implied · T2 realized]
+6  VOL REGIME TAG — composite CALM/ELEVATED/STRESS/CRISIS chip from
+   VIX level + VIX/VIX3M, on data already fetched by the page.
+7  EARNINGS IV — Quote page ERN expander: front-expiry ATM IV +
+   straddle-implied move, app-side chain call, cached 15 min,
+   fail-soft with named reasons. [T2 chain-derived]
+8  FLOW BY EXPIRY — Flow page display cut of the existing
+   footprint record grouped by expiration date; no new feed.
+9  THE WALLS FIX (live bug, 06-Aug) — Yahoo returned a chain with
+   openInterest zeroed on every row while volume populated; the
+   accrual stored it and the walls rendered "PUT WALL (0 OI)".
+   Three-layer fix: desk/accrue.py refuses to overwrite a good
+   record with a zero-OI snapshot (named message names the kept
+   date); the Volatility page withholds walls on a degraded record
+   with a dated red explanation; desk/analyst.py hands the Analyst
+   "[T1 gap]" instead of fictional walls.
 
 TESTS (pre-package)
-  pip resolver (dry-run) — streamlit==1.61.0 + starlette<1.4 resolves
-                           cleanly to starlette 1.3.1: PASS
-  ast.parse              — theme.py, 3_Volatility.py: PASS
-  content fingerprints   — SKEW fix, kwarg translation, VERSION 4.8.2
-                           present in packaged files: PASS
-  boot (real-data mocks) — carried from v4.8.1 (unchanged logic):
-                           kwarg translation paths, SKEW->Cboe routing,
-                           empty-feed path, hist.get guard: PASS
+   ast.parse            — all 29 shipped files + full tree: PASS
+   module imports       — wire, events, fed, theme, data, analyst,
+                          accrue under streamlit 1.61: PASS
+   boot suite (9 parts, real-data mocks) — macro word-boundaries
+     (11 headlines), OpEx third-Fridays vs known dates + roll-
+     forward, zero-OI accrual guard, walls guard fired on the
+     ACTUAL 06-Aug degraded record, VRP alignment + 5 regime
+     scenarios, expiry-cut groupby, DTS parse + dead-network
+     fail-soft, net-liquidity FRED fallback arithmetic, earnings-IV
+     ATM/straddle math: ALL PASS
 
-NOTE
-  Root cause of the outage was unbounded version ranges resolving on
-  every reboot. Full-stack pinning (pandas/numpy/etc.) deliberately
-  NOT done here — hotfix touches only the broken pair. A pinned
-  lockfile discussion queues under v4.9.0 cleanups if wanted.
+NOTES
+   fiscaldata.treasury.gov could not be live-called from the build
+   environment (network policy); the parse layer is tested against
+   mocked API rows and the dead-network path returns explained
+   empties — verify the three Fed-page metrics populate on deploy.
+   The current oi_latest.csv on the data branch is the degraded
+   06-Aug record; the guard prevents future overwrites but does not
+   retroactively restore old data — walls return with the next
+   healthy snapshot. Version: theme.VERSION = 4.9.0.

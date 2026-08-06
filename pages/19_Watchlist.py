@@ -40,7 +40,7 @@ else:
         theme.neg_red(df.style.format(
             {"@ Add": "{:,.2f}", "Last": "{:,.2f}",
              "Since %": "{:+.1f}"}, na_rep="—")),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
         height=min(560, 60 + 36 * len(df)),
         on_select="rerun", selection_mode="single-row", key="wl_tbl")
     picked = (ev.selection.rows if ev and hasattr(ev, "selection")

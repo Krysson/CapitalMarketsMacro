@@ -1,7 +1,7 @@
 """News Wire — free RSS/Atom feeds rendered as a terminal tape.
 
 Two tapes, deliberately separated to teach the Data Reliability Tiers:
-PRIMARY   — the agencies themselves (Fed, BLS, BEA).
+PRIMARY   — the agencies themselves (Fed, BLS, BEA, TSY).
 NARRATIVE — financial media; never evidence on its own.
 Fetching lives in desk/wire.py (concurrent, short timeouts, fail-soft).
 """
@@ -94,21 +94,33 @@ def tape(label: str, tier: str, feeds: list[tuple[str, str]],
 
 with st.spinner("Pulling the tape…"):
     prim_items, prim_dead = wire.fetch_tape(wire.PRIMARY_FEEDS)
+# v4.9.0: when Akamai blocks BLS (routine on cloud hosts) AND the
+# Google release-chasers answer, the red FEED DOWN line is pure noise
+# — the labeled backup section below already tells that story. The
+# line is suppressed only in that exact case; any other dead feed, or
+# BLS down with the backup ALSO down, still shows in red.
+_bls_dead = [d for d in prim_dead if d.startswith("BLS")]
+_bk = ([], [])
+if _bls_dead:
+    with st.spinner("Pulling the tape…"):
+        _bk = wire.fetch_tape(wire.BLS_BACKUP_FEEDS)
+_shown_dead = ([d for d in prim_dead if not d.startswith("BLS")]
+               if (_bls_dead and _bk[0]) else prim_dead)
 tape("Primary tape", "TIER 1–2 · OFFICIAL RELEASES · THE SOURCE ITSELF",
      wire.PRIMARY_FEEDS, theme.AMBER,
-     preloaded=(prim_items, prim_dead))
-theme.note("Press releases from the Fed, BLS, and BEA — the actual "
-           "documents markets reprice on, before anyone paraphrases them. "
-           "When a headline here conflicts with a headline below, this "
-           "one wins by definition.")
+     preloaded=(prim_items, _shown_dead))
+theme.note("Press releases from the Fed, BLS, BEA, and Treasury — the "
+           "actual documents markets reprice on, before anyone "
+           "paraphrases them. When a headline here conflicts with a "
+           "headline below, this one wins by definition.")
 
 # BLS sits behind Akamai, which blocks many cloud hosts. When its lane
 # is down, surface the aggregator release-chasers as a LABELED backup —
 # same headlines, honestly tiered.
-if any(d.startswith("BLS") for d in prim_dead):
+if _bls_dead:
     tape("BLS backup — via Google News",
          "TIER 5 AGGREGATOR STANDING IN FOR A BLOCKED TIER 1 FEED",
-         wire.BLS_BACKUP_FEEDS, theme.YELLOW)
+         wire.BLS_BACKUP_FEEDS, theme.YELLOW, preloaded=_bk)
     theme.note("The direct BLS feeds are blocked from this host (Akamai "
                "filters many datacenter IPs; they work when the desk "
                "runs locally). These lanes chase the same releases "
@@ -119,15 +131,35 @@ if any(d.startswith("BLS") for d in prim_dead):
 
 st.divider()
 
+# v4.9.0: MACRO/ALL toggle. MACRO (default) runs the deterministic
+# INCLUDE-list from desk/wire.py — word-boundary matches, editable,
+# auditable. ALL is the unfiltered firehose when you want it.
+_mode = st.radio("Narrative filter", ["MACRO", "ALL"], horizontal=True,
+                 label_visibility="collapsed",
+                 help="MACRO = INCLUDE-list in desk/wire.py · "
+                      "ALL = unfiltered")
+with st.spinner("Pulling the tape…"):
+    _n_items, _n_dead = wire.fetch_tape(
+        wire.NARRATIVE_FEEDS + wire.GOOGLE_NARRATIVE_FEEDS)
+_n_shown = wire.macro_filter(_n_items) if _mode == "MACRO" else _n_items
+if _mode == "MACRO" and _n_items and not _n_shown:
+    st.markdown(f'<div class="desk-note">Narrative tape fetched '
+                f'{len(_n_items)} headlines; none cleared the macro '
+                f'INCLUDE-list — a quiet macro tape is itself a data '
+                f'point. Flip to ALL to see the rest.</div>',
+                unsafe_allow_html=True)
 tape("Narrative tape", "TIER 5 · MEDIA + AGGREGATOR · THE STORY ABOUT "
      "THE SOURCE",
-     wire.NARRATIVE_FEEDS + wire.GOOGLE_NARRATIVE_FEEDS, theme.PURPLE)
+     wire.NARRATIVE_FEEDS + wire.GOOGLE_NARRATIVE_FEEDS, theme.PURPLE,
+     preloaded=(_n_shown, _n_dead))
 theme.note("Financial media plus Google News topic lanes (Fed, rates, "
            "oil, markets — keyless RSS queries). This tape tells you "
            "what the crowd is being told — which is worth knowing — but "
            "narrative is Tier 5 data: it can lag, lead, or invert the "
            "truth. Evidence for a Notebook entry comes from the tape "
-           "above, never this one.")
+           "above, never this one. The MACRO filter is the same "
+           "INCLUDE-list the Desk Analyst's [T3] block always runs — "
+           "what you read here on MACRO is what the Analyst reads.")
 
 st.page_link("pages/4_Notebook.py",
              label="Something on the tape worth logging? → Notebook",

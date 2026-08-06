@@ -42,7 +42,7 @@ def fred_search_ui(prefill: str = "") -> None:
     df = pd.DataFrame(results).rename(columns={
         "id": "ID", "title": "Title", "freq": "Freq",
         "units": "Units", "pop": "Pop"})
-    st.dataframe(df, hide_index=True, use_container_width=True,
+    st.dataframe(df, hide_index=True, width="stretch",
                  height=min(420, 40 + 35 * len(df)))
     pick = st.selectbox(
         "Chart one", [f'{r["id"]} — {r["title"][:70]}' for r in results])
@@ -99,7 +99,7 @@ if kind == "expr":
     theme.plot(theme.style_fig(fig, None, height=380,
                                right_text=theme.fmt_last(tail),
                                right_color=theme.AMBER),
-               use_container_width=True)
+               width="stretch")
     theme.note(f"Computed from daily closes of {', '.join(legs)} on "
                f"overlapping dates — your own CIX, built from parts. "
                f"[T2] Ratios read best as regime lines (HYG/LQD "
@@ -132,7 +132,7 @@ if kind == "calc" and sym == "CRACK":
         right_color=(theme.GREEN
                      if last['crack_321'] >= wk['crack_321']
                      else theme.RED)),
-        use_container_width=True)
+        width="stretch")
     theme.readout(
         theme.AMBER,
         f"3-2-1 ${last['crack_321']:,.2f} · gasoline 1-1 "
@@ -172,7 +172,7 @@ if kind == "cboe":
         right_text=(f"d/d {wow:+.2f}" if wow is not None else None),
         right_color=(theme.RED if wow is not None and wow > 0
                      else theme.GREEN)),
-        use_container_width=True)
+        width="stretch")
     theme.note("Straight from Cboe's own daily-history CDN — the index "
                "owner's file, which is why this works where Yahoo's "
                "^-symbols went dark. [T1] For SKEW: Cboe has announced "
@@ -218,7 +218,7 @@ if kind == "eia":
         right_text=(f"w/w {wow:+,.0f}" if wow is not None else None),
         right_color=(theme.GREEN if wow is not None and wow >= 0
                      else theme.RED)),
-        use_container_width=True)
+        width="stretch")
     pts = data.series_hist_points(s)
     if pts:
         cols = st.columns(len(pts))
@@ -271,7 +271,7 @@ if kind == "fred":
     theme.recession_bands(fig, data.usrec(), start=tail.index.min(),
                           end=tail.index.max())
     theme.plot(theme.style_fig(fig, None, height=380),
-                    use_container_width=True)
+                    width="stretch")
     pts = data.series_hist_points(s)
     if pts:
         cols = st.columns(len(pts))
@@ -312,7 +312,7 @@ if not snap and ohlc.empty:
                                    line=dict(width=1.8,
                                              color=theme.AMBER)))
         theme.plot(theme.style_fig(fig, None, height=340),
-                   use_container_width=True)
+                   width="stretch")
         theme.note("Yahoo doesn't carry this one; Stooq (free CSV) "
                    "does. [T2] Daily closes only — good enough to "
                    "read, not wired into any computed signal.")
@@ -438,7 +438,7 @@ if not ohlc.empty:
                         unified_hover=False,
                         right_text=theme.fmt_last(close),
                         right_color=theme.AMBER),
-        use_container_width=True)
+        width="stretch")
     theme.note("The MAs compute on the bars displayed: the 200 MA on "
                "monthly bars reaches back sixteen years, on dailies "
                "about ten months — same label, different question, "
@@ -513,6 +513,67 @@ if prof:
         except Exception:
             e = None
         st.markdown(f"Next earnings: **{e or 'unknown'}**")
+
+        # v4.9.0: what the options market charges for the print.
+        # App-side chain call (Yahoo blocks this endpoint from bot
+        # IPs, not app IPs) — cached, fail-soft, named reasons.
+        @st.cache_data(ttl=900, show_spinner=False)
+        def _ern_iv(s: str) -> dict | None:
+            import yfinance as _yf
+            tk = _yf.Ticker(s)
+            exps = tk.options
+            if not exps:
+                return None
+            exp = exps[0]
+            ch = tk.option_chain(exp)
+            spot = float(tk.fast_info.get("last_price") or 0)
+            if spot <= 0:
+                h = tk.history(period="2d")
+                if h.empty:
+                    return None
+                spot = float(h["Close"].dropna().iloc[-1])
+            ks = ch.calls["strike"]
+            atm = float(ks.iloc[(ks - spot).abs().argmin()])
+            c = ch.calls[ch.calls["strike"] == atm]
+            p = ch.puts[ch.puts["strike"] == atm]
+            ivs = pd.concat([c["impliedVolatility"],
+                             p["impliedVolatility"]]).dropna()
+            if ivs.empty:
+                return None
+            mid = (lambda f: float(((f["bid"] + f["ask"]) / 2)
+                                   .fillna(f["lastPrice"]).iloc[0])
+                   if not f.empty else 0.0)
+            strad = mid(c) + mid(p)
+            return {"exp": exp, "atm": atm,
+                    "iv": float(ivs.mean()) * 100,
+                    "move": (strad / spot * 100) if spot else None}
+        try:
+            _ei = _ern_iv(sym)
+            if _ei:
+                st.markdown(
+                    f"Front expiry **{_ei['exp']}** · ATM "
+                    f"{_ei['atm']:g} IV **{_ei['iv']:.0f}%**"
+                    + (f" · straddle-implied move "
+                       f"**±{_ei['move']:.1f}%**"
+                       if _ei["move"] else ""))
+                theme.note("The IV number is the annualized insurance "
+                           "price on the nearest expiry; the straddle "
+                           "move is the same information in trade "
+                           "units — what the market charges to be "
+                           "long the print in either direction. "
+                           "Compare it to what the stock has actually "
+                           "done on past prints before calling it "
+                           "rich or cheap; IV collapses the morning "
+                           "after regardless (the crush is the "
+                           "seller's product). [T2 chain-derived]")
+            else:
+                theme.note("No listed options on the front expiry — "
+                           "earnings IV not computable for this "
+                           "name.")
+        except Exception as _e:
+            theme.note(f"Earnings IV unavailable "
+                       f"({type(_e).__name__}) — chain endpoint "
+                       f"didn't answer this load.")
         theme.note("Opening a position into a print is a choice, not "
                    "an accident — the Paper Desk assumes you checked.")
     st.markdown(f'<div class="desk-note">`{sym} DEBT <GO>` — bond '
@@ -581,7 +642,7 @@ with st.expander("FA — financials (annual, $bn)", expanded=(func == "FA")):
                     unsafe_allow_html=True)
     else:
         st.dataframe(theme.neg_red((fin / 1e9).style.format("{:,.2f}")),
-                     use_container_width=True)
+                     width="stretch")
 
 theme.note("Yahoo Finance, delayed — Tier 2 market data, Tier 3 once "
            "you're reading estimates. A quote page tells you what IS; "

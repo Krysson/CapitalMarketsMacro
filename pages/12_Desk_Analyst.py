@@ -117,7 +117,7 @@ if not st.session_state["analyst_chat"]:
             "answer, wait for my answers, then grade them."),
     }
     for col, (label, prompt) in zip((b1, b2, b3, b4), CANNED.items()):
-        if col.button(label, use_container_width=True):
+        if col.button(label, width="stretch"):
             st.session_state["analyst_chat"].append(
                 {"role": "user", "content": prompt})
             st.rerun()

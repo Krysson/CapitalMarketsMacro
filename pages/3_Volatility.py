@@ -35,6 +35,26 @@ theme.note("VIX = 30-day S&P insurance price (teens calm, 20s stressed, "
            "rates often lead equities · SKEW = crash-insurance premium. "
            "Deltas shown red when rising: rising vol is risk-off.")
 
+# ---- v4.9.0: vol regime tag — composite on data already on-page ----
+try:
+    _v = float(hist["^VIX"].dropna().iloc[-1])
+    _v3 = float(hist["^VIX3M"].dropna().iloc[-1])
+    _rt = _v / _v3
+    _tag, _tcol = (("CRISIS", theme.RED) if _v >= 35 or _rt >= 1.10
+                   else ("STRESS", theme.YELLOW) if _v >= 25 or _rt >= 1.0
+                   else ("ELEVATED", theme.AMBER) if _v >= 18
+                   else ("CALM", theme.GREEN))
+    theme.readout(_tcol,
+                  f"VOL REGIME: {_tag} — VIX {_v:.1f} · VIX/VIX3M "
+                  f"{_rt:.2f} ({'INVERTED' if _rt >= 1 else 'contango'})"
+                  f". Level says how much insurance costs; term "
+                  f"structure says whether the fear is NOW or later. "
+                  f"Thresholds are the chapter's, not laws. "
+                  f"[T2 computed]")
+except Exception as _e:
+    theme.note(f"Vol regime tag unavailable ({type(_e).__name__}) — "
+               f"needs both VIX and VIX3M on the tape above.")
+
 st.divider()
 
 # ---- term structure ratio: the tripwire ----
@@ -51,7 +71,7 @@ if "^VIX" in hist and "^VIX3M" in hist:
         theme.style_fig(fig, "VIX / VIX3M term-structure ratio  (below 1 = "
                              "contango / calm · above 1 = inverted / stress)",
                         height=320),
-        use_container_width=True)
+        width="stretch")
     last = ratio.iloc[-1]
     color, msg = ((theme.GREEN, "contango — near-term risk priced calm. "
                    "Normal regime.") if last < 0.95 else
@@ -81,7 +101,7 @@ if not skew_cb.empty:
         right_text=f"{float(skew_cb.iloc[-1]):.1f} · {pct:.0f}th pct 1y",
         right_color=(theme.RED if pct >= 85 else
                      theme.YELLOW if pct >= 60 else theme.GREEN)),
-        use_container_width=True)
+        width="stretch")
     theme.readout(
         theme.RED if pct >= 85 else theme.YELLOW if pct >= 60
         else theme.GREEN,
@@ -124,7 +144,21 @@ try:
     if _rr.ok and _rr.text.strip():
         _oi = pd.read_csv(_io.StringIO(_rr.text))
     _spy = _oi[_oi["und"] == "SPY"] if not _oi.empty else _oi
-    if _spy.empty:
+    _oi_total = (float(pd.to_numeric(_spy["oi"], errors="coerce")
+                       .fillna(0).sum()) if not _spy.empty else 0.0)
+    if not _spy.empty and _oi_total <= 0:
+        # v4.9.0: a record CAN exist with every OI zeroed (Yahoo
+        # degradation, first seen 06-Aug-26) — walls drawn from a
+        # dead column are fiction. Say so; draw nothing.
+        _rd = str(_spy["date"].iloc[0]) if "date" in _spy else "?"
+        st.markdown(f'<div class="desk-note" style="color:{theme.RED}">'
+                    f'WALLS WITHHELD — the OI record for {_rd} is '
+                    f'degraded: the source returned openInterest = 0 '
+                    f'on every row while volume populated. The '
+                    f'accrual now refuses to overwrite good records '
+                    f'with zeroed feeds; walls return with the next '
+                    f'healthy snapshot.</div>', unsafe_allow_html=True)
+    elif _spy.empty:
         st.markdown('<div class="desk-note">No OI record yet — the '
                     'morning accrual builds it; once present, this '
                     'panel maps it.</div>', unsafe_allow_html=True)
@@ -148,7 +182,7 @@ try:
                                         "(puts left · calls right)")
         theme.plot(theme.style_fig(
             _figw, "AGGREGATE OI ACROSS EXPIRIES ≤45D", height=420),
-            use_container_width=True)
+            width="stretch")
         _pw = _ag[_ag.index < _spot]["P"] if "P" in _ag else None
         _cw = _ag[_ag.index > _spot]["C"] if "C" in _ag else None
         _pk = (float(_pw.idxmax())
@@ -208,7 +242,7 @@ else:
     theme.plot(
         theme.style_fig(fig, f"SPY options — expiration {expiry}",
                         height=380, unified_hover=False),
-        use_container_width=True)
+        width="stretch")
     theme.note("Left side high = puts pricier than calls — the market pays "
                "up for downside. A steepening left wing = growing crash "
                "premium; a flattening one = complacency. This curve IS the "
@@ -252,7 +286,7 @@ if st.session_state.get("iv_surface"):
                                              "LEFT, OTM CALLS RIGHT",
                                         height=340,
                                         unified_hover=False),
-                        use_container_width=True)
+                        width="stretch")
         atm = (surf[(surf.moneyness > 97.5) & (surf.moneyness < 102.5)]
                .groupby("dte")["impliedVolatility"].mean().mul(100)
                .sort_index())
@@ -263,7 +297,7 @@ if st.session_state.get("iv_surface"):
                 line=dict(width=1.8, color=theme.AMBER)))
             theme.plot(theme.style_fig(fig, "ATM TERM STRUCTURE "
                                                  "(IV %)", height=240),
-                            use_container_width=True)
+                            width="stretch")
         theme.note("Read it in two directions. Left-to-right at any row "
                    "= the skew (bright left wing = crash premium). "
                    "Bottom-to-top at any column = the term structure — "
@@ -321,9 +355,64 @@ else:
     height = 300
 if have_series:
     theme.plot(theme.style_fig(fig, height=height, unified_hover=False),
-               use_container_width=True)
+               width="stretch")
     theme.note(SERIES_NOTES[pick])
 else:
     theme.note(f"{SERIES_LABELS.get(pick, pick)} series unavailable — "
                "source feed unreachable (Cboe CDN for SKEW, Yahoo for "
                "the rest). The chart returns when the feed does.")
+
+
+st.divider()
+
+# ---- v4.9.0: variance risk premium — the insurance seller's P&L ----
+theme.panel_bar("Variance risk premium",
+                "implied vs realized · the insurance seller's income "
+                "statement")
+try:
+    _spy_px = data.ohlc("SPY", period="1y")
+    _rv21 = (_spy_px["Close"].pct_change().rolling(21).std()
+             * (252 ** 0.5) * 100).dropna()
+    _vix_ln = hist["^VIX"].dropna()
+    _vrp_df = pd.concat([_vix_ln, _rv21], axis=1,
+                        keys=["VIX", "RV21"]).dropna()
+    if _vrp_df.empty:
+        theme.note("VRP unavailable — VIX or SPY realized series came "
+                   "back empty; both feeds must answer for the spread "
+                   "to mean anything.")
+    else:
+        _figp = go.Figure()
+        _figp.add_scatter(x=_vrp_df.index, y=_vrp_df["VIX"],
+                          mode="lines", name="VIX (implied)",
+                          line=dict(width=1.6, color=theme.AMBER))
+        _figp.add_scatter(x=_vrp_df.index, y=_vrp_df["RV21"],
+                          mode="lines", name="Realized 21d (SPY)",
+                          line=dict(width=1.6, color=theme.BLUE))
+        theme.plot(theme.style_fig(
+            _figp, "IMPLIED (VIX) VS REALIZED (21-DAY, ANNUALIZED)",
+            height=300), width="stretch")
+        _vrp_now = float(_vrp_df["VIX"].iloc[-1]
+                         - _vrp_df["RV21"].iloc[-1])
+        theme.readout(
+            theme.GREEN if _vrp_now > 0 else theme.RED,
+            f"VRP {_vrp_now:+.1f} vol pts (VIX "
+            f"{_vrp_df['VIX'].iloc[-1]:.1f} vs realized "
+            f"{_vrp_df['RV21'].iloc[-1]:.1f}). Positive = options "
+            f"priced above delivered movement — the normal state; "
+            f"sellers of insurance earn the spread. NEGATIVE = "
+            f"realized is outrunning implied: the market is moving "
+            f"more than options charged for, and short-vol positions "
+            f"are losing. Watch the sign flip, not the level.")
+        theme.note("Book II: this spread is why 'selling vol' is a "
+                   "business and why it occasionally ends careers — "
+                   "the premium is income until realized rips through "
+                   "it. Implied here is the VIX print [T1]; realized "
+                   "is 21-day SPY close-to-close, annualized "
+                   "[T2 computed]. Methodology gap on purpose: VIX is "
+                   "a 30-day variance swap rate, not a 21-day "
+                   "standard deviation — close enough to teach the "
+                   "sign, not tight enough to trade the basis.")
+except Exception as _e:
+    theme.note(f"VRP panel unavailable ({type(_e).__name__}: "
+               f"{str(_e)[:80]}) — needs Yahoo (SPY history) and the "
+               f"vol tape both answering.")

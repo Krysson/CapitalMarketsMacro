@@ -74,7 +74,7 @@ def line(sid, series, title, yoy=False, color=theme.BLUE):
     theme.plot(theme.style_fig(fig, title, height=260,
                                right_text=theme.fmt_last(s),
                                right_color=color),
-                    use_container_width=True)
+                    width="stretch")
     if sid in NOTES:
         theme.note(NOTES[sid])
 
@@ -90,7 +90,7 @@ if not nl.empty:
                              "ON RRP  ($tn)", height=320,
                         right_text=theme.fmt_last(s),
                         right_color=theme.AMBER),
-        use_container_width=True)
+        width="stretch")
     prior = nl.asof(nl.index[-1] - pd.DateOffset(weeks=13))
     if pd.notna(prior):
         d_bn = (float(nl.iloc[-1]) - float(prior)) / 1_000

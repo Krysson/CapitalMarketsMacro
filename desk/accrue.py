@@ -93,6 +93,18 @@ def run() -> str:
         today = dt.date.today().isoformat()
         if snap_date != today:
             snap = _inst.oi_snapshot(today)
+            if snap is not None and not snap.empty and float(
+                    pd.to_numeric(snap["oi"], errors="coerce")
+                    .fillna(0).sum()) <= 0:
+                # v4.9.0: Yahoo intermittently returns chains with
+                # openInterest zeroed while volume populates (first
+                # seen 06-Aug-26). A zero-OI snapshot is a degraded
+                # feed, not data — never overwrite a good record
+                # with one. Volume-only rows ride oi_footprints'
+                # next healthy diff instead.
+                msgs.append("OI: source zeroed openInterest — kept "
+                            f"record of {snap_date or 'n/a'}")
+                snap = None
             if snap is not None and not snap.empty:
                 fps = pd.DataFrame()
                 if not latest.empty:

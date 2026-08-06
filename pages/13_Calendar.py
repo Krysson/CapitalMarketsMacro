@@ -50,6 +50,35 @@ theme.note("These three anchors are hardcoded from the BLS release "
 
 st.divider()
 
+# ------------------------------------------------- v4.9.0: OpEx ----
+theme.panel_bar("Options expiration",
+                "pure computation · third Fridays · nothing to fail")
+_ops = events.opex_dates(6)
+_opc = st.columns(len(_ops)) if _ops else []
+for _c, _o in zip(_opc, _ops):
+    _wt = _o["witching"]
+    _c.markdown(
+        f'<div style="font-family:\'IBM Plex Mono\',monospace;'
+        f'padding:8px 10px;background:{theme.PANEL};'
+        f'border-left:3px solid '
+        f'{theme.RED if _wt else theme.AMBER};border-radius:2px">'
+        f'<span style="color:{theme.TEXT};font-size:1.0rem">'
+        f'{_o["date"]:%d %b %Y}</span><br>'
+        f'<span style="color:'
+        f'{theme.RED if _wt else theme.MUTED};font-size:0.72rem;'
+        f'letter-spacing:0.06em">'
+        f'{"TRIPLE WITCHING" if _wt else "monthly opex"}</span>'
+        f'</div>', unsafe_allow_html=True)
+theme.note("Third Friday each month; March, June, September, and "
+           "December add expiring index futures and futures options — "
+           "'triple witching', the heaviest mechanical volume days of "
+           "the quarter. This is when the walls (Volatility page) "
+           "matter most and then RESET: pinning pressure into the "
+           "date, unclamped tape after it. Computed from the calendar "
+           "itself, not fetched — [T1] by construction.")
+
+st.divider()
+
 # ---------------------------------------------------- the wide net ----
 theme.panel_bar("Full calendar", "aggregator · all releases · live")
 _CAL = """

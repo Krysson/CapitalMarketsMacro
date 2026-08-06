@@ -82,3 +82,85 @@ def diff_stats(ops: list[tuple[str, str]]) -> tuple[int, int]:
     add = sum(len(t.split()) for op, t in ops if op == "insert")
     rem = sum(len(t.split()) for op, t in ops if op == "delete")
     return add, rem
+
+
+# ------------------------------------------------- v4.9.0: fiscal ----
+# fiscaldata.treasury.gov — official, free, keyless. House rule: the
+# daily official series is primary; FRED's weekly WTREGEN is the
+# fallback (wired in data.net_liquidity). Every function fails soft
+# with a named reason and returns an empty frame/series — callers
+# render explained empties, never tracebacks.
+_FISCAL_API = ("https://api.fiscaldata.treasury.gov/services/api/"
+               "fiscal_service")
+
+
+def _fiscal_get(path: str, params: str) -> list[dict]:
+    r = requests.get(f"{_FISCAL_API}{path}?{params}",
+                     headers=_HEADERS, timeout=20)
+    r.raise_for_status()
+    return r.json().get("data", [])
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def tga_daily() -> "pd.Series":
+    """TGA closing balance from the Daily Treasury Statement, $mm,
+    daily. Account naming changed across DTS vintages, so rows are
+    matched by substring, and the balance column is whichever of the
+    known candidates the vintage carries."""
+    import pandas as pd
+    try:
+        rows = _fiscal_get(
+            "/v1/accounting/dts/operating_cash_balance",
+            "sort=-record_date&page[size]=900")
+        df = pd.DataFrame(rows)
+        if df.empty or "account_type" not in df:
+            return pd.Series(dtype=float)
+        m = df["account_type"].str.contains(
+            "Treasury General Account|Federal Reserve Account",
+            case=False, na=False)
+        df = df[m]
+        col = next((c for c in ("close_today_bal", "closing_balance",
+                                "open_today_bal") if c in df), None)
+        if col is None or df.empty:
+            return pd.Series(dtype=float)
+        s = pd.Series(
+            pd.to_numeric(df[col], errors="coerce").values,
+            index=pd.to_datetime(df["record_date"]).values,
+            name="TGA ($mm, DTS daily)").dropna().sort_index()
+        return s[~s.index.duplicated(keep="last")]
+    except Exception:
+        return pd.Series(dtype=float)
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def debt_to_penny() -> tuple[float, str] | None:
+    """Latest total public debt outstanding ($) and its date."""
+    try:
+        rows = _fiscal_get(
+            "/v2/accounting/od/debt_to_penny",
+            "fields=record_date,tot_pub_debt_out_amt"
+            "&sort=-record_date&page[size]=1")
+        if rows:
+            return (float(rows[0]["tot_pub_debt_out_amt"]),
+                    rows[0]["record_date"])
+    except Exception:
+        pass
+    return None
+
+
+@st.cache_data(ttl=6 * 3600, show_spinner=False)
+def interest_expense_fytd() -> tuple[float, str] | None:
+    """Fiscal-year-to-date interest expense on the public debt ($).
+    Field names vary by vintage; matched from known candidates."""
+    try:
+        rows = _fiscal_get(
+            "/v2/accounting/od/interest_expense",
+            "sort=-record_date&page[size]=60")
+        for row in rows:
+            for k in ("fytd_expense_amt", "fytd_intexp_amt",
+                      "intexp_fytd_amt"):
+                if row.get(k) not in (None, "", "null"):
+                    return (float(row[k]), row.get("record_date", "?"))
+    except Exception:
+        pass
+    return None

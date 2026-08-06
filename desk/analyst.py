@@ -183,6 +183,11 @@ def desk_snapshot() -> str:
         else:
             _err = None
         if narr:
+            # v4.9.0: the Analyst's [T3] block is macro-filtered
+            # ALWAYS (no toggle here) — fewer tokens per call, and
+            # the apilog receipts will show it.
+            narr = _w.macro_filter(narr)
+        if narr:
             out.append("[T3] NARRATIVE WIRE — circulating claims, "
                        "NOT verified facts; read as sentiment and "
                        "positioning fuel; flag divergence from desk "
@@ -192,7 +197,9 @@ def desk_snapshot() -> str:
         else:
             # empties explain themselves (v4.4.5 house rule)
             out.append("[T3] NARRATIVE WIRE: unavailable this load"
-                       + (f" ({_err})" if _err else " (feeds empty)"))
+                       + (f" ({_err})" if _err else
+                          " (feeds empty or nothing macro-relevant"
+                          " cleared the INCLUDE-list)"))
         return "\n".join(out) if len(out) > 1 else ""
     lines.append(_try(_wire))
     def _brd():
@@ -216,6 +223,14 @@ def desk_snapshot() -> str:
                      f"/data/history/oi_latest.csv", timeout=10)
         d = pd.read_csv(_io.StringIO(rr.text))
         d = d[d["und"] == "SPY"]
+        # v4.9.0: a record can exist with every OI zeroed (Yahoo
+        # degradation, first seen 06-Aug-26). Walls from a dead
+        # column are fiction — hand the Analyst the gap instead.
+        if d.empty or float(pd.to_numeric(
+                d["oi"], errors="coerce").fillna(0).sum()) <= 0:
+            return ("THE WALLS: OI record empty or degraded (source "
+                    "zeroed openInterest) — walls withheld rather "
+                    "than inferred from nothing [T1 gap]")
         ag = d.groupby(["strike", "type"])["oi"].sum().unstack(
             fill_value=0)
         spot = float(d["spot"].iloc[0])

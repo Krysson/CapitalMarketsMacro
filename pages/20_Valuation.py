@@ -35,7 +35,7 @@ try:
         theme.plot(theme.style_fig(
             fig, "BUFFETT INDICATOR — TOTAL MARKET / GDP (%)",
             height=340, right_text=theme.fmt_last(buf),
-            right_color=theme.AMBER), use_container_width=True)
+            right_color=theme.AMBER), width="stretch")
         theme.note(f"Total market cap over GDP — Buffett's 'best "
                    f"single measure' line made him its namesake. "
                    f"Structurally higher margins and global revenues "

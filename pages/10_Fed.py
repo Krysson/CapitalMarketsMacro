@@ -81,3 +81,45 @@ with st.expander("Full text — current statement"):
     st.markdown(new_txt)
 with st.expander("Full text — prior statement"):
     st.markdown(old_txt)
+
+
+st.divider()
+
+# ------------------------------------------ v4.9.0: fiscal tape ----
+theme.panel_bar("Fiscal tape — fiscaldata.treasury.gov",
+                "Tier 1 · official · the government's own ledger")
+_fc1, _fc2, _fc3 = st.columns(3)
+_tga = fed.tga_daily()
+if not _tga.empty:
+    _fc1.metric("TGA (DTS daily)",
+                f"${_tga.iloc[-1] / 1e3:,.0f}bn",
+                f"{(_tga.iloc[-1] - _tga.iloc[-6]) / 1e3:+,.0f}bn / wk"
+                if len(_tga) > 6 else None)
+else:
+    _fc1.metric("TGA (DTS daily)", "—")
+    _fc1.caption("DTS unreachable — Macro page falls back to FRED "
+                 "weekly")
+_dp = fed.debt_to_penny()
+if _dp:
+    _fc2.metric("Debt to the Penny", f"${_dp[0] / 1e12:,.2f}tn")
+    _fc2.caption(f"as of {_dp[1]}")
+else:
+    _fc2.metric("Debt to the Penny", "—")
+    _fc2.caption("endpoint unreachable this load")
+_ie = fed.interest_expense_fytd()
+if _ie:
+    _fc3.metric("Interest expense (FYTD)", f"${_ie[0] / 1e9:,.0f}bn")
+    _fc3.caption(f"through {_ie[1]}")
+else:
+    _fc3.metric("Interest expense (FYTD)", "—")
+    _fc3.caption("endpoint unreachable this load")
+theme.note("The fiscal side of the liquidity ledger, from the "
+           "Treasury itself [T1]. The TGA is the government's "
+           "checking account at the Fed: when it FILLS (tax days, "
+           "heavy issuance), cash leaves the private system — same "
+           "arithmetic as QT; when it DRAINS, cash returns. This "
+           "daily series now feeds the Macro page's net-liquidity "
+           "line directly (FRED's weekly print is the fallback). "
+           "Debt and interest expense are the slow variables the "
+           "issuance calendar answers to — Book II's fiscal-dominance "
+           "chapter in two numbers.")

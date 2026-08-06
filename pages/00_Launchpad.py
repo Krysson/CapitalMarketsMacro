@@ -39,7 +39,7 @@ def mini(s: pd.Series, title: str, color: str, hline: float | None = None,
         fig.add_hline(y=hline, line=dict(color=theme.RED, width=1,
                                          dash="dash"))
     theme.plot(theme.style_fig(fig, None, height=150),
-                    use_container_width=True,
+                    width="stretch",
                     config={"displayModeBar": False})
 
 
@@ -125,7 +125,7 @@ with c1:
                 if isinstance(v, float) else "",
                 subset=["Chg %"],
             ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
-            hide_index=True, height=390, use_container_width=True,
+            hide_index=True, height=390, width="stretch",
             on_select="rerun", selection_mode="single-row",
             key="lp_xa")
         picked = (ev.selection.rows if ev and hasattr(ev, "selection")

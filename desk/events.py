@@ -124,3 +124,23 @@ def past_statements(today: dt.date | None = None) -> list[dt.date]:
     today = today or dt.date.today()
     all_ = FOMC_PAST_STATEMENTS + [d for d in FOMC_STATEMENTS if d <= today]
     return sorted(set(all_), reverse=True)
+
+
+def opex_dates(months: int = 6,
+               start: dt.date | None = None) -> list[dict]:
+    """Monthly options expiration (third Friday) with the quarterly
+    triple-witching flag. v4.9.0. Pure computation — the one calendar
+    on the desk that needs no publisher, so it can never go stale and
+    never shows FEED DOWN. (Exchange holiday shifts — a third Friday
+    that is a market holiday settles Thursday — are rare enough that
+    the chip says 'third Friday', not 'settlement day'.)"""
+    start = start or dt.date.today()
+    out, y, m = [], start.year, start.month
+    for _ in range(months + 1):
+        d = dt.date(y, m, 15)
+        d += dt.timedelta((4 - d.weekday()) % 7)  # Fri on/after 15th
+        out.append({"date": d, "witching": m in (3, 6, 9, 12)})
+        m += 1
+        if m == 13:
+            y, m = y + 1, 1
+    return [o for o in out if o["date"] >= start][:months]

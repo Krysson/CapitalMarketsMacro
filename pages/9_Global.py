@@ -65,7 +65,7 @@ else:
         ).format({"Last": "{:,.1f}", **{c: "{:+.2f}" for c in pct}},
                  na_rep="—"),
         hide_index=True, height=min(680, 40 + 36 * len(df)),
-        use_container_width=True)
+        width="stretch")
 
     ytds = df["YTD %"].dropna()
     if len(ytds):
@@ -156,7 +156,7 @@ else:
     styled = cross.style.format("{:,.4g}").apply(
         lambda col: [color_cell(b, col.name) for b in cross.index],
         axis=0)
-    st.dataframe(styled, use_container_width=True,
+    st.dataframe(styled, width="stretch",
                  height=40 + 36 * len(cross))
     theme.note("The Bloomberg FXC function is exactly this grid. Ours "
                "is triangulated from USD pairs (daily closes) — kept "

@@ -111,7 +111,7 @@ entries.
 theme.panel_bar("Alerts — the active tripwires",
                 "evaluated nightly by the bot · delivered as GitHub issues")
 st.dataframe(pd.DataFrame(alerts.rules_table()), hide_index=True,
-             use_container_width=True)
+             width="stretch")
 st.markdown("""
 Alerts fire on **crossings and changes, never levels** — a level you
 already know about is a condition; a crossing is news. When any rule

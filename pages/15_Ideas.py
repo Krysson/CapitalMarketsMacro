@@ -444,7 +444,7 @@ else:
                                    "claude-opus-4-8",
                                    "claude-haiku-4-5-20251001"])
     if st.button("RUN THE FUNNEL ON TODAY'S SCANS",
-                 use_container_width=True):
+                 width="stretch"):
         with st.spinner("Reading the desk…"):
             snapshot = analyst.desk_snapshot()
         gen_text = "\n".join(

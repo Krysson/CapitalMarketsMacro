@@ -86,6 +86,40 @@ def us_filter(items: list[dict]) -> list[dict]:
         out.append(it)
     return out
 
+# ---------------------------------------------------------------------
+# v4.9.0 — deterministic macro INCLUDE-list for the narrative tape.
+# Word-boundary matches on purpose: "rates" must catch "rate cut" but
+# never "corporate" or "moderate" (the substring trap, decided at
+# session start). Editing these lists edits the filter — no scoring,
+# no model, fully auditable.
+_MACRO_TERMS = [
+    # policy
+    r"Fed", r"FOMC", r"rates?", r"inflation", r"CPI", r"PCE",
+    r"tariffs?", r"Treasur(?:y|ies)", r"yields?", r"fiscal",
+    r"sanctions?", r"central banks?", r"rate (?:cut|hike)s?",
+    # regime
+    r"recession", r"GDP", r"jobs?", r"payrolls?", r"unemployment",
+    r"liquidity", r"credit", r"defaults?", r"stimulus", r"deficits?",
+    # market structure
+    r"oil", r"OPEC", r"dollar", r"China", r"bonds?", r"curve",
+    r"vol", r"volatility", r"positioning",
+]
+_MACRO_RX = re.compile(
+    r"\b(?:" + "|".join(_MACRO_TERMS) + r")\b", re.IGNORECASE)
+
+
+def is_macro(title: str) -> bool:
+    """Pure: does a headline clear the macro INCLUDE-list?"""
+    return bool(_MACRO_RX.search(title or ""))
+
+
+def macro_filter(items: list[dict]) -> list[dict]:
+    """Pure: keep only macro-relevant headlines. INCLUDE-list, so a
+    quiet tape means nothing macro is circulating — that is itself
+    information, and the page says so instead of padding."""
+    return [it for it in items if is_macro(it.get("title", ""))]
+
+
 # The release-chaser subset: aggregator lanes that track BLS releases,
 # used as the visible backup when Akamai blocks the direct BLS feeds.
 BLS_BACKUP_FEEDS = [f for f in GOOGLE_FEEDS if f[0] in ("G-CPI", "G-JOBS")]

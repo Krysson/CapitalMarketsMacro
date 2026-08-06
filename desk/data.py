@@ -108,8 +108,22 @@ def macro_bundle() -> dict[str, pd.Series]:
 
 
 def net_liquidity(bundle: dict[str, pd.Series]) -> pd.Series:
-    """WALCL − TGA − RRP, in $ millions, aligned weekly."""
-    w, t, r = bundle.get("WALCL"), bundle.get("WTREGEN"), bundle.get("RRPONTSYD")
+    """WALCL − TGA − RRP, in $ millions.
+
+    v4.9.0: TGA prefers the Daily Treasury Statement series
+    (official, daily, fiscaldata.treasury.gov) over FRED's weekly
+    WTREGEN — same number, five prints a week instead of one.
+    House-rule fallback: if the DTS call fails or comes back empty,
+    the weekly FRED series stands in and the line still draws."""
+    w, r = bundle.get("WALCL"), bundle.get("RRPONTSYD")
+    t = pd.Series(dtype=float)
+    try:
+        from desk import fed as _fed
+        t = _fed.tga_daily()
+    except Exception:
+        t = pd.Series(dtype=float)
+    if t is None or t.empty:
+        t = bundle.get("WTREGEN")
     if w is None or w.empty:
         return pd.Series(dtype=float)
     df = pd.DataFrame({"walcl": w})

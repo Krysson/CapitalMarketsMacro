@@ -174,7 +174,7 @@ with right:
                 if isinstance(v, float) else "",
                 subset=["Chg %"],
             ).format({"Last": "{:,.2f}", "Chg %": "{:+.2f}"}),
-            hide_index=True, height=430, use_container_width=True,
+            hide_index=True, height=430, width="stretch",
             on_select="rerun", selection_mode="single-row",
             key="sm_xa")
         picked = (ev.selection.rows if ev and hasattr(ev, "selection")

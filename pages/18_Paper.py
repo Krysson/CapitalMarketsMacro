@@ -110,12 +110,12 @@ if open_pos:
              "Day $": "{:+,.0f}", "Unrl $": "{:+,.0f}",
              "Unrl %": "{:+.1f}", "Wt %": "{:.1f}",
              "Stop": "{:g}", "Tgt": "{:g}"}, na_rep="—")),
-        use_container_width=True, height=min(430, 60 + 36 * len(df)))
+        width="stretch", height=min(430, 60 + 36 * len(df)))
     cc1, cc2, cc3 = st.columns([2.2, 3.2, 1.2])
     sel = cc1.selectbox("Close",
                         [p["id"] + " · " + p["symbol"] for p in open_pos])
     pm = cc2.text_input("Exit note (kill switch fire? honored?)")
-    if cc3.button("CLOSE", use_container_width=True):
+    if cc3.button("CLOSE", width="stretch"):
         ok, msg = paper.close_position(book, sel.split(" · ")[0], pm)
         (st.success if ok else st.error)(msg)
         if ok:
@@ -143,7 +143,7 @@ with tab_o, st.form("ticket", clear_on_submit=False):
                            min_value=0.0, value=0.0)
     tgt = s2.number_input("Target (0 = none)", min_value=0.0, value=0.0)
     thesis = st.text_area("Thesis (two sentences)", height=68)
-    sub = st.form_submit_button("SUBMIT ORDER", use_container_width=True)
+    sub = st.form_submit_button("SUBMIT ORDER", width="stretch")
 if sub:
     ok, msg = paper.open_position(
         book, symbol=sym, side=side, qty=qty, generator=gen or "",
@@ -165,7 +165,7 @@ with tab_s, st.form("spread", clear_on_submit=False):
     ks2 = st.text_input("Kill switch — one switch, one thesis: the "
                         "RELATIONSHIP is the trade")
     th2 = st.text_area("Thesis ", height=68)
-    sub2 = st.form_submit_button("SUBMIT SPREAD", use_container_width=True)
+    sub2 = st.form_submit_button("SUBMIT SPREAD", width="stretch")
 if sub2:
     ok, msg = paper.open_spread(
         book, leg1=a, side1=sa, leg2=b, side2=sb, qty=q,
@@ -206,7 +206,7 @@ if closed:
         {"Qty": "{:g}", "Entry": "{:,.4f}", "Exit": "{:,.4f}",
          "Realized $": "{:+,.2f}", "Ret %": "{:+.1f}",
          "MAE $": "{:+,.0f}", "MFE $": "{:+,.0f}"}, na_rep="—")),
-        hide_index=True, use_container_width=True,
+        hide_index=True, width="stretch",
         height=min(430, 60 + 36 * len(dfc)))
     theme.note("MAE is the kill-switch auditor: if your max adverse "
                "excursion blew through the level your switch named "
@@ -219,7 +219,7 @@ if closed:
             {"Win %": "{:.0f}", "Avg win": "{:+,.0f}",
              "Avg loss": "{:+,.0f}", "Profit factor": "{:.2f}",
              "Expectancy": "{:+,.0f}", "Total": "{:+,.2f}"},
-            na_rep="—")), use_container_width=True)
+            na_rep="—")), width="stretch")
         theme.note("Read COUNTS before sums — small samples for "
                    "months. This table tells you which scans YOU "
                    "read well, which beats knowing which scans are "
