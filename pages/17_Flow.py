@@ -24,6 +24,87 @@ theme.header(
     "plumbing; the scan speaks only in streaks and divergences — and "
     "the WHY always carries an [I] tag.")
 
+# ---------------------------------------- v4.9.1: flow scoreboard ----
+# One-glance composite before the detail: every chip is a cached call
+# the sections below make anyway, so this costs no extra fetches.
+# Each chip fails soft to an em-dash with a reason.
+_sb = st.columns(4)
+def _chip(col, label, value, sub, color):
+    col.markdown(
+        f'<div style="font-family:\'IBM Plex Mono\',monospace;'
+        f'padding:8px 10px;background:{theme.PANEL};'
+        f'border-left:3px solid {color};border-radius:2px">'
+        f'<span style="color:{theme.MUTED};font-size:0.68rem;'
+        f'letter-spacing:0.08em">{label}</span><br>'
+        f'<span style="color:{theme.TEXT};font-size:1.02rem">'
+        f'{value}</span><br>'
+        f'<span style="color:{theme.MUTED};font-size:0.7rem">{sub}'
+        f'</span></div>', unsafe_allow_html=True)
+try:
+    _f = flow.compute_flows(flow.load())
+    _nm = flow.normalize_flows(_f, flow.load())
+    if not _nm.empty:
+        _t = _nm.iloc[0]
+        _zs = (f"z {_t['z']:+.1f}" if pd.notna(_t["z"])
+               else f"record n={int(_t['n_obs'])}")
+        _chip(_sb[0], "ETF FLOW · LOUDEST", f"{_t['ticker']} "
+              f"{_t['pct_aum']:+.2f}% AUM", _zs,
+              theme.GREEN if _t["pct_aum"] >= 0 else theme.RED)
+    else:
+        _chip(_sb[0], "ETF FLOW", "—", "record building", theme.MUTED)
+except Exception as _e:
+    _chip(_sb[0], "ETF FLOW", "—", type(_e).__name__, theme.MUTED)
+try:
+    _svt, _svd = flow.finra_short()
+    _svp = flow.shortvol_percentiles(flow.shortvol_history(), _svt)
+    if not _svp.empty:
+        _hi = _svp.sort_values("short_ratio",
+                               ascending=False).iloc[0]
+        _ps = (f"{_hi['pctl']:.0f}th pctl of own record"
+               if pd.notna(_hi["pctl"])
+               else f"record n={int(_hi['n_obs'])}")
+        _chip(_sb[1], "SHORT VOL · HIGHEST",
+              f"{_hi['Symbol']} {_hi['short_ratio']:.0%}", _ps,
+              theme.AMBER)
+    else:
+        _chip(_sb[1], "SHORT VOL", "—", "file unreachable",
+              theme.MUTED)
+except Exception as _e:
+    _chip(_sb[1], "SHORT VOL", "—", type(_e).__name__, theme.MUTED)
+try:
+    _ats = instflow.ats_weekly()
+    if not _ats.empty:
+        _wk = _ats["week"].max()
+        _tw = (_ats[_ats["week"] == _wk]
+               .sort_values("shares", ascending=False).iloc[0])
+        _chip(_sb[2], "DARK POOL · HEAVIEST",
+              f"{_tw['symbol']} {_tw['shares'] / 1e6:,.0f}M sh",
+              f"wk of {str(_wk)[:10]}", theme.PURPLE)
+    else:
+        _chip(_sb[2], "DARK POOL", "—", "needs FINRA credential",
+              theme.MUTED)
+except Exception as _e:
+    _chip(_sb[2], "DARK POOL", "—", type(_e).__name__, theme.MUTED)
+try:
+    _fpx = instflow.load_footprints()
+    if not _fpx.empty:
+        _ld = _fpx["date"].max()
+        _tot = int(_fpx[_fpx["date"] == _ld]["d_oi"].abs().sum())
+        _hst = (_fpx.groupby("date")["d_oi"]
+                .apply(lambda s: s.abs().sum()))
+        _fps = (f"{float((_hst < _tot).mean() * 100):.0f}th pctl "
+                f"of {len(_hst)}d record" if len(_hst) >= 10
+                else f"record n={len(_hst)}")
+        _chip(_sb[3], "FOOTPRINTS · INTENSITY",
+              f"{_tot:,} ΔOI", _fps, theme.AMBER)
+    else:
+        _chip(_sb[3], "FOOTPRINTS", "—", "record building",
+              theme.MUTED)
+except Exception as _e:
+    _chip(_sb[3], "FOOTPRINTS", "—", type(_e).__name__, theme.MUTED)
+
+st.divider()
+
 # ------------------------------------------------- rotation monitor ----
 theme.panel_bar("Rotation monitor", "Yahoo · Tier 2 · live")
 try:
@@ -113,6 +194,31 @@ else:
         f"{hi['short_ratio']:.0%} of off-exchange volume. Around half "
         f"is NORMAL (market-maker hedging prints short) — the read is "
         f"outliers and multi-day drift, never the level alone.")
+    # v4.9.1: today vs the desk's own accrued record — the level is
+    # structurally noisy; the departure from a symbol's own norm is
+    # the read. Record accrues one session per app-load-day.
+    _svh = flow.shortvol_history()
+    _svp = flow.shortvol_percentiles(_svh, fs.reset_index())
+    if not _svp.empty and _svp["pctl"].notna().any():
+        _ext = _svp[_svp["pctl"].notna()].sort_values(
+            "pctl", ascending=False)
+        _top, _bot = _ext.iloc[0], _ext.iloc[-1]
+        theme.readout(
+            theme.PURPLE,
+            f"VS OWN RECORD: {_top['Symbol']} at the "
+            f"{_top['pctl']:.0f}th percentile of its accrued history "
+            f"· {_bot['Symbol']} at the {_bot['pctl']:.0f}th. "
+            f"Extremes against a symbol's OWN distribution are the "
+            f"tell — the cross-sectional table above can't say that.")
+    elif not _svh.empty:
+        theme.note(f"Percentiles arrive at 10 accrued sessions per "
+                   f"symbol — the record has "
+                   f"{_svh['date'].nunique()} so far and grows one "
+                   f"per trading day.")
+    else:
+        theme.note("Short-ratio record starts accruing with the next "
+                   "morning accrual run — percentiles vs each "
+                   "symbol's own history appear at 10 sessions.")
     theme.note("FINRA publishes per-symbol short volume for OFF-EXCHANGE "
                "(TRF/ADF/ORF) trades daily, free, same-day — a slice "
                "the workbook never had. It is not total market "
@@ -144,15 +250,29 @@ else:
             .sort_values("shares", ascending=False).copy())
     last["Name"] = last["symbol"].map(
         lambda s: flow.FLOW_ETFS.get(s, (s,))[0])
+    # v4.9.1: latest week vs each symbol's trailing-4-week average —
+    # dark share LEVEL varies by name structurally; the change
+    # against its own recent norm is the read.
+    _wks = sorted(ats["week"].unique())
+    _prior = ats[ats["week"].isin(_wks[-5:-1])]
+    _avg4 = _prior.groupby("symbol")["shares"].mean()
+    last["vs_4wk"] = [
+        (float(r["shares"]) / float(_avg4[r["symbol"]]) - 1) * 100
+        if r["symbol"] in _avg4 and _avg4[r["symbol"]] > 0
+        else float("nan")
+        for _, r in last.iterrows()]
     st.dataframe(
         last.set_index("symbol")[
-            ["Name", "shares", "trades", "shares_per_trade"]]
+            ["Name", "shares", "trades", "shares_per_trade",
+             "vs_4wk"]]
         .rename(columns={"shares": "ATS shares",
                          "trades": "ATS trades",
-                         "shares_per_trade": "Shares/trade"})
+                         "shares_per_trade": "Shares/trade",
+                         "vs_4wk": "vs 4-wk avg"})
         .style.format({"ATS shares": "{:,.0f}",
                        "ATS trades": "{:,.0f}",
-                       "Shares/trade": "{:,.0f}"}, na_rep="—"),
+                       "Shares/trade": "{:,.0f}",
+                       "vs 4-wk avg": "{:+,.0f}%"}, na_rep="—"),
         width="stretch",
         height=min(560, 60 + 35 * len(last)))
     conc = instflow.ats_concentration(ats)
@@ -246,6 +366,51 @@ else:
         theme.readout(theme.GREEN,
                       f"No qualifying streaks ({n_days} sessions "
                       f"accrued) — quiet is information too.")
+    # v4.9.1: the measurement pass — raw $mm makes SPY dwarf
+    # everything by construction; each fund against its own size and
+    # its own record is the honest yardstick.
+    nm = flow.normalize_flows(flows, log)
+    if not nm.empty:
+        theme.panel_bar("Measurement pass — latest session, "
+                        "normalized", "each fund vs its own size and "
+                        "its own record")
+        _nz = int(nm["z"].notna().sum())
+        st.dataframe(
+            theme.neg_red(
+                nm.set_index("ticker")[
+                    ["name", "flow_mm", "pct_aum", "roll5_mm", "z",
+                     "n_obs"]]
+                .rename(columns={"name": "Name", "flow_mm": "$mm",
+                                 "pct_aum": "% AUM",
+                                 "roll5_mm": "5-day $mm",
+                                 "z": "z (own record)",
+                                 "n_obs": "n"})
+                .style.format({"$mm": "{:+,.0f}", "% AUM": "{:+.2f}",
+                               "5-day $mm": "{:+,.0f}",
+                               "z (own record)": "{:+.1f}",
+                               "n": "{:d}"}, na_rep="—")),
+            width="stretch",
+            height=min(560, 60 + 35 * len(nm)))
+        _ld1 = nm.iloc[0]
+        theme.readout(
+            theme.AMBER,
+            f"LOUDEST VS ITSELF: {_ld1['ticker']} "
+            f"{_ld1['pct_aum']:+.2f}% of AUM"
+            + (f", z {_ld1['z']:+.1f} vs its own record"
+               if pd.notna(_ld1["z"]) else
+               f" (z arrives at 10 sessions; record has "
+               f"{int(_ld1['n_obs'])})")
+            + f" · 5-day {_ld1['roll5_mm']:+,.0f}mm. SPY's raw "
+              f"millions can't say this — a small fund at +2% of "
+              f"AUM is a louder statement than SPY at +0.1%.")
+        theme.note("% AUM = flow ÷ prior-day assets (Δshares ÷ "
+                   "shares, arithmetic the record already holds). "
+                   "The z-score is today against the fund's OWN "
+                   "accrued distribution — honest small-n rule: no z "
+                   "until 10 sessions, and n is printed so you know "
+                   "how much record stands behind each number. The "
+                   "5-day sum separates campaigns from single-print "
+                   "plumbing. [T2 computed on the desk's own record]")
     # cumulative by group
     cum = (flows.groupby(["date", "group"])["flow_mm"].sum()
            .unstack().fillna(0).cumsum())
@@ -297,13 +462,29 @@ else:
     recent["Contract"] = (recent["und"] + " " + recent["expiry"].astype(str)
                           + " " + recent["strike"].map("{:g}".format)
                           + recent["type"])
+    # v4.9.1: size AND seriousness. Notional weights the contracts;
+    # moneyness says how far from spot the bet sits (50k lottery
+    # tickets and 50k at-the-monies are different sentences); the
+    # CAMP flag marks a line loaded on 2+ of the last 5 record days
+    # — repeated accumulation is a campaign, not a print.
+    recent["notional_mm"] = (recent["d_oi"] * recent["strike"]
+                             * 100 / 1e6)
+    recent["mny"] = (recent["strike"] / recent["spot"] - 1) * 100
+    _d5 = sorted(fp["date"].unique())[-5:]
+    _keys = fp[fp["date"].isin(_d5)].groupby(
+        ["und", "expiry", "strike", "type"])["date"].nunique()
+    recent["camp"] = [
+        "CAMP" if _keys.get((r["und"], r["expiry"], r["strike"],
+                             r["type"]), 0) >= 2 else ""
+        for _, r in recent.iterrows()]
     st.dataframe(
-        recent[["Date", "Contract", "oi_prev", "oi_now", "d_oi",
-                "prev_volume"]]
-        .rename(columns={"oi_prev": "OI before", "oi_now": "OI after",
-                         "d_oi": "Δ OI", "prev_volume": "Day's volume"})
-        .style.format({"OI before": "{:,}", "OI after": "{:,}",
-                       "Δ OI": "{:+,}", "Day's volume": "{:,}"}),
+        recent[["Date", "Contract", "d_oi", "notional_mm", "mny",
+                "camp", "prev_volume"]]
+        .rename(columns={"d_oi": "Δ OI", "notional_mm": "Notional $mm",
+                         "mny": "% from spot", "camp": "",
+                         "prev_volume": "Day's volume"})
+        .style.format({"Δ OI": "{:+,}", "Notional $mm": "{:+,.1f}",
+                       "% from spot": "{:+.1f}", "Day's volume": "{:,}"}),
         hide_index=True, width="stretch",
         height=min(500, 40 + 36 * len(recent)))
     big = recent.iloc[0]
@@ -313,6 +494,13 @@ else:
         f"overnight. Volume ≈ ΔOI = mostly fresh positioning; volume ≫ "
         f"ΔOI = churn with some closing. Side of initiation is NOT in "
         f"this data — say so in the Notebook entry.")
+    theme.note("Notional = ΔOI × strike × 100: the dollar weight of "
+               "the bet, so a far-out-of-the-money pile stops "
+               "reading equal to an at-the-money one. CAMP = the "
+               "same contract loaded on 2+ of the last 5 record "
+               "days — accumulation with a memory. Both computed "
+               "from the record you already keep. [T1 OI · T2 "
+               "computed]")
     theme.note("Footprints are Ch. 15's G6 in the options market: money "
                "moving in ways price doesn't yet show. Read them "
                "against skew (VOL page) and the strike's distance from "

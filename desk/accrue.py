@@ -84,6 +84,36 @@ def run() -> str:
                 msgs.append(f"flows {target}: no rows ({probe})")
     except Exception as e:
         msgs.append(f"flows: skipped ({type(e).__name__})")
+    # ---- short-volume ratios (v4.9.1) ----
+    # Accrue-your-own, same as flows/signals: FINRA's daily file is
+    # keyless but has no history endpoint, so the percentile view on
+    # the Flow page needs a record — this builds it one session at a
+    # time. The fetch reuses flow.finra_short()'s cache.
+    try:
+        from desk import flow as _flow
+        sv_today, sv_date = _flow.finra_short()
+        if not sv_today.empty:
+            sv_iso = dt.datetime.strptime(
+                sv_date, "%d-%b-%Y").date().isoformat()
+            rec = _get_csv("history/shortvol.csv")
+            have = (set(rec["date"].astype(str)) if not rec.empty
+                    and "date" in rec else set())
+            if sv_iso not in have:
+                add = sv_today[["Symbol", "short_ratio"]].copy()
+                add.insert(0, "date", sv_iso)
+                add.columns = ["date", "symbol", "short_ratio"]
+                allr = pd.concat([rec, add], ignore_index=True)
+                sha = _pub._get_sha("history/shortvol.csv")
+                ok, _ = _pub._put("history/shortvol.csv",
+                                  allr.to_csv(index=False),
+                                  f"app accrual: shortvol {sv_iso}",
+                                  sha)
+                if ok:
+                    _flow.shortvol_history.clear()
+                msgs.append(f"shortvol {sv_iso}: "
+                            + ("stored" if ok else "commit failed"))
+    except Exception as e:
+        msgs.append(f"shortvol: skipped ({type(e).__name__})")
     # ---- OI ----
     try:
         latest = _get_csv("history/oi_latest.csv")

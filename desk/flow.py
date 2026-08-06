@@ -286,3 +286,97 @@ def evaluate_flow_alerts(flows: pd.DataFrame) -> list[str]:
                 f"July 15 pattern. Rotation or distribution? is the "
                 f"question; write the falsifier for each answer.")
     return out
+
+
+# ------------------------------------------- v4.9.1: measurement ----
+# The measurement pass: same feeds, better yardsticks. Raw $mm makes
+# SPY dwarf everything by construction; a fund's flow only means
+# something against its own size and its own history.
+
+def normalize_flows(flows: pd.DataFrame,
+                    log: pd.DataFrame,
+                    min_obs: int = 10) -> pd.DataFrame:
+    """Pure. Latest-session measurement table per ticker: flow_mm,
+    pct_aum (flow / prior-day AUM), roll5_mm (5-session sum), z
+    (today's pct_aum vs the ticker's own record — NaN until the
+    record has min_obs sessions; a thin record says so instead of
+    faking a distribution), n_obs."""
+    if flows.empty or log.empty:
+        return pd.DataFrame()
+    aum = log.copy()
+    aum["aum_mm"] = aum["shares"] * aum["close"] / 1e6
+    aum = aum.sort_values("date")
+    out = []
+    last_day = flows["date"].max()
+    for t, g in flows.groupby("ticker"):
+        g = g.sort_values("date")
+        a = aum[aum["ticker"] == t].set_index("date")["aum_mm"]
+        # pct of PRIOR-day AUM: the base the flow moved against
+        pct = pd.Series(
+            [float(f) / float(a.shift(1).get(d, float("nan"))) * 100
+             if pd.notna(a.shift(1).get(d, float("nan"))) else
+             float("nan")
+             for d, f in zip(g["date"], g["flow_mm"])],
+            index=g["date"].values)
+        pct = pct.dropna()
+        if pct.empty or last_day not in pct.index:
+            continue
+        n = len(pct)
+        mu, sd = pct.mean(), pct.std(ddof=1)
+        z = (float((pct.loc[last_day] - mu) / sd)
+             if n >= min_obs and sd and sd > 0 else float("nan"))
+        out.append({
+            "ticker": t, "name": FLOW_ETFS[t][0],
+            "flow_mm": float(g[g["date"] == last_day]
+                             ["flow_mm"].iloc[0]),
+            "pct_aum": float(pct.loc[last_day]),
+            "roll5_mm": float(g["flow_mm"].tail(5).sum()),
+            "z": z, "n_obs": n})
+    if not out:
+        return pd.DataFrame()
+    df = pd.DataFrame(out)
+    df["abs_z"] = df["z"].abs()
+    return (df.sort_values(["abs_z", "pct_aum"],
+                           ascending=[False, False], na_position="last")
+            .drop(columns="abs_z"))
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def shortvol_history() -> pd.DataFrame:
+    """The desk's own accrued short-ratio record (date, symbol,
+    short_ratio) from the data branch — same accrue-your-own pattern
+    as flows and signals. Empty until the accrual's first run."""
+    from desk.history import OWNER, REPO
+    try:
+        r = requests.get(
+            f"https://raw.githubusercontent.com/{OWNER}/{REPO}"
+            f"/data/history/shortvol.csv", timeout=15)
+        if r.ok and r.text.strip():
+            df = pd.read_csv(io.StringIO(r.text))
+            df["date"] = pd.to_datetime(df["date"])
+            return df
+    except Exception:
+        pass
+    return pd.DataFrame()
+
+
+def shortvol_percentiles(hist: pd.DataFrame,
+                         today: pd.DataFrame,
+                         min_obs: int = 10) -> pd.DataFrame:
+    """Pure. Today's short_ratio per symbol as a percentile of that
+    symbol's own accrued record. The LEVEL of a short ratio is nearly
+    meaningless (market-maker hedging prints short structurally);
+    the departure from its own norm is the read. NaN pctl until a
+    symbol has min_obs sessions on record."""
+    if today.empty:
+        return pd.DataFrame()
+    rows = []
+    for _, r in today.iterrows():
+        s = r["Symbol"]
+        h = (hist[hist["symbol"] == s]["short_ratio"].dropna()
+             if not hist.empty else pd.Series(dtype=float))
+        pct = (float((h < r["short_ratio"]).mean() * 100)
+               if len(h) >= min_obs else float("nan"))
+        rows.append({"Symbol": s, "short_ratio": r["short_ratio"],
+                     "pctl": pct, "n_obs": len(h)})
+    return pd.DataFrame(rows)

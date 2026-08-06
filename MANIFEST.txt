@@ -1,70 +1,54 @@
-CAPITAL MARKETS DESK — v4.9.0 (THE MACRO FILTER)
+CAPITAL MARKETS DESK — v4.9.1 (THE MEASUREMENT PASS)
 August 6, 2026
 
-Baseline: v4.8.2 on main. 29 replacement files, drop-in at repo
-paths. Full replacements per house convention — no diffs.
+Baseline: v4.9.0 — APPLY v4.9.0 FIRST. Four replacement files,
+drop-in at repo paths. No new feeds; same data, better yardsticks.
 
-WHAT SHIPS (the eight scoped items + the walls fix)
-
-1  MACRO FILTER — desk/wire.py grows a deterministic INCLUDE-list
-   (policy / regime / market-structure buckets), word-boundary
-   matched so "rates" catches "rate cut" but never "corporate" or
-   "moderate". Wire page gets a MACRO/ALL toggle (default MACRO)
-   with an explained-quiet state when nothing clears the list. The
-   Desk Analyst's [T3] narrative block is macro-filtered ALWAYS —
-   fewer tokens per call; the apilog receipts will show it.
-2  FISCAL DATA PASS — desk/fed.py gains a fiscaldata.treasury.gov
-   layer: tga_daily() (Daily Treasury Statement, $mm, vintage-
-   tolerant field/name matching), debt_to_penny(),
-   interest_expense_fytd(). data.net_liquidity() now prefers the
-   daily DTS TGA over FRED's weekly WTREGEN, falling back per house
-   rules. Fed page gains a three-metric fiscal tape panel.
-3  CLEANUPS — Wire page docstring/note now credit Fed, BLS, BEA,
-   AND Treasury; the red BLS FEED DOWN line is suppressed only when
-   Akamai blocks BLS and the Google backup answers (any other dead
-   feed still shows); 64 direct use_container_width kwargs swept to
-   width='stretch' across all pages (theme.plot translation from
-   v4.8.1 remains as the backstop).
-4  OPEX CALENDAR — desk/events.opex_dates(): third Fridays +
-   quarterly triple-witching flags, pure computation, nothing to
-   fail. Rendered as chips on the Calendar page.
-5  VARIANCE RISK PREMIUM — Volatility page panel: VIX vs 21-day
-   realized SPY vol, sign-colored readout, methodology-gap note
-   (teaches the sign, not the basis). [T1 implied · T2 realized]
-6  VOL REGIME TAG — composite CALM/ELEVATED/STRESS/CRISIS chip from
-   VIX level + VIX/VIX3M, on data already fetched by the page.
-7  EARNINGS IV — Quote page ERN expander: front-expiry ATM IV +
-   straddle-implied move, app-side chain call, cached 15 min,
-   fail-soft with named reasons. [T2 chain-derived]
-8  FLOW BY EXPIRY — Flow page display cut of the existing
-   footprint record grouped by expiration date; no new feed.
-9  THE WALLS FIX (live bug, 06-Aug) — Yahoo returned a chain with
-   openInterest zeroed on every row while volume populated; the
-   accrual stored it and the walls rendered "PUT WALL (0 OI)".
-   Three-layer fix: desk/accrue.py refuses to overwrite a good
-   record with a zero-OI snapshot (named message names the kept
-   date); the Volatility page withholds walls on a degraded record
-   with a dated red explanation; desk/analyst.py hands the Analyst
-   "[T1 gap]" instead of fictional walls.
+FILES
+  desk/flow.py       — normalize_flows(): latest session per fund as
+                       % of prior-day AUM, 5-session rolling sum, and
+                       a z-score vs the fund's OWN accrued record
+                       (honest small-n rule: no z until 10 sessions,
+                       n printed). shortvol_history() +
+                       shortvol_percentiles(): today's short ratio as
+                       a percentile of each symbol's own record.
+  desk/accrue.py     — accrues history/shortvol.csv (date, symbol,
+                       short_ratio) one session per day, deduped by
+                       file date, reusing finra_short()'s cache —
+                       the accrue-your-own pattern from flows/
+                       signals, because FINRA has no history
+                       endpoint. Includes v4.9.0's zero-OI guard.
+  pages/17_Flow.py   — FLOW SCOREBOARD strip (4 chips: loudest ETF
+                       flow vs itself, highest short ratio + own-
+                       record percentile, heaviest dark-pool name,
+                       footprint intensity percentile — all from
+                       calls the page already caches; each fails
+                       soft to an em-dash with a named reason).
+                       Measurement-pass table in the ETF section
+                       (%AUM / 5-day / z / n). Short-vol section
+                       gains a VS OWN RECORD readout with honest
+                       record-building notes until n=10. ATS table
+                       gains a vs-4-week-average column. Footprints
+                       gain Notional $mm, % from spot, and a CAMP
+                       flag (same contract on 2+ of last 5 record
+                       days).
+  desk/theme.py      — VERSION 4.9.1.
 
 TESTS (pre-package)
-   ast.parse            — all 29 shipped files + full tree: PASS
-   module imports       — wire, events, fed, theme, data, analyst,
-                          accrue under streamlit 1.61: PASS
-   boot suite (9 parts, real-data mocks) — macro word-boundaries
-     (11 headlines), OpEx third-Fridays vs known dates + roll-
-     forward, zero-OI accrual guard, walls guard fired on the
-     ACTUAL 06-Aug degraded record, VRP alignment + 5 regime
-     scenarios, expiry-cut groupby, DTS parse + dead-network
-     fail-soft, net-liquidity FRED fallback arithmetic, earnings-IV
-     ATM/straddle math: ALL PASS
+  ast + imports      — 4 files under streamlit 1.61: PASS
+  measurement suite  — %AUM arithmetic exact vs hand-computed AUM,
+    z present at n=15 / withheld at n<10, small-fund-outranks-SPY
+    ordering, roll5 sum, shortvol percentile exact rank + NaN under
+    10 obs + empty-history safety, ATS vs-4wk +50% exact, footprint
+    notional $2.8bn / moneyness -9.1% exact, CAMP fires on a 3-day
+    line and stays off a one-shot, accrual date-dedup: ALL PASS
 
 NOTES
-   fiscaldata.treasury.gov could not be live-called from the build
-   environment (network policy); the parse layer is tested against
-   mocked API rows and the dead-network path returns explained
-   empties — verify the three Fed-page metrics populate on deploy.
-   The current oi_latest.csv on the data branch is the degraded
-   06-Aug record; the guard prevents future overwrites but does not
-   retroactively restore old data — walls return with the next
-   healthy snapshot. Version: theme.VERSION = 4.9.0.
+  Percentile/z views are honest about thin records by design — the
+  short-ratio record starts accruing with the first app load after
+  deploy, and z-scores on ETF flows arrive when the flow record
+  (started 23-Jul) reaches 10 sessions per fund. Expect "record
+  n=X" subtitles for the first stretch; that is the feature working,
+  not failing. FINRA short INTEREST (the settled twice-monthly
+  stock figure) is deliberately NOT in this release — parked to
+  v4.10.0 pending live endpoint verification.
