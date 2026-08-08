@@ -9,6 +9,7 @@ returns a verdict. Every check fails soft with a named error —
 house rules apply from line one.
 """
 import datetime as dt
+from providers import provider_status
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +21,10 @@ app = FastAPI(title="Capital Markets Desk API", version="5.0.0-alpha.1")
 app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_methods=["GET"], allow_headers=["*"])
 
+
+@app.get("/api/providers")
+def providers_health():
+    return provider_status()
 
 def _attempt(fn, tries: int = 3):
     """Run one probe leg with backoff; never raise.
