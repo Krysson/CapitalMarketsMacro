@@ -1,0 +1,8 @@
+CapitalMarketsDesk API stub v5.0.0-alpha.2 — 2026-08-08
+Full replacement files. Paste to GitHub in the stub directory.
+---
+main.py :: """Capital Markets Desk — Phase 0 API stub.
+providers.py :: # providers.py — keyed market-data providers with fallback chain
+---
+requirements.txt must contain: fastapi, uvicorn, yfinance, pandas, requests
+(curl_cffi optional — probe falls back without it)
