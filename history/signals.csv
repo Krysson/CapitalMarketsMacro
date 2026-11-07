@@ -74,3 +74,4 @@ date,growth_score,growth_label,inflation_score,inflation_label,policy_score,poli
 2026-11-03,4.0,Rising,2,Mixed,1,Tight,3,Ample / Loosening,7568.92,20.83,0.9793,0.2907,0.7422,0.34,3.43,5.746,101.36
 2026-11-04,4.0,Rising,2,Mixed,1,Tight,3,Ample / Loosening,7688.62,16.61,0.8835,0.2912,0.7418,0.32,3.4,5.746,101.29
 2026-11-05,4.0,Rising,1,Cooling,1,Tight,2,Neutral,7353.73,28.18,1.1029,0.2959,0.7384,0.38,3.32,5.791,101.65
+2026-11-06,4.0,Rising,1,Cooling,1,Tight,2,Neutral,7376.86,25.64,1.0423,0.2938,0.7388,0.35,3.48,5.791,102.28
